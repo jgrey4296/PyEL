@@ -109,6 +109,9 @@ FACT.setResultsName(FACTNAME)
 ROOT = pp.OneOrMore(FACT + s(pp.Optional(pp.LineEnd() | pp.StringEnd()))).ignore(COMMENTS)
 
 
+#TODO: SET FAIL ACTIONS: .setFailAction(lambda s,loc,expr,err: 0)
+
+
 ########################################
 if __name__ == "__main__":
     logging.info("Starting ")
