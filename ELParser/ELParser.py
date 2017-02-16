@@ -44,8 +44,8 @@ FACTNAME = "Fact"
 
 #Tuples, the main Intermediate Representations to feed to the runtime
 t_ELFACT = namedtuple('ELFact','data array')
-t_ELPAIR = namedtuple('ELPair','elop data')
-t_ELARRAY = namedtuple('ELArray','elop array')
+t_ELPAIR = namedtuple('ELPair','elop value')
+t_ELARRAY = namedtuple('ELArray','elop value')
 
 #Utilities
 def debugPA(toks):
