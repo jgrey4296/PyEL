@@ -79,6 +79,7 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(len(results[0].array.value),3)
 
     def test_fact_with_string_inside(self):
+        """ check facts can have strings inside them """
         test_fact = '.this.is.a."string fact"'
         results = self.parser.parseString(test_fact)
         self.assertEqual(results[0].data[3].value,'"string fact"')
