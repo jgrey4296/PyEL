@@ -54,14 +54,16 @@ class ELParser_Tests(unittest.TestCase):
         test_fact = ".this.is.an.array.[1,2,3,4,5]"
         results = self.parser.parseString(test_fact)
         self.assertIsNotNone(results[0].array)
-        self.assertEqual(results[0].array.array,[1,2,3,4,5])
+        self.assertIsInstance(results[0].array,t_ELARRAY)
+        self.assertEqual(results[0].array.value,[1,2,3,4,5])
 
     def test_empty_array(self):
         """ check that an array can be empty """
         test_fact = ".this.is.an.empty.array.[]"
         results = self.parser.parseString(test_fact)
         self.assertIsNotNone(results[0].array)
-        self.assertEqual(len(results[0].array.array),0)
+        self.assertIsInstance(results[0].array,t_ELARRAY)
+        self.assertEqual(len(results[0].array.value),0)
         
     def test_multi_line_array(self):
         """ check that an array can be on multiple lines """
@@ -72,8 +74,16 @@ class ELParser_Tests(unittest.TestCase):
         ]"""
         results = self.parser.parseString(test_fact)
         self.assertIsNotNone(results[0].array)
-        self.assertEqual(len(results[0].array.array),3)
-        
+        self.assertIsInstance(results[0].array,t_ELARRAY)
+        self.assertEqual(len(results[0].array.value),3)
+
+    def test_fact_with_string_inside(self):
+        test_fact = '.this.is.a."string fact"'
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(results[0].data[3].value,'"string fact"')
+
+    
+
         
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
