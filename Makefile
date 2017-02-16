@@ -1,3 +1,3 @@
 
-test:
+all:
 	$(MAKE) -C tests test
