@@ -106,7 +106,7 @@ FACT.setResultsName(FACTNAME)
 
 
 #The entire grammar:
-ROOT = pp.OneOrMore(FACT).ignore(COMMENTS)
+ROOT = pp.OneOrMore(FACT + s(pp.Optional(pp.LineEnd() | pp.StringEnd()))).ignore(COMMENTS)
 
 
 ########################################
