@@ -104,6 +104,57 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(len(results[0].data),3)
         self.assertEqual(results[0].data[2].value,'"a !test"')
 
+    def test_fact_with_number(self):
+        """ check that facts can include numbers """
+        test_fact = '.a.b.5'
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(results[0].data[2].value,5)
+
+    def test_fact_with_negative_number(self):
+        """ check that numbers in facts can be negative """
+        test_fact = '.a.b.-5'
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(results[0].data[2].value,-5)
+
+    def test_fact_with_underscore_number(self):
+        """ check that numbers can be formatted to be read """
+        test_fact = '.a.b.5_000_000'
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(results[0].data[2].value,5000000)
+
+    def test_fact_with_number_array(self):
+        """ check that numbers can be in arrays """
+        test_fact ='.a.b.[1,2,3]'
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(results[0].array.value,[1,2,3])
+
+    def test_fact_with_underscore_negative_number(self):
+        """ check that formatted numbers can be negative """
+        test_fact = ".a.b.-12_000_000"
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(results[0].data[-1].value,-12000000)
+
+    def test_facts_can_be_fractions(self):
+        """ check that numbers in facts can be fractions """
+        test_fact = ".a.b.1/5"
+        results = self.parser.parseString(test_fact)
+        self.assertIsInstance(results[0].data[-1].value,Fraction)
+
+    def test_facts_can_be_decimals(self):
+        """ check that numbers can be decimals """
+        test_fact = ".a.b.1d5"
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(results[0].data[-1].value,1.5)
+
+    def test_numbers_can_have_sub_facts(self):
+        test_fact = ".a.b.5.c"
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(len(results[0].data),4)
+        self.assertEqual(results[0].data[-1].value,'c')
+
+        
+
+    
         
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
