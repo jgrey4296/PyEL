@@ -1,0 +1,137 @@
+#ELPY Langauge Examples
+#Comments are on single lines, with hashes
+
+#Every fact must start with a .
+#Simple Fact Strings to add to the fact base
+.this.is.a.simple.fact.string
+.this.is.a.second.fact.string
+#Exclusion using !:
+.this.is.an!exclusion.string
+#Arrays, must always be the last part of a factm
+#ie: they can't have subcomponents: .[1,2,3].a
+.this.is.an.array.test.["a","b","c","d"]
+#Multiline Arrays
+.this.is.a.multiline.array.[
+    "a",
+    "b",
+    "c",
+    "d"
+]
+#Strings in facts
+.this.is.a."string fact"
+.this.is.a."string fact".with.values
+.this.is.a."string ! fact".with.an.elop.inside
+#Numbers:
+.this.is.a.number.5
+#Number arrays:
+.this.is.a.num.array.[1,2,3]
+#Negative Numbers:
+.this.is.a.negative.-1
+#Negative Arrays:
+.this.is.a.neg.array.[-1,-2,5]
+#Underscores for large numbers
+.this.is.a.large.number.1_000_000
+#Underscores for negative numbers to
+.this.is.a.large.negative.number.-1_234_456
+#numbers can be fractions:
+.this.is.a.fraction.3/5
+#and decimals (d so as not to conflict with Non-Exclusive operator)
+.this.is.a.decimal.1d5
+
+
+##############################
+# TODO:
+
+#Rules in EL:
+#Single Line:
+.this.is.a.rule.{[.blah.bloo.blee] -> [.wee.bloo.blah]}
+#Multicondition/actions:
+.this.is.a.multirule.{[.blah.bloo,.blah.blee] -> [.wee.bloo, .wee.blah]}
+#Multiline:
+.this.is.a.multiline.rule.{
+    [.blah.bloo.blee]
+    ->
+    [.wee.bloo.blah]
+}
+#multiline, multi condition/action
+.this.is.multi.line.and.multi.condition.{
+    [.bloo.blah.blee,
+     .blah.blee.bloo]
+    ->
+    [.awe.awe.hth,
+     .awg.aw.aweg]
+}
+#Bindings:
+.this.is.a.binding.rule.{ [.blah.bloo.$1] -> [.bloo.blee.$1] }
+#named bindings:
+.this.is.a.named.binding.rule.{ [.person.name.$name] -> [.other.person.friend.$name] }
+#negation testing:
+.this.is.a.rule.{ [~.blah.bloo.blee] -> [.blah.bloo.blee] }
+#retraction
+.this.is.a.rule.{ [.blah.bloo.blee] -> [~.blah.bloo.blee] }
+#empty rules:
+.this.is.an.empty.rules.{ [] -> [] }
+#arithmetic:
+.this.is.a.comparison.rule.{ [.a.b.c>20, a.b.c<50] -> [] }
+.this.is.an.arith.rule.{ [] -> [.a.b.c+20, a.b.c-40, a.b.c*20, a.b.c/2] }
+#fractional arithmetic:
+.this.is.another.comparison.rule{ [.a.b.c > 2/3, .a.b.c < 5/8 ] -> [] }
+.this.is.another.arith.rule.{ []-> [.a.b.c+2/3, a.b.c-5/8, a.b.c*5/6, a.b.c/2/3 ] }
+#modulo arith:
+.this.is.another.arith.rule.{[]-> [.a.b.c%5 ] }
+
+#Binding comparison: Equality
+.this.is.a.binding.rule.{[.a.b.c.$1, .a.b.d.$1] -> [.a.b.e]}
+#Binding comparison: Non_Equality
+.this.is.a.binding.rule.{[.a.b.c.$1, .a.b.d.$2, $1 != $2] -> [.a.b.e]}
+#Binding Comparison: size:
+.this.is.a.binding.rule.{[.a.b.c.$1, .a.b.d.$2, $1 < $2] -> [.a.b.e]}
+
+#simple closure/binding:
+x <- .person.bob
+x.likes.fish
+x.dislikes.smoking
+#discard binding:
+x <-
+
+#rebinding:
+x <- .person.bob
+x <- .person.bill
+x.likes.blackjack
+
+
+#Action sequence, just an array
+.action.sayHi."Hello"
+.action.sayGoodBye."Goodbye"
+.action.wave."*Waves*"
+.actionSequence.[.action.sayHi,.action.wave,.action.sayGoodBye]
+
+
+#Basic Rules using conditions/actions stored elsewhere:
+#The {} without internal [] -> [], allows binding etc
+#the binding is evaluated upon running
+.this.is.a.condition.set.{.a.b.c, .b.d.e, .e.f.$1}
+.this.is.an.action.set.{.e.f.g, .h.i.j, .l.m.$1 }
+.this.is.the.rule.utilizing.{ .this.is.a.condition.set -> .this.is.an.action.set }
+
+
+#Interfaces?
+.this.is.an.interface.[.a.b.c, .d.e.f]
+
+.this.must.satisfy.the.interface :: .this.is.an.interface
+.this.must.satisfy.the.interface.a.b.c
+.this.must.satisfy.the.interface.d.e.f
+
+#nested interfaces:
+#Possibly '::' is an 'subtree application' operator?
+.base.interface.[.a.b.c]
+.complex.interface.[.d.e.f, ::.base.interface]
+
+
+#Institutions:
+#institution structure:
+.an.institution
+.an.institution.roles.[a,b,c]
+#Utilizes collections of concepts:
+.an.institution.imports :: [.an.interface, .another.interface]
+.an.institution.exports :: [.some.other.interface]
