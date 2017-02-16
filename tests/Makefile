@@ -1,6 +1,6 @@
 
 all:
-	python -m unittest ELParser* -v
+	python -m unittest EL*.py -v
 
 
 test:
