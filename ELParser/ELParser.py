@@ -11,8 +11,8 @@ logging = root_logger.getLogger(__name__)
 from enum import Enum 
 import pyparsing as pp
 from pyparsing import pyparsing_common as ppc
-from collections import namedtuple
 from fractions import Fraction
+import ELParser.ELBaseData as ELBD
 import IPython
 
 
@@ -27,8 +27,6 @@ import IPython
 #Shortcuts:
 s = pp.Suppress
 
-#Enums
-EL = Enum('EL','DOT EX')
 #Allows management of Components in the parse, but remember to wrap in str()
 #Not intended to be human usable
 PARSENAMES = Enum('PARSENAMES','BASEFACT ARRAY FACT')
@@ -36,10 +34,6 @@ PARSENAMES = Enum('PARSENAMES','BASEFACT ARRAY FACT')
 #Human usable names:
 FACTNAME = "Fact"
 
-#Tuples, the main Intermediate Representations to feed to the runtime
-t_ELFACT = namedtuple('ELFact','data array')
-t_ELPAIR = namedtuple('ELPair','elop value')
-t_ELARRAY = namedtuple('ELArray','elop value')
 
 #Utilities
 def debugPA(toks):
@@ -69,9 +63,9 @@ def construct_num(toks):
 COMMENTS = pp.Suppress(pp.Literal('#') + pp.SkipTo(pp.LineEnd()))
 
 DOT = pp.Keyword('.', identChars='!')
-DOT.setParseAction(lambda toks: EL.DOT)
+DOT.setParseAction(lambda toks: ELBD.EL.DOT)
 EX = pp.Keyword('!', identChars='.')
-EX.setParseAction(lambda toks : EL.EX)
+EX.setParseAction(lambda toks : ELBD.EL.EX)
 
 #Individual entries in an ELString
 NAME = pp.Word(pp.alphas, excludeChars='\n')
