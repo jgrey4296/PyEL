@@ -124,6 +124,7 @@ x.likes.blackjack
 
 #nested interfaces:
 #Possibly '::' is an 'subtree application' operator?
+#and '::?' as subtree test?
 .base.interface.[.a.b.c]
 .complex.interface.[.d.e.f, ::.base.interface]
 
