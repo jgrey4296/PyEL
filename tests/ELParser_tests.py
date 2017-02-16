@@ -1,3 +1,6 @@
+"""
+	BASIC testing of the ELParser
+"""
 import unittest
 import logging
 from random import random
@@ -147,12 +150,17 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(results[0].data[-1].value,1.5)
 
     def test_numbers_can_have_sub_facts(self):
+        """ make sure numbers dont have to be leaves """
         test_fact = ".a.b.5.c"
         results = self.parser.parseString(test_fact)
         self.assertEqual(len(results[0].data),4)
         self.assertEqual(results[0].data[-1].value,'c')
 
-        
+    def test_comments_are_ignored(self):
+        """ make sure comments are ignored """
+        test_fact = ".a.b.c\n#blahhhhh\n.c.d.e"
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(len(results),2)
 
     
         
