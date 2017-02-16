@@ -84,7 +84,25 @@ class ELParser_Tests(unittest.TestCase):
         results = self.parser.parseString(test_fact)
         self.assertEqual(results[0].data[3].value,'"string fact"')
 
-    
+    def test_fact_with_string_sub_values(self):
+        """ check that a string fact can continue having sub values """
+        test_fact = '.this.is."a test".with.subvalues'
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(len(results[0].data),5)
+
+    def test_fact_with_exclusion_operator(self):
+        """ Check the ! exclusion operator works in facts """
+        test_fact = ".this.is.an!exclusive.fact"
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(len(results[0].data),5)
+        self.assertEqual(results[0].data[3].elop,ELParser.EL.EX)
+
+    def test_fact_with_string_including_ex_op(self):
+        """ check that an ! in a string doesn't interfere """
+        test_fact = '.this.is."a !test"'
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(len(results[0].data),3)
+        self.assertEqual(results[0].data[2].value,'"a !test"')
 
         
 if __name__ == "__main__":
