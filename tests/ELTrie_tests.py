@@ -209,9 +209,23 @@ class ELParser_Tests(unittest.TestCase):
         self.assertFalse("bloo" in gotten_2)
         root_logger.disable(root_logger.CRITICAL)
         
-    def test_fail_exclusion_and_non_exclusion_mismatch(self):
-        """ Check that .a.b!c -> a.b.c fails """
-        None
+    def test_exclusion_to_non_downscale(self):
+        """ Check that .a.b!c -> a.b.c passes but updates """
+        ex_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("a")).push(ELBD.ELPAIR("b",ELBD.EL.EX)).push(ELBD.ELTERM("c"))
+        non_ex_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("a")).push(ELBD.ELPAIR("b")).push(ELBD.ELTERM("c"))
+        non_ex_fact_2 = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("a")).push(ELBD.ELPAIR("b")).push(ELBD.ELTERM("d"))
+        result_1 = self.trie.push(ex_fact)
+        result_2 = self.trie.push(non_ex_fact)
+        result_3 = self.trie.push(non_ex_fact_2)
+        self.assertTrue(result_1)
+        self.assertTrue(result_2)
+        self.assertTrue(result_3)
+        gotten = self.trie.get(ELBD.ELFACT(r=True).push(ELBD.ELPAIR("a")).push(ELBD.ELTERM("b")))
+        self.assertTrue(gotten)
+        self.assertEqual(len(gotten),2)
+        self.assertEqual(gotten,"b")
+        self.assertTrue("c" in gotten)
+        self.assertTrue("d" in gotten)
 
     def test_adding_array(self):
         """ Check .a.b.[1,2,3] succeeds """
