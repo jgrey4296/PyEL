@@ -36,6 +36,7 @@ class ELParser_Tests(unittest.TestCase):
         base_term = ELBD.ELTERM("test")
         base_fact = ELBD.ELFACT([base_root,base_term])
         result = self.trie.push(base_fact)
+        self.assertTrue(result)
         self.assertIsInstance(result, ELBD.ELSuccess)
         self.assertFalse(self.trie.is_empty())
 
@@ -43,6 +44,7 @@ class ELParser_Tests(unittest.TestCase):
         """ Check that just adding '.' does not change empty state """
         self.assertTrue(self.trie.is_empty())
         result = self.trie.push(ELBD.ELFACT([ELBD.ELROOT(ELBD.EL.DOT)]))
+        self.assertTrue(result)
         self.assertIsInstance(result,ELBD.ELSuccess)
         self.assertTrue(self.trie.is_empty())
         
@@ -53,7 +55,7 @@ class ELParser_Tests(unittest.TestCase):
         base_fact = ELBD.ELFACT([base_root,base_term])
         add_response = self.trie.push(base_fact)
         result = self.trie.get(ELBD.ELFACT([base_root]))
-        self.assertIsInstance(add_response, ELBD.ELSuccess)
+        self.assertTrue(add_response)
         self.assertIsInstance(result,ELBD.ELGet)
         self.assertEqual(result.value,"ROOT")
         #One child, test.
@@ -68,9 +70,9 @@ class ELParser_Tests(unittest.TestCase):
         #now add:
         add_result1 = self.trie.push(base_fact1)
         add_result2 = self.trie.push(base_fact2)
-        #verify success:
-        self.assertIsInstance(add_result1,ELBD.ELSuccess)
-        self.assertIsInstance(add_result2,ELBD.ELSuccess)
+        #verify success
+        self.assertTrue(add_result1)
+        self.assertTrue(add_result2)
         #Now get the root and see the children are there:
         root = self.trie.get(root_fact)
         self.assertIsInstance(root,ELBD.ELGet)
@@ -106,7 +108,7 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(len(base_fact),2)
         self.assertTrue(self.trie.is_empty())
         result = self.trie.push(base_fact)
-        self.assertIsInstance(result,ELBD.ELSuccess)
+        self.assertTrue(result)
         self.assertFalse(self.trie.is_empty())
 
     def test_fact_addition_of_depth_2_actually_adds(self):
@@ -115,7 +117,7 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(len(base_fact),2)
         self.assertTrue(self.trie.is_empty())
         successOrFail = self.trie.push(base_fact)
-        self.assertIsInstance(successOrFail,ELBD.ELSuccess)
+        self.assertTrue(successOrFail)
         result = self.trie.get(ELBD.ELFACT(r=True))
         self.assertEqual(result.value,"ROOT")
         self.assertTrue("test" in result)
@@ -124,8 +126,27 @@ class ELParser_Tests(unittest.TestCase):
         self.assertNotEqual(result_depth1.value,"ROOT")
         self.assertFalse("test" in result_depth1)
         self.assertTrue("bloo" in result_depth1)
-                                    
-                                      
+
+    def test_fact_addition_doesnt_duplicate(self):
+        """ Check that adding the same fact, or head components of the same fact
+        twice, doesnt duplicate those facts 
+        """
+        base_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("test")).push(ELBD.ELTERM("bloo"))
+        self.trie.push(base_fact)
+        successOrFail = self.trie.push(base_fact)
+        self.assertTrue(successOrFail)
+        base_result = self.trie.get(ELBD.ELFACT(r=True))
+        self.assertEqual(base_result.value,"ROOT")
+        self.assertEqual(len(base_result.children),1)
+        self.assertTrue("test" in base_result.children)
+        self.assertFalse("bloo" in base_result.children)
+        depth1_result = self.trie.get(ELBD.ELFACT(r=True).push(ELBD.ELTERM("test")))
+        self.assertEqual(depth1_result.value,"test")
+        self.assertEqual(len(depth1_result.children),1)
+        self.assertFalse("test" in depth1_result.children)
+        self.assertTrue("bloo" in depth1_result.children)
+
+
         
         
         
