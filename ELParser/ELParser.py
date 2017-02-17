@@ -15,15 +15,6 @@ from fractions import Fraction
 import ELParser.ELBaseData as ELBD
 import IPython
 
-
-# Group, Suppress, ParseResults, Forward
-# OnlyOnce, , FollowedBy, NotAny, OneOrMore, ZeroOrMore, Optional, SkipTo, Combine, Dict
-# And, Each, MatchFirst, Or, CharsNotIn, Empty, Keyword, CaselessKeyword, Literal, CaselessLiteral,
-# NoMatch, QuotedString, Regex, White, Word
-#PARSER.setParseAction(lambda toks: toks))
-#PARSER.setResultsName('')
-#PARSER.parseString('')
-
 #Shortcuts:
 s = pp.Suppress
 
@@ -63,6 +54,15 @@ def construct_num(toks):
 #####################
 # Grammar
 COMMENTS = pp.Suppress(pp.Literal('#') + pp.SkipTo(pp.LineEnd()))
+#Reference
+# Group, Suppress, ParseResults, Forward
+# OnlyOnce, , FollowedBy, NotAny, OneOrMore, ZeroOrMore, Optional, SkipTo, Combine, Dict
+# And, Each, MatchFirst, Or, CharsNotIn, Empty, Keyword, CaselessKeyword, Literal, CaselessLiteral,
+# NoMatch, QuotedString, Regex, White, Word
+#PARSER.setParseAction(lambda toks: toks))
+#PARSER.setResultsName('')
+#PARSER.parseString('')
+
 
 DOT = pp.Keyword('.', identChars='!')
 DOT.setParseAction(lambda toks: ELBD.EL.DOT)
