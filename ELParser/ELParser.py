@@ -1,5 +1,10 @@
 """
 An experiment in generating text using a combinator parser
+There are a couple of main segments to this file:
+1) Constant names / enums for internal use of the parser
+2) Utility functions to construct data structures from parse data, 
+	to interface with the runtime
+3) The actual grammar combinators themselves
 """
 # Setup root_logger:
 import logging as root_logger
@@ -25,7 +30,6 @@ PARSENAMES = Enum('PARSENAMES','BASEFACT ARRAY FACT TERMINAL ROOT')
 #Human usable names of the parser:
 FACTNAME = "Fact"
 
-
 #Utilities
 def debugPA(toks):
     IPython.embed(simple_prompt=True)
@@ -39,8 +43,6 @@ def construct_el_fact(toks):
     term = [toks[-1]]
     return ELBD.ELFACT(root + base + term)
 
-
-
 def construct_num(toks):
     underscore_removed = toks.replace('_','')
     if 'd' in toks:
@@ -53,7 +55,6 @@ def construct_num(toks):
 
 #####################
 # Grammar
-COMMENTS = pp.Suppress(pp.Literal('#') + pp.SkipTo(pp.LineEnd()))
 #Reference
 # Group, Suppress, ParseResults, Forward
 # OnlyOnce, , FollowedBy, NotAny, OneOrMore, ZeroOrMore, Optional, SkipTo, Combine, Dict
