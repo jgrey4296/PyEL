@@ -22,12 +22,41 @@ class ELTrieNode:
         else:
             self.value = val
 
+    def __repr__(self):
+        return "EL_Trie_Node({},{})".format(str(self.value),str(self.elop))
+            
     def is_empty(self):
         return len(self.children) == 0
         
     def elops_match(self,el_op):
         return False
 
+    def __getitem__(self,key):
+        if isinstance(key,ELBD.ELPAIR):
+            return self.children[key.value]
+        elif isinstance(key,ELBD.ELTERM):
+            return self.children[key.value]
+        else:
+            return self.children[key]
+
+    def __setitem__(self,key,value):
+        if isinstance(key,ELBD.ELPAIR):
+            self.children[key.value] = value
+        elif isinstance(key,ELBD.ELTERM):
+            self.children[key.value] = value
+        else:
+            self.children[key] = value
+            
+    def __contains__(self,key):
+        if isinstance(key,ELBD.ELPAIR):
+            return key.value in self.children
+        elif isinstance(key,ELBD.ELTERM):
+            return key.value in self.children
+        else:
+            return key in self.children
+        
+    def keys(self):
+        return self.children.keys()
 
     
 class ELTrie:
