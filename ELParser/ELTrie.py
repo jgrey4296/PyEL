@@ -64,36 +64,36 @@ class ELTrie:
     def __init__(self):
         #The root element of the trie, everything starts here.
         #Is essentially the opening '.'
-        self.root = ELTrieNode()
+        self.root = ELTrieNode('ROOT')
 
     def is_empty(self):
         return self.root.is_empty()
         
-    def add_fact(self,el_string):
-        """ Add an EL String into the Trie """
-
+    def push(self,el_string):
+        """ Take an ELFact of [ROOT, [PAIRS], TERM],
+        and attempt to add to the trie
+        """
+        assert isinstance(el_string,ELBD.ELFACT)
+        assert isinstance(el_string.data[0],ELBD.ELROOT)
+        if len(el_string.data) > 1:
+            assert isinstance(el_string.data[-1],ELBD.ELTERM)
+        
         #First change is (Parent,Original,New) for rewinding
         first_change = (None,None,None)
-        current = self.root
-        for el_pair in el_string.data:
-            if el_pair.elop != current.elop:
-                return first_change
+        current = None
+        for statement in el_string:
+            if isinstance(statement,ELBD.ELROOT):
+                current = self.root
+                continue
+            elif isinstance(statement,ELBD.ELTERM) and statement not in current:
+                current[statement] = ELTrieNode(statement)
+            elif isinstance(statement,ELBD.ELPAIR) and statement not in current:
+                current[statement] = ELTrieNode(statement)
+            current = current[statement]
             
-            #If a pure addition:
-            elif current.is_empty():
-                new_node = ELTrieNode(el_pair.elop,el_pair.value)
-                current
-                
-            #else do the elops match?
-            elif el_pair.elop != current.elop:
-                return False
-            #elops match, move down
-            
-
-            
-        return True
+        return ELBD.ELSuccess()
         
-    def remove_fact(self,el_string):
+    def pop(self,el_string):
         """ Remove an EL String from the Trie """
         return False
         
@@ -101,9 +101,27 @@ class ELTrie:
         """ Given an EL String, test the Trie to see if it is true """
 
     def get(self,el_string):
-        """ Get the values at the leaf of the specified EL String """
-        
+        """ Get the values at the leaf of the specified EL String
+            Returns an ELBD.ELRESULT
 
+        """
+        assert isinstance(el_string,ELBD.ELFACT)
+        if len(el_string.data) == 1 and isinstance(el_string.data[0],ELBD.ELROOT):
+            return ELBD.ELGet(self.root.value, list(self.root.keys()))
+        else:
+            current = None
+            for statement in el_string:
+                if isinstance(statement,ELBD.ELROOT):
+                    current = self.root
+                    continue
+                elif statement in current:
+                    current = current[statement]
+                else:
+                    return ELBD.ELFail()
+
+            return ELBD.ELGet(current.value,list(current.keys()))
+        
+        
 
           
 
