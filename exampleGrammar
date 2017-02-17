@@ -43,6 +43,11 @@
 # TODO:
 
 #Rules in EL:
+#rules are a shorthand for:
+#.this.is.a.rule.conditions.[a,b,d]
+#.this.is.a.rule.actions.[a,b,c]
+#.this.is.a.rule.bindings.[[a,b],[c,d],[e,f]]
+
 #Single Line:
 .this.is.a.rule.{[.blah.bloo.blee] -> [.wee.bloo.blah]}
 #Multicondition/actions:
