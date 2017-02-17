@@ -133,5 +133,6 @@ if __name__ == "__main__":
     console.setLevel(root_logger.INFO)
     root_logger.getLogger('').addHandler(console)
     logging = root_logger.getLogger(__name__)
-    logging.info("Starting ")
+    results = ROOT.parseString('.this.is.a.test\n.here.is!another\n.and.one.more.[1,2,3]')
+    IPython.embed(simple_prompt=True)
     
