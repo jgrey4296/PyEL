@@ -114,6 +114,9 @@ class ELGet(ELRESULT):
         self.value = value
         self.children = children
 
+    def __bool__(self):
+        return True
+        
     def __repr__(self):
         return "({} , {})".format(str(self.value),str(self.children))
         
