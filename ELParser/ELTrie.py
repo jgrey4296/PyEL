@@ -10,10 +10,17 @@ class ELTrieNode:
     Nominally an EL Operator (DOT or EX), and a value, usually a dict 
     """
     
-    def __init__(self,op=ELBD,val={}):
+    def __init__(self,val):
         self.elop = ELBD.EL.DOT
-        self.value = val
+        self.value = None
         self.children = {}
+        if isinstance(val,ELBD.ELPAIR):
+            self.elop = val.elop
+            self.value = val.value
+        elif isinstance(val,ELBD.ELTERM):
+            self.value = val.value
+        else:
+            self.value = val
 
     def is_empty(self):
         return len(self.children) == 0
