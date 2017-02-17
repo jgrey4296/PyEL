@@ -2,14 +2,19 @@
 	BASIC testing of the ELTrie
 """
 import unittest
+import IPython
 import logging
 from random import random
 from test_context import ELParser
 from ELParser.ELTrie import ELTrie
 from ELParser import ELBaseData as ELBD
 
-class ELParser_Tests(unittest.TestCase):
 
+base_root = ELBD.ELROOT(ELBD.EL.DOT)
+root_fact = ELBD.ELFACT([base_root])
+
+class ELParser_Tests(unittest.TestCase):
+    
     def setUp(self):
         self.trie = ELTrie()
     def tearDown(self):
