@@ -99,7 +99,13 @@ class ELTrie:
         
     def test(self,el_string):
         """ Given an EL String, test the Trie to see if it is true """
-
+        result = self.get(el_string)
+        if isinstance(result,ELBD.ELGet):
+            return ELBD.ELSuccess()
+        else:
+            return ELBD.ELFail()
+        
+        
     def get(self,el_string):
         """ Get the values at the leaf of the specified EL String
             Returns an ELBD.ELRESULT
