@@ -2,7 +2,7 @@
 A Simple Trie for EL
 """
 import logging as root_logger
-import ELParser.ELBaseData as ELBD
+from ELParser import ELBaseData as ELBD
 logging = root_logger.getLogger(__name__)
 
 class ELTrieNode:
