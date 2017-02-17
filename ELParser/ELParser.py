@@ -65,49 +65,63 @@ def construct_num(toks):
 #PARSER.parseString('')
 
 
+#The Grammar Combinators, parse actions come later
+COMMENTS = pp.Suppress(pp.Literal('#') + pp.SkipTo(pp.LineEnd()))
 DOT = pp.Keyword('.', identChars='!')
-DOT.setParseAction(lambda toks: ELBD.EL.DOT)
 EX = pp.Keyword('!', identChars='.')
-EX.setParseAction(lambda toks : ELBD.EL.EX)
 
-#Individual entries in an ELString
-NAME = pp.Word(pp.alphas, excludeChars='\n')
-NUM = pp.Word(pp.nums + '-_d/')
-NUM.setParseAction(lambda toks: construct_num(toks[0]))
+NAME = pp.Word(pp.alphas)
+NUM = pp.Word(pp.nums + '-_d/') #negation, formatting, decimal, and fraction
 STRING = pp.dblQuotedString
-
 ELEMENT = (NAME | STRING | NUM)
+
 #An array in EL: [ e1, e2 ... en ]
-ARRAY = s(pp.Literal('[')) + pp.Optional(s(pp.Optional(pp.LineEnd()))
+EL_ARRAY = s(pp.Literal('[')) + pp.Optional(s(pp.Optional(pp.LineEnd()))
                                          + ELEMENT
                                          + pp.ZeroOrMore(s(pp.Literal(',')
                                                            + pp.Optional(pp.LineEnd()))
                                                          + ELEMENT)) \
                     + pp.Suppress(pp.Literal(']'))
-ARRAY.setParseAction(lambda toks: [toks[:]])
-#The final part of a fact can be an array:
-EL_ARRAY = ARRAY
 #Core part of a fact:
 EL_PAIR = ELEMENT + pp.NotAny(pp.LineEnd()) + (DOT | EX)
-EL_PAIR.setParseAction(lambda tok: ELBD.ELPAIR(tok[0],tok[1]))
-#Root part of a fact:
+#Fact Components, [Root ... pairs ... terminal]
 EL_FACT_ROOT = pp.Group(DOT)
-EL_FACT_ROOT.setParseAction(lambda tok: ELBD.ELROOT(ELBD.EL.DOT))
 EL_FACT_TERMINAL = pp.Group(ELEMENT | EL_ARRAY)
-#tok[0][0] for the group wrapping then element wrapping
-EL_FACT_TERMINAL.setParseAction(lambda tok: ELBD.ELTERM(tok[0][0]))
-
 #An Entire sequence, note the stopOn to not continue over lines
 FACT = EL_FACT_ROOT + pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + EL_FACT_TERMINAL
-FACT.setParseAction(lambda toks: construct_el_fact(toks))
-FACT.setResultsName(FACTNAME)
-
-
 #The entire grammar:
 ROOT = pp.OneOrMore(FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
 
 
-#TODO: SET FAIL ACTIONS: .setFailAction(lambda s,loc,expr,err: 0)
+#Top Level entry:
+def ELPARSE(string):
+    results = []
+    try:
+        results =  ROOT.parseString(string)
+    except pp.ParseException as e:
+        logging.exception(e)
+    finally:
+        return results
+
+
+##############################
+# PARSE ACTIONS
+##############################
+DOT.setParseAction(lambda toks: ELBD.EL.DOT)
+EX.setParseAction(lambda toks : ELBD.EL.EX)
+NUM.setParseAction(lambda toks: construct_num(toks[0]))
+EL_ARRAY.setParseAction(lambda toks: [toks[:]])
+EL_PAIR.setParseAction(lambda tok: ELBD.ELPAIR(tok[0],tok[1]))
+EL_FACT_ROOT.setParseAction(lambda tok: ELBD.ELROOT(ELBD.EL.DOT))
+#tok[0][0] for the group wrapping then element/array wrapping
+EL_FACT_TERMINAL.setParseAction(lambda tok: ELBD.ELTERM(tok[0][0]))
+FACT.setParseAction(lambda toks: construct_el_fact(toks))
+FACT.setResultsName(FACTNAME)
+
+##############################
+# TODO : FAIL ACTIONS
+##############################
+
 
 
 ########################################
