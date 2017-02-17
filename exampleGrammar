@@ -39,6 +39,18 @@
 .this.is.a.decimal.1d5
 
 
+#Semantic note: Sequences of facts:
+.this.is.a.test
+.this.is.a.blah
+# -> .this.is.a.test AND .this.is.a.blah
+.this.is.a!test
+# -> .this.is.a!test ONLY, NOT .this.is.a.blah
+.this.is.a!blah
+# -> .this.is.a!blah ONLY
+.this.is.a.test
+# -> .this.is.a.test ONLY, NOT .this.is.a!blah
+
+
 ##############################
 # TODO:
 
