@@ -29,7 +29,7 @@ class ELTrie:
             assert isinstance(el_string.data[-1],ELBD.ELTERM)
         
         #First change is (Parent,Original,New) for rewinding
-        first_change = (None,None,None)
+        changes = []
         current = None
         for statement in el_string:
             if isinstance(statement,ELBD.ELROOT):
@@ -66,20 +66,24 @@ class ELTrie:
 
         """
         assert isinstance(el_string,ELBD.ELFACT)
+        returnVal = None
         if len(el_string.data) == 1 and isinstance(el_string.data[0],ELBD.ELROOT):
-            return ELBD.ELGet(self.root.value, list(self.root.keys()))
+            returnVal = ELBD.ELGet(self.root.value, list(self.root.keys()))
         else:
             current = None
             for statement in el_string:
                 if isinstance(statement,ELBD.ELROOT):
                     current = self.root
-                    continue
                 elif statement in current:
                     current = current[statement]
                 else:
-                    return ELBD.ELFail()
+                    returnVal = ELBD.ELFail()
+                    break
+        #get the final current value:
+        if returnVal is None:
+            returnVal = ELBD.ELGet(current.value,list(current.keys()))
 
-            return ELBD.ELGet(current.value,list(current.keys()))
+        return returnVal
         
         
 
