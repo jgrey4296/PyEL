@@ -89,10 +89,17 @@ class ELRESULT:
 
 class ELSuccess(ELRESULT):
     """ Indication of success """
-    
+    def __bool__(self):
+        return True    
+    def __eq__(self,other):
+        return other == True
+                            
 class ELFail(ELRESULT):
     """ Indication of failure """
-    
+    def __bool__(self):
+        return False
+    def __eq__(self,other):
+        return other == False
     
 class ELGet(ELRESULT):
     """ A Successful result """
