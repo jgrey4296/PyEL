@@ -9,6 +9,8 @@ logging = root_logger.getLogger(__name__)
 
 #Enums
 EL = Enum('EL','DOT EX')
+#El Value enum
+ELV = Enum('ELV','ARR')
 
 def ELOP2STR(elop):
     assert isinstance(elop,EL)
@@ -61,6 +63,27 @@ class ELFACT:
             self.data = data
 
 
+    def is_valid(self):
+        """ Ensure this is a valid fact """
+        #Must end with a term
+        if not isinstance(self.data[-1],ELTERM):
+            raise Exception("Fact is not valid: No ELTERM")
+        for x in self.data[1:]:
+        	if isinstance(x,ELPAIR) and isinstance(x.value,list):
+                    #must not have arrays as pairs, only terminals
+                    raise Exception("Fact is not valid: has Array in non-terminal")
+
+    def is_valid_for_searching(self):
+        """ Ensure this fact is valid for using as a search 
+        relaxes constraints on the string, can be just '.', and doesn't have to end 
+        with an ELTERM
+        """
+        for x in self.data[1:]:
+        	if isinstance(x,ELPAIR) and isinstance(x.value,list):
+                    #must not have arrays as pairs, only terminals
+                    raise Exception("Fact is not valid: has Array in non-terminal")
+
+                
     def __repr__(self):
         return "| {} |" .format("".join([str(x) for x in self]))
         
@@ -74,6 +97,16 @@ class ELFACT:
         self.data.append(statement)
         return self
 
+    def pair(self,*args):
+        return self.push(ELPAIR(*args))
+
+    def epair(self,arg):
+        return self.push(ELPAIR(arg,EL.EX))
+
+    def term(self,*args):
+        return self.push(ELTERM(*args))
+
+    
     def pop(self):
         return self.data.pop()
 
@@ -183,7 +216,11 @@ class ELTrieNode:
         if isinstance(key,ELPAIR):
             return self.children[key.value]
         elif isinstance(key,ELTERM):
-            return self.children[key.value]
+            if isinstance(key.value,list):
+                #Only terminals can have arrays, but they are unhashable so use the ELV.ARR enum
+                return self.children[ELV.ARR]
+            else:
+                return self.children[key.value]
         else:
             return self.children[key]
 
@@ -193,7 +230,11 @@ class ELTrieNode:
         if isinstance(key,ELPAIR):
             self.children[key.value] = value
         elif isinstance(key,ELTERM):
-            self.children[key.value] = value
+            #Only terminals can have arrays, but they are unhashable so use the ELV.ARR enum
+            if isinstance(key.value,list):
+                self.children[ELV.ARR] = value
+            else:
+                self.children[key.value] = value
         else:
             self.children[key] = value
             
@@ -203,9 +244,13 @@ class ELTrieNode:
             return key.value in self.children and self.children[key.value] == key
         elif isinstance(key,ELTERM):
             #only check the key is right, as a terminal doesn't specify exclusion status
-            return key.value in self.children
+            return key.value in self.keys()
         else:
             return key in self.children
         
     def keys(self):
-        return self.children.keys()
+        #get keys, but replace arrays with their actual values
+        keys = list(self.children.keys())
+        if ELV.ARR in keys:
+            keys[keys.index(ELV.ARR)] = self.children[ELV.ARR].value        
+        return keys
