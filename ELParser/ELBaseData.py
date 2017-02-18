@@ -21,6 +21,11 @@ def ELOP2STR(elop):
     else:
         return elop
 
+class ELAction:
+    """ The Base class of actions """
+
+
+    
 #Tuples, the main Intermediate Representations to feed to the runtime
 class ELROOT:
     """ The Representation of the Trie root """
