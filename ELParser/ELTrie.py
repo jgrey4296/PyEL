@@ -27,25 +27,31 @@ class ELTrie:
         assert isinstance(el_string.data[0],ELBD.ELROOT)
         if len(el_string.data) > 1:
             assert isinstance(el_string.data[-1],ELBD.ELTERM)
+        try:
+            el_string.is_valid()
         
-        #First change is (Parent,Original,New) for rewinding
-        changes = []
-        current = None
-        for statement in el_string:
-            if isinstance(statement,ELBD.ELROOT):
-                logging.debug("Hit Root")
-                current = self.root
-                continue
-            elif isinstance(statement,ELBD.ELTERM) and statement not in current:
-                logging.debug("Missing TERM: {}".format(str(statement)))
-                current[statement] = ELTrieNode(statement)
-            elif isinstance(statement,ELBD.ELPAIR) and statement not in current:
-                logging.debug("Missing PAIR: {}".format(str(statement)))
-                current[statement] = ELTrieNode(statement)
-            logging.debug("-> {}".format(str(statement)))
-            current = current[statement]
-            
-        return ELBD.ELSuccess()
+            #First change is (Parent,Original,New) for rewinding
+            returnVal = ELBD.ELSuccess()
+            changes = []
+            current = None
+            for statement in el_string:
+                if isinstance(statement,ELBD.ELROOT):
+                    logging.debug("Hit Root")
+                    current = self.root
+                    continue
+                elif isinstance(statement,ELBD.ELTERM) and statement not in current:
+                    logging.debug("Missing TERM: {}".format(str(statement)))
+                    current[statement] = ELTrieNode(statement)
+                elif isinstance(statement,ELBD.ELPAIR) and statement not in current:
+                    logging.debug("Missing PAIR: {}".format(str(statement)))
+                    current[statement] = ELTrieNode(statement)
+                logging.debug("-> {}".format(str(statement)))
+                current = current[statement]
+        except Exception as e:
+            logging.critical(e)
+            returnVal = ELBD.ELFail()
+        finally:
+            return returnVal
         
     def pop(self,el_string):
         """ Remove an EL String from the Trie """
@@ -66,24 +72,30 @@ class ELTrie:
 
         """
         assert isinstance(el_string,ELBD.ELFACT)
-        returnVal = None
-        if len(el_string.data) == 1 and isinstance(el_string.data[0],ELBD.ELROOT):
-            returnVal = ELBD.ELGet(self.root.value, list(self.root.keys()))
-        else:
-            current = None
-            for statement in el_string:
-                if isinstance(statement,ELBD.ELROOT):
-                    current = self.root
-                elif statement in current:
-                    current = current[statement]
-                else:
-                    returnVal = ELBD.ELFail()
-                    break
-        #get the final current value:
-        if returnVal is None:
-            returnVal = ELBD.ELGet(current.value,list(current.keys()))
-
-        return returnVal
+        try:
+            el_string.is_valid_for_searching()
+        
+            returnVal = None
+            if len(el_string.data) == 1 and isinstance(el_string.data[0],ELBD.ELROOT):
+                returnVal = ELBD.ELGet(self.root.value, list(self.root.keys()))
+            else:
+                current = None
+                for statement in el_string:
+                    if isinstance(statement,ELBD.ELROOT):
+                        current = self.root
+                    elif statement in current:
+                        current = current[statement]
+                    else:
+                        returnVal = ELBD.ELFail()
+                        break
+            #get the final current value:
+            if returnVal is None:
+                returnVal = ELBD.ELGet(current.value,list(current.keys()))
+        except Exception as e:
+            logging.critical(e)
+            returnVal = ELBD.ELFail()
+        finally:
+            return returnVal
         
         
 
