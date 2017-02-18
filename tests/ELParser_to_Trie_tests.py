@@ -37,7 +37,19 @@ class ELParser_to_Trie_tests(unittest.TestCase):
         self.assertEqual(retrieved,"a")
         self.assertTrue("test" in retrieved)
 
-    
+    def test__n_facts(self):
+        """ parse a number of facts and add them all """
+        fact_string = ".this.is.a.test\n.this.is.another.test\n.this.is.yet.another.test"
+        parsed_strings = self.parser.parseString(fact_string)
+        for s in parsed_strings:
+            success = self.trie.push(s)
+            self.assertTrue(success)
+        #now test:
+        retrieved = self.trie.get(self.parser.parseString('.this.is')[0])
+        self.assertEqual(retrieved,'is')
+        self.assertTrue('a' in retrieved)
+        self.assertTrue('another' in retrieved)
+        self.assertTrue('yet' in retrieved)
         
 
 
