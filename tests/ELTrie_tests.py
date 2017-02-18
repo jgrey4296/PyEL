@@ -8,6 +8,7 @@ from random import random
 from test_context import ELParser
 from ELParser.ELTrie import ELTrie
 from ELParser import ELBaseData as ELBD
+from fractions import Fraction
 
 
 base_root = ELBD.ELROOT(ELBD.EL.DOT)
@@ -257,30 +258,66 @@ class ELParser_Tests(unittest.TestCase):
         
     def test_decimal(self):
         """ Check .a.b.1d5 works """
-        None
+        decimal = ELBD.ELFACT(r=True).pair("a").pair("b").term(1.5)
+        s = self.trie.push(decimal)
+        self.assertTrue(s)
+        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b"))
+        self.assertEqual(gotten,"b")
+        self.assertEqual(len(gotten),1)
+        self.assertTrue(1.5 in gotten)
+        gotten2 = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b").pair(1.5))
+        self.assertEqual(gotten2,1.5)
+        self.assertEqual(len(gotten2),0)
 
     def test_fraction(self):
         """ Check .a.b.1/5 works """
-        None
+        fraction = ELBD.ELFACT(r=True).pair("a").pair("b").term(Fraction(1,5))
+        s = self.trie.push(fraction)
+        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b"))
+        self.assertEqual(gotten,"b")
+        self.assertEqual(len(gotten),1)
+        self.assertTrue(Fraction(1,5) in gotten)
+                
 
     def test_terminal_string(self):
         """ Check .a.b."blah bloo" works """
-        None
+        string_fact = ELBD.ELFACT(r=True).pair("a").pair("b").term("blah bloo")
+        s = self.trie.push(string_fact)
+        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b"))
+        self.assertEqual(gotten,"b")
+        self.assertEqual(len(gotten),1)
+        self.assertTrue("blah bloo" in gotten)
+        
 
     def test_non_terminal_string(self):
         """ Check .a.b."blah "bloo".c works """
-        None
+        string_fact = ELBD.ELFACT(r=True).pair("a").pair("b").pair("blah bloo").term("c")
+        s = self.trie.push(string_fact)
+        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b").pair("blah bloo"))
+        self.assertEqual(gotten,"blah bloo")
+        self.assertEqual(len(gotten),1)
+        self.assertTrue("c" in gotten)
+        
 
     def test_negative_number(self):
         """ Check that .a.b.-5 works """
-        None
+        neg_fact = ELBD.ELFACT(r=True).pair("a").pair("b").term(-5)
+        s = self.trie.push(neg_fact)
+        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b"))
+        self.assertEqual(gotten,"b")
+        self.assertEqual(len(gotten),1)
+        self.assertTrue(-5 in gotten)
+        
 
     def test_negative_number_subvalues(self):
         """ Check that .a.b.-5.c works """
-        None
-
-    
-
+        neg_sub_fact = ELBD.ELFACT(r=True).pair("a").pair("b").pair(-5).term("c")
+        s = self.trie.push(neg_sub_fact)
+        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b").pair(-5))
+        self.assertEqual(gotten,-5)
+        self.assertEqual(len(gotten),1)
+        self.assertTrue("c" in gotten)
+        
         
     #Test removing
     #test trie dump
