@@ -44,8 +44,8 @@ class ELParser_Tests(unittest.TestCase):
         """ Check that just adding '.' does not change empty state """
         self.assertTrue(self.trie.is_empty())
         result = self.trie.push(ELBD.ELFACT([ELBD.ELROOT(ELBD.EL.DOT)]))
-        self.assertTrue(result)
-        self.assertIsInstance(result,ELBD.ELSuccess)
+        self.assertFalse(result)
+        self.assertIsInstance(result,ELBD.ELFail)
         self.assertTrue(self.trie.is_empty())
         
     def test_getting(self):
@@ -229,15 +229,31 @@ class ELParser_Tests(unittest.TestCase):
 
     def test_adding_array(self):
         """ Check .a.b.[1,2,3] succeeds """
-        None
+        test_fact = ELBD.ELFACT(r=True).pair("a").pair("b").term([1,2,3])
+        s = self.trie.push(test_fact)
+        self.assertTrue(s)
 
     def test_getting_array(self):
         """ Check you can get .a.b.[1,2,3] """
-        None
+        test_fact = ELBD.ELFACT(r=True).pair("a").pair("b").term([1,2,3])
+        self.trie.push(test_fact)
+        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b"))
+        self.assertEqual(gotten,"b")
+        self.assertEqual(len(gotten),1)
+        self.assertTrue([1,2,3] in gotten)
+        self.assertFalse([3,4,5] in gotten)
+        gotten_2 = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b").term([1,2,3]))
+        self.assertEqual(gotten_2,[1,2,3])
+        self.assertEqual(gotten_2.value[1],2)
+        self.assertNotEqual(gotten_2,[2,3,4])
+        self.assertEqual(len(gotten_2),0)
+
 
     def test_array_subvalues_fails(self):
         """ Check .a.b.[1,2,3].d fails """
-        None
+        bad_fact = ELBD.ELFACT(r=True).pair("a").pair("b").pair([1,2,3]).term("d")
+        f = self.trie.push(bad_fact)
+        self.assertFalse(f)
         
     def test_decimal(self):
         """ Check .a.b.1d5 works """
