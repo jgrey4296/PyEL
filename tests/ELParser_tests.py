@@ -170,20 +170,55 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(len(results),1)
         self.assertIsInstance(results[0],ELBD.ELFACT)
         self.assertEqual(len(results[0]),5)
+        self.assertIsInstance(results[0][-1],ELBD.ELTERM)
+        self.assertIsInstance(results[0][-1].value,ELBD.ELRULE)
+        self.assertEqual(len(results[0][-1].value.conditions),0)
+        self.assertEqual(len(results[0][-1].value.actions),0)
         
+                
     
     def test_rule_defintion(self):
         """ Test .this.is.a.rule.{[.blah.bloo.blee] -> [.wee.bloo.blah]} """
-        None
+        test_fact = ".this.is.a.rule.{[.a,.b,.c] -> [.d,.e,.f]}"
+        conditions = ".a\n.b\n.c"
+        actions = ".d\n.e\.f"
+        results = self.parser.parseString(test_fact)
+        conditions_parsed = self.parser.parseString(conditions)
+        actions_parsed = self.parser.parseString(actions)
+        for x,y in zip(results[0][-1].value.conditions,conditions_parsed):
+            self.assertIsInstance(x,ELBD.ELFACT)
+            self.assertEqual(x,y)
+        for x,y in zip(results[0][-1].value.actions,actions_parsed):
+            self.assertIsInstance(x,ELBD.ELFACT)
+            self.assertEqual(x,y)
 
     def test_rule__multiline(self):
         """ As above, but across multiple lines """
-        None
+        test_fact = """ .this.is.a.rule.{
+        [.a,.b,.c]
+        ->
+        [.d,.e,.f]
+        }
+        """
+        results = self.parser.parseString(test_fact)
+        self.assertIsInstance(results[0][-1].value,ELBD.ELRULE)
+        for x in results[0][-1].value.conditions:
+            self.assertIsInstance(x,ELBD.ELFACT)
+        for x in results[0][-1].value.actions:
+            self.assertIsInstance(x,ELBD.ELFACT)
+            
         
     def test_rule_multiconditions(self):
         """ Test .this.is.a.rule{[.blah.bloo,.blee.blah] -> [.wee.bloo, .wee.blah]} """
-        None
-
+        test_fact = ".this.is.a.rule.{[.blah.bloo,.blee.blah] -> [.wee.bloo, .wee.blah]}"
+        results = self.parser.parseString(test_fact)
+        root_logger.disable(root_logger.NOTSET)
+        self.assertIsInstance(results[0][-1].value,ELBD.ELRULE)
+        for x in results[0][-1].value.conditions:
+            self.assertIsInstance(x,ELBD.ELFACT)
+        for x in results[0][-1].value.actions:
+            self.assertIsInstance(x,ELBD.ELFACT)
+        root_logger.disable(root_logger.CRITICAL)
 
     def test_rule_multiconditions_multiline(self):
         """ As above, but across multiple lines """
