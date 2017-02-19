@@ -109,6 +109,8 @@ NUM       = pp.Word(pp.nums + '-_d/') #negation, formatting, decimal, and fracti
 STRING    = pp.dblQuotedString
 ELEMENT   = (NAME | STRING | NUM)
 
+#Forward declaraction of fact:
+FACT = pp.Forward()
 
 
 #An array in EL: [ e1, e2 ... en ]
@@ -132,7 +134,7 @@ EL_PAIR = ELEMENT + pp.NotAny(pp.LineEnd()) + (DOT | EX)
 EL_FACT_ROOT = pp.Group(DOT)
 EL_FACT_TERMINAL = pp.Group(ELEMENT | EL_ARRAY | EL_RULE)
 #An Entire sequence, note the stopOn to not continue over lines
-FACT = EL_FACT_ROOT + \
+FACT << EL_FACT_ROOT + \
        pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + \
        pp.Group(EL_FACT_TERMINAL).setResultsName(str(PARSENAMES.TERMINAL))
 
