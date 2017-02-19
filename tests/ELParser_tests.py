@@ -2,7 +2,8 @@
 	BASIC testing of the ELParser
 """
 import unittest
-import logging
+import logging as root_logger
+import IPython
 from random import random
 from test_context import ELParser
 from ELParser import ELParser
