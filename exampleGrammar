@@ -145,6 +145,13 @@ x.likes.blackjack
 .base.interface.[.a.b.c]
 .complex.interface.[.d.e.f, ::.base.interface]
 
+#subtree application with variables:
+.base.interface.$1.blah
+.base.interface.$2
+.complex :: .base.interface(bob,bill)
+# -> .complex.bob.blah
+# -> .complex.bill
+
 
 #Institutions:
 #institution structure:
