@@ -22,6 +22,8 @@ import IPython
 
 #Shortcuts:
 s = pp.Suppress
+opLn = s(pp.Optional(pp.LineEnd()))
+
 
 #Allows management of Components in the parse, but remember to wrap in str()
 #Not intended to be human usable, or anywhere other than the parser.
