@@ -100,6 +100,12 @@ class ELFACT:
         else:
             self.data = data
 
+    def __eq__(self,other):
+        if all([x == y for x,y in zip(self.data,other.data)]):
+            return True
+        else:
+            return False
+            
 
     def is_valid(self):
         """ Ensure this is a valid fact """
