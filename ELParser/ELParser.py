@@ -166,8 +166,9 @@ def ELPARSE(string):
 DOT.setParseAction(lambda toks: ELBD.EL.DOT)
 EX.setParseAction(lambda toks : ELBD.EL.EX)
 NUM.setParseAction(lambda toks: construct_num(toks[0]))
-EL_ARRAY.setParseAction(lambda toks: toks[:])
-EL_RULE.setParseAction(lambda toks: [construct_rule(toks)])
+EL_ARRAY.setParseAction(lambda toks: [toks[:]])
+EL_RULE.setParseAction(lambda toks: construct_rule(toks))
+EL_RULE_ARRAY.setParseAction(lambda toks: [toks[:]])
 EL_PAIR.setParseAction(lambda tok: ELBD.ELPAIR(tok[0],tok[1]))
 EL_FACT_ROOT.setParseAction(lambda tok: ELBD.ELROOT(ELBD.EL.DOT))
 #tok[0][0] for the group wrapping then element/array wrapping
