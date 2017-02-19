@@ -144,8 +144,8 @@ EL_FACT_ROOT = pp.Group(DOT)
 EL_FACT_TERMINAL = pp.Group(ELEMENT | EL_ARRAY | EL_RULE)
 #An Entire sequence, note the stopOn to not continue over lines
 FACT << EL_FACT_ROOT + \
-       pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + \
-       pp.Group(EL_FACT_TERMINAL).setResultsName(str(PARSENAMES.TERMINAL))
+        pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + \
+        pp.Group(EL_FACT_TERMINAL).setResultsName(str(PARSENAMES.TERMINAL))
 
 #The entire grammar:
 ROOT = pp.OneOrMore(FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
