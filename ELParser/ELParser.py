@@ -25,7 +25,7 @@ s = pp.Suppress
 
 #Allows management of Components in the parse, but remember to wrap in str()
 #Not intended to be human usable, or anywhere other than the parser.
-PARSENAMES = Enum('PARSENAMES','BASEFACT ARRAY FACT TERMINAL ROOT')
+PARSENAMES = Enum('PARSENAMES','BASEFACT ARRAY FACT TERMINAL ROOT RULE CONDITIONS ACTIONS BINDINGS BINDCOMP')
 
 #Human usable names of the parser:
 FACTNAME = "Fact"
@@ -52,7 +52,20 @@ def construct_num(toks):
     else:
         return int(underscore_removed)
         
+def construct_rule(toks):
+    conditions = toks[str(PARSENAMES.CONDITIONS)][:]
+    actions = toks[str(PARSENAMES.ACTIONS)][:]
+    if str(PARSENAMES.BINDINGS) in toks:
+        bindings = toks[str(PARSENAMES.BINDINGS)][:]
+    else:
+        bindings = []
+    if str(PARSENAMES.BINDCOMP) in toks:
+        bind_comp = toks[str(PARSENAMES.BINDCOMP)][:]
+    else:
+        bind_comp = []
+    return ELBD.ELRULE(conditions,actions,bindings,bind_comp)
 
+    
 #####################
 # Grammar
 #Reference
@@ -66,29 +79,61 @@ def construct_num(toks):
 
 
 #The Grammar Combinators, parse actions come later
-COMMENTS = pp.Suppress(pp.Literal('#') + pp.SkipTo(pp.LineEnd()))
-DOT = pp.Keyword('.', identChars='!')
-EX = pp.Keyword('!', identChars='.')
+COMMENTS  = pp.Suppress(pp.Literal('#') + pp.SkipTo(pp.LineEnd()))
+DOT       = pp.Keyword('.', identChars='!')
+EX        = pp.Keyword('!', identChars='.')
+NOT       = pp.Keyword('~')
+ARROW     = pp.Keyword('->')
+BIND      = pp.Keyword('<-')
+#Subtree application and testing
+S_APP     = pp.Keyword('::', identChars='?')
+S_TEST    = pp.Keyword('::?')
 
-NAME = pp.Word(pp.alphas)
-NUM = pp.Word(pp.nums + '-_d/') #negation, formatting, decimal, and fraction
-STRING = pp.dblQuotedString
-ELEMENT = (NAME | STRING | NUM)
+
+ARITH     = pp.Word('-+*/^',exact=1)
+COMP      = pp.Word('><',exact=1)
+
+O_BRACKET = pp.Literal('[')
+C_BRACKET = pp.Literal(']')
+O_BRACE   = pp.Literal('{')
+C_BRACE   = pp.Literal('}')
+O_PAREN   = pp.Literal('(')
+C_PAREN   = pp.Literal(')')
+
+VAR       = pp.Word('$', pp.nums)
+NAME      = pp.Word(pp.alphas)
+IG_NAME   = pp.Word('_',pp.alphas)
+NUM       = pp.Word(pp.nums + '-_d/') #negation, formatting, decimal, and fraction
+STRING    = pp.dblQuotedString
+ELEMENT   = (NAME | STRING | NUM)
+
+
 
 #An array in EL: [ e1, e2 ... en ]
-EL_ARRAY = s(pp.Literal('[')) + pp.Optional(s(pp.Optional(pp.LineEnd()))
-                                         + ELEMENT
-                                         + pp.ZeroOrMore(s(pp.Literal(',')
-                                                           + pp.Optional(pp.LineEnd()))
-                                                         + ELEMENT)) \
-                    + pp.Suppress(pp.Literal(']'))
+EL_ARRAY = s(O_BRACKET) + \
+           pp.Optional(s(pp.Optional(pp.LineEnd()))
+                       + ELEMENT
+                       + pp.ZeroOrMore(s(pp.Literal(',')
+                                         + pp.Optional(pp.LineEnd()))
+                                       + ELEMENT)) \
+            + pp.Suppress(C_BRACKET)
+
+EL_RULE = s(O_BRACE) + \
+          EL_ARRAY.setResultsName(str(PARSENAMES.CONDITIONS)) + \
+          s(ARROW) + \
+          EL_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) + \
+          s(C_BRACE)
+
 #Core part of a fact:
 EL_PAIR = ELEMENT + pp.NotAny(pp.LineEnd()) + (DOT | EX)
 #Fact Components, [Root ... pairs ... terminal]
 EL_FACT_ROOT = pp.Group(DOT)
-EL_FACT_TERMINAL = pp.Group(ELEMENT | EL_ARRAY)
+EL_FACT_TERMINAL = pp.Group(ELEMENT | EL_ARRAY | EL_RULE)
 #An Entire sequence, note the stopOn to not continue over lines
-FACT = EL_FACT_ROOT + pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + EL_FACT_TERMINAL
+FACT = EL_FACT_ROOT + \
+       pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + \
+       EL_FACT_TERMINAL.setResultsName(str(PARSENAMES.TERMINAL)) \
+
 #The entire grammar:
 ROOT = pp.OneOrMore(FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
 
@@ -110,7 +155,8 @@ def ELPARSE(string):
 DOT.setParseAction(lambda toks: ELBD.EL.DOT)
 EX.setParseAction(lambda toks : ELBD.EL.EX)
 NUM.setParseAction(lambda toks: construct_num(toks[0]))
-EL_ARRAY.setParseAction(lambda toks: [toks[:]])
+EL_ARRAY.setParseAction(lambda toks: toks[:])
+EL_RULE.setParseAction(lambda toks: [construct_rule(toks)])
 EL_PAIR.setParseAction(lambda tok: ELBD.ELPAIR(tok[0],tok[1]))
 EL_FACT_ROOT.setParseAction(lambda tok: ELBD.ELROOT(ELBD.EL.DOT))
 #tok[0][0] for the group wrapping then element/array wrapping

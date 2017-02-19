@@ -26,7 +26,7 @@ class ELAction:
 
 
     
-#Tuples, the main Intermediate Representations to feed to the runtime
+#The main Intermediate Representations to feed to the runtime
 class ELROOT:
     """ The Representation of the Trie root """
     def __init__(self,elop=EL.DOT):
@@ -34,6 +34,9 @@ class ELROOT:
         
     def __repr__(self):
         return "ROOT{}".format(ELOP2STR(self.elop))
+
+    def __eq__(self,other):
+        return self.elop == other.elop
 
 class ELPAIR:
     """ Internal pairs of statements of |test.|blah!|something.|
@@ -47,14 +50,44 @@ class ELPAIR:
         op = ELOP2STR(self.elop)
         return "{}{}".format(str(self.value),op)
 
+    def __eq__(self,other):
+        return self.elop == other.elop and self.value == other.value
+    
 class ELTERM:
     """ Internal representation of the terminal of the EL String
     """
     def __init__(self,value):
         self.value = value
-
+        
     def __repr__(self):
         return "{} ||".format(str(self.value))
+
+    def __eq__(self,other):
+        return self.value == other.value
+    
+class ELRULE:
+    """ Internal representation of a rule """
+    def __init__(self,conditions,actions,bindings=[],binding_comparisons=[]):
+        self.conditions = conditions
+        self.actions = actions
+        self.bindings = bindings
+        self.binding_comparisons = binding_comparisons
+
+    def __repr__(self):
+        return "Rule({},{},{},{}) ||".format(str(self.conditions),
+                                             str(self.actions),
+                                             str(self.bindings),
+                                             str(self.binding_comparisons))
+
+    def __eq__(self,other):
+        if all([x == y for x,y in zip(self.conditons,other.conditions)]) \
+           and all([x == y for x,y in zip(self.actions, other.actions)]) \
+           and all([x == y for x,y in zip(self.bindings, other.bindings)]) \
+           and all([x == y for x,y in zip(self.binding_comparisons, other.binding_comparisons)]):
+            return True
+        else:
+            return False
+               
     
 class ELFACT:
     """ An internal representation of an EL Fact string """

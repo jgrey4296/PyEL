@@ -161,6 +161,133 @@ class ELParser_Tests(unittest.TestCase):
         results = self.parser.parseString(test_fact)
         self.assertEqual(len(results),2)
 
+    ####################
+
+    def test_empty_rule(self):
+        """ test .this.is.a.rule.{[] -> []} """
+        test_fact = ".this.is.a.rule.{[]->[]} """
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(len(results),1)
+        self.assertIsInstance(results[0],ELBD.ELFACT)
+        self.assertEqual(len(results[0]),5)
+        
+    
+    def test_rule_defintion(self):
+        """ Test .this.is.a.rule.{[.blah.bloo.blee] -> [.wee.bloo.blah]} """
+        None
+
+    def test_rule__multiline(self):
+        """ As above, but across multiple lines """
+        None
+        
+    def test_rule_multiconditions(self):
+        """ Test .this.is.a.rule{[.blah.bloo,.blee.blah] -> [.wee.bloo, .wee.blah]} """
+        None
+
+
+    def test_rule_multiconditions_multiline(self):
+        """ As above, but across multiple lines """
+        None
+
+    def test_rule_bindings(self):
+        """ Test .this.is.a.rule.{[.blah.bloo.$1] -> [.bloo.blee.$1]} """
+        None
+
+    def test_rule_name_binding(self):
+        """ Test .this.is.a.rule.{[.blah.bloo.$name] -> [.bloo.blee.$name]} """
+        None
+
+    def test_rule_negation_testing(self):
+        """ Test .this.is.a.rule.{[~.blah.bloo.blee] -> [.blah.bloo.blee]} """
+        None
+
+    def test_rule_retraction(self):
+        """ Test .this.is.a.rule.{[.blah.bloo.blee] -> [~.blah.bloo.blee]} """
+        None
+
+    def test_rule_condition_comparison(self):
+        """ test .this.is.a.rule.{[.a.b.c > 20, a.b.c < 50] -> [] } """
+        None
+
+    def test_rule_arith_action(self):
+        """ test .this.is.a.rule.{[] -> [.a.b.c + 20 ]} """
+        None
+
+    def test_rule_arith_action_expanded(self):
+        """ test .this.is.a.rule.{[] -> [.a.b.c+2/3, .a.b.d-1d4, .a.b.c*5/6, .a.b.c / 2]} """
+        None
+
+    def test_rule_modulo_action(self):
+        """ test .this.is.a.rule.{[.a.b.c%5] -> [.a.b.c%2]} """
+        None
+
+    def test_rule_binding_comparison(self):
+        """ test .this.is.a.rule.{[.a.b.c.$1, .a.b.d.$1] -> []} """
+        None
+
+    def test_rule_binding_comparison_non_equality(self):
+        """" test .this.is.a.rule.{[.a.b.c.$1, .a.b.d.$2, $1 != $2] -> []} """
+        None
+
+    def test_rule_binding_comparison_size(self):
+        """ test .this.is.a.rule.{[.a.b.c.$1,.a.b.d.$2, $1 < $2] -> []} """
+        None
+
+    def test_closure_binding(self):
+        """ test:
+        x <- .person.bob
+        x.likes.fish        
+        """
+        None
+
+    def test_closure_unbinding(self):
+        """ test:
+        x <- .person.bob
+        x <- 
+        """
+        None
+
+    def test_closure_rebinding(self):
+        """ test:
+        x <- .person.bob
+        x <- .person.bill
+        """
+        None
+
+    def test_statement_array(self):
+        """ test .a.b.list.[.a.b.c,.a.b.c,.a.b.d] """
+        None
+
+    def test_condition_variables(self):
+        """ test:
+        .this.is.a.condition.set.{.a.b.c, .b.d.e, .e.f.$1}
+        .this.is.an.action.set.{.e.f.g, .h.i.j, .l.m.$1}
+        .this.is.a.rule.{ .this.is.a.condition.set -> .this.is.an.action.set }
+        """
+        None
+
+    def test_subtree_application(self):
+        """ test: 
+        .a.b.c.d, .a.b.e.f
+        .a.g :: .a.b
+        """
+        None
+        
+    def test_subtree_test(self):
+        """ test:
+        .a.b.c.d, .a.b.e.f
+        .a.g.c.d, .a.g.e.f
+        .a.g ::? .a.b
+        """
+        None
+
+    def test_subtree_variable_application(self):
+        """ test:
+        .a.b.c.$1, .a.b.c.$2,
+        .a.d :: .a.b(bob,bill)        
+        """
+        None
+        
     
         
 if __name__ == "__main__":
