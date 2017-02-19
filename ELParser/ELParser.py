@@ -103,12 +103,12 @@ C_BRACE   = pp.Literal('}')
 O_PAREN   = pp.Literal('(')
 C_PAREN   = pp.Literal(')')
 
-VAR       = pp.Word('$', pp.nums)
+VAR       = pp.Word('$', pp.nums | pp.nums)
 NAME      = pp.Word(pp.alphas)
 IG_NAME   = pp.Word('_',pp.alphas)
 NUM       = pp.Word(pp.nums + '-_d/') #negation, formatting, decimal, and fraction
 STRING    = pp.dblQuotedString
-ELEMENT   = (NAME | STRING | NUM)
+ELEMENT   = (VAR | NAME | STRING | NUM)
 
 #Forward declaraction of fact:
 FACT = pp.Forward()
