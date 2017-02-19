@@ -22,7 +22,8 @@ import IPython
 
 #Shortcuts:
 s = pp.Suppress
-opLn = s(pp.Optional(pp.LineEnd()))
+op = pp.Optional
+opLn = s(op(pp.LineEnd()))
 
 
 #Allows management of Components in the parse, but remember to wrap in str()
@@ -115,20 +116,21 @@ FACT = pp.Forward()
 
 #An array in EL: [ e1, e2 ... en ]
 EL_ARRAY = s(O_BRACKET) + \
-           pp.Optional( opLn \
-                       + ELEMENT
-                       + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
-                       + ELEMENT)) \
+           op( opLn \
+               + ELEMENT
+               + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
+               + ELEMENT)) \
         + s(C_BRACKET)
 
+#An array for rules, as it contains facts
 EL_RULE_ARRAY = s(O_BRACKET) + \
-                pp.Optional( opLn \
-                             + FACT
-                             + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
-                             + FACT)) \
+                op( opLn \
+                    + FACT
+                    + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
+        	    + FACT)) \
                 + s(C_BRACKET)
 
-
+#a Rule of conditions -> actions
 EL_RULE = s(O_BRACE) + opLn + \
           EL_RULE_ARRAY.setResultsName(str(PARSENAMES.CONDITIONS)) + \
           opLn + ARROW + opLn + \
