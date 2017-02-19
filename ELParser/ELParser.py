@@ -115,18 +115,25 @@ FACT = pp.Forward()
 
 #An array in EL: [ e1, e2 ... en ]
 EL_ARRAY = s(O_BRACKET) + \
-           pp.Optional(s(pp.Optional(pp.LineEnd()))
+           pp.Optional( opLn \
                        + ELEMENT
-                       + pp.ZeroOrMore(s(pp.Literal(',')
-                                         + pp.Optional(pp.LineEnd()))
-                                       + ELEMENT)) \
-            + pp.Suppress(C_BRACKET)
+                       + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
+                       + ELEMENT)) \
+        + s(C_BRACKET)
 
-EL_RULE = s(O_BRACE) + \
-          EL_ARRAY.setResultsName(str(PARSENAMES.CONDITIONS)) + \
-          s(ARROW) + \
-          EL_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) + \
-          s(C_BRACE)
+EL_RULE_ARRAY = s(O_BRACKET) + \
+                pp.Optional( opLn \
+                             + FACT
+                             + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
+                             + FACT)) \
+                + s(C_BRACKET)
+
+
+EL_RULE = s(O_BRACE) + opLn + \
+          EL_RULE_ARRAY.setResultsName(str(PARSENAMES.CONDITIONS)) + \
+          opLn + ARROW + opLn + \
+          EL_RULE_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) + \
+          opLn + s(C_BRACE)
 
 #Core part of a fact:
 EL_PAIR = ELEMENT + pp.NotAny(pp.LineEnd()) + (DOT | EX)
