@@ -42,7 +42,7 @@ def construct_el_fact(toks):
         raise Exception('No BaseFact provided',toks)
     root = [toks[0]]
     base = toks[str(PARSENAMES.BASEFACT)][:]
-    term = [toks[-1]]
+    term = [toks[str(PARSENAMES.TERMINAL)][0]]
     return ELBD.ELFACT(root + base + term)
 
 def construct_num(toks):
@@ -134,7 +134,7 @@ EL_FACT_TERMINAL = pp.Group(ELEMENT | EL_ARRAY | EL_RULE)
 #An Entire sequence, note the stopOn to not continue over lines
 FACT = EL_FACT_ROOT + \
        pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + \
-       EL_FACT_TERMINAL.setResultsName(str(PARSENAMES.TERMINAL)) \
+       pp.Group(EL_FACT_TERMINAL).setResultsName(str(PARSENAMES.TERMINAL))
 
 #The entire grammar:
 ROOT = pp.OneOrMore(FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
