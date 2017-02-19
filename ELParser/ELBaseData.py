@@ -74,7 +74,7 @@ class ELRULE:
         self.binding_comparisons = binding_comparisons
 
     def __repr__(self):
-        return "Rule({},{},{},{}) ||".format(str(self.conditions),
+        return "Rule({},{},{},{})".format(str(self.conditions),
                                              str(self.actions),
                                              str(self.bindings),
                                              str(self.binding_comparisons))
