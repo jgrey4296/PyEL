@@ -213,21 +213,31 @@ class ELParser_Tests(unittest.TestCase):
         """ Test .this.is.a.rule{[.blah.bloo,.blee.blah] -> [.wee.bloo, .wee.blah]} """
         test_fact = ".this.is.a.rule.{[.blah.bloo,.blee.blah] -> [.wee.bloo, .wee.blah]}"
         results = self.parser.parseString(test_fact)
-        root_logger.disable(root_logger.NOTSET)
         self.assertIsInstance(results[0][-1].value,ELBD.ELRULE)
         for x in results[0][-1].value.conditions:
             self.assertIsInstance(x,ELBD.ELFACT)
         for x in results[0][-1].value.actions:
             self.assertIsInstance(x,ELBD.ELFACT)
-        root_logger.disable(root_logger.CRITICAL)
+        
 
     def test_rule_multiconditions_multiline(self):
         """ As above, but across multiple lines """
-        None
+        test_fact = """.this.is.a.rule.{
+    		[.blah.bloo,.blee.blah] 
+        	-> 
+		[.wee.bloo, .wee.blah]}"""
+        results = self.parser.parseString(test_fact)
+        self.assertIsInstance(results[0][-1].value,ELBD.ELRULE)
+        for x in results[0][-1].value.conditions:
+            self.assertIsInstance(x,ELBD.ELFACT)
+        for x in results[0][-1].value.actions:
+            self.assertIsInstance(x,ELBD.ELFACT)
+        
 
     def test_rule_bindings(self):
         """ Test .this.is.a.rule.{[.blah.bloo.$1] -> [.bloo.blee.$1]} """
-        None
+        test_fact = ".this.is.a.rule.{[.blah.bloo.$1] -> [.bloo.blee.$1]}"
+        results = self.parser.parseString(test_fact)
 
     def test_rule_name_binding(self):
         """ Test .this.is.a.rule.{[.blah.bloo.$name] -> [.bloo.blee.$name]} """
