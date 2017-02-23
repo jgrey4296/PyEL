@@ -142,32 +142,16 @@ ELEMENT   = (VAR | NAME | STRING | NUM)
 
 #Comparison:
 EL_COMPARISON = VAR + COMP + VAR
-
-EL_COMPARISON_ARRAY = s(O_BRACKET) + opLn + \
-                      EL_COMPARISON + \
-                      pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
-                         + EL_COMPARISON) + \
-                         s(C_BRACKET)
+EL_COMPARISON_ARRAY = array_template(EL_COMPARISON)
 
 #Forward declaraction of fact:
 FACT = pp.Forward()
 
-
 #An array in EL: [ e1, e2 ... en ]
-EL_ARRAY = s(O_BRACKET) + \
-           op( opLn \
-               + ELEMENT
-               + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
-               + ELEMENT)) \
-        + s(C_BRACKET)
+EL_ARRAY = array_template(ELEMENT)
 
 #An array for rules, as it contains facts
-EL_RULE_ARRAY = s(O_BRACKET) + \
-                op( opLn \
-                    + FACT
-                    + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
-        	    + FACT)) \
-                + s(C_BRACKET)
+EL_RULE_ARRAY = array_template(FACT)
 
 #a Rule of conditions -> actions
 EL_RULE = s(O_BRACE) + opLn + \
