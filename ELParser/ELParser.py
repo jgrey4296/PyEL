@@ -161,9 +161,9 @@ EL_RULE = s(O_BRACE) + opLn + \
           EL_RULE_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) + \
           opLn + s(C_BRACE)
 
-#Core part of a fact:
-EL_PAIR = ELEMENT + pp.NotAny(pp.LineEnd()) + (DOT | EX)
 #Fact Components, [Root ... pairs ... terminal]
+#Core part of a fact: a.b!c => (a,DOT),(b.EX)
+EL_PAIR = ELEMENT + pp.NotAny(pp.LineEnd()) + (DOT | EX)
 EL_FACT_ROOT = pp.Group(DOT).setResultsName(str(PARSENAMES.ROOT))
 EL_FACT_TERMINAL = pp.Group(ELEMENT | EL_ARRAY | EL_RULE)
 #An Entire sequence, note the stopOn to not continue over lines
