@@ -99,6 +99,15 @@ def construct_rule(toks):
 #PARSER.parseString('')
 
 
+def array_template(element):
+    parser = s(O_BRACKET) + \
+             op( opLn \
+                 + element
+                 + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
+                                 + element)) \
+                + s(C_BRACKET)
+    return parser
+
 #The Grammar Combinators, parse actions come later
 COMMENTS  = pp.Suppress(pp.Literal('#') + pp.SkipTo(pp.LineEnd()))
 DOT       = pp.Keyword('.', identChars='!')
