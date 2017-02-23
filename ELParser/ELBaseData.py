@@ -1,6 +1,7 @@
 """
 Base Data for EL
 """
+import IPython
 from enum import Enum
 from collections import namedtuple
 import logging as root_logger
