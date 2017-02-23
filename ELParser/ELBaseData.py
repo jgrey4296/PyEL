@@ -147,7 +147,12 @@ class ELVAR:
 class ELFACT:
     """ An internal representation of an EL Fact string """
 
-    def __init__(self,data=None, r=False):
+    def __init__(self,data=None, r=False, bindings = None, negated=False):
+        self.negated = negated
+        if bindings is not None:
+            self.bindings = bindings
+        else:
+            self.bindings = []
         if data is None:
             self.data = []
             if r is True:
