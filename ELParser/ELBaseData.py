@@ -12,6 +12,28 @@ logging = root_logger.getLogger(__name__)
 EL = Enum('EL','DOT EX')
 #El Value enum
 ELV = Enum('ELV','ARR')
+#EL comparison operations:
+ELCOMP = Enum('ELCOMP','GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL NOTEQUAL CONTAINS NOTCONTAINS NEAR')
+ELCOMP_lookup = {
+    '<'   : ELCOMP.LESSER,
+    '>'   : ELCOMP.GREATER,
+    '<='  : ELCOMP.LESSEREQUAL,
+    '>='  : ELCOMP.GREATEREQUAL,
+    '=='  : ELCOMP.EQUAL,
+    '!='  : ELCOMP.NOTEQUAL,
+    '@'   : ELCOMP.CONTAINS,
+    '!@'  : ELCOMP.NOTCONTAINS,
+    'c'   : ELCOMP.NEAR
+}
+#EL ARITH OP
+ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW') 
+ELARITH_lookup = {
+    '-' : ELARITH.MINUS,
+    '+' : ELARITH.PLUS,
+    '*' : ELARITH.MUL,
+    '/' : ELARITH.DIV,
+    '^' : ELARITH.POW
+}
 
 def ELOP2STR(elop):
     assert isinstance(elop,EL)
