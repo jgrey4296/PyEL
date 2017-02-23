@@ -121,7 +121,7 @@ C_BRACE   = pp.Literal('}')
 O_PAREN   = pp.Literal('(')
 C_PAREN   = pp.Literal(')')
 
-VAR       = pp.Word('$', pp.nums | pp.nums)
+VAR       = pp.Word('$', pp.alphas + pp.nums)
 NAME      = pp.Word(pp.alphas)
 IG_NAME   = pp.Word('_',pp.alphas)
 NUM       = pp.Word(pp.nums + '-_d/') #negation, formatting, decimal, and fraction
