@@ -13,6 +13,8 @@ from fractions import Fraction
 
 base_root = ELBD.ELROOT(ELBD.EL.DOT)
 root_fact = ELBD.ELFACT([base_root])
+logging = root_logger.getLogger(__name__)
+
 
 class ELParser_Tests(unittest.TestCase):
     
