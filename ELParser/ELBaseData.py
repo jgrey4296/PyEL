@@ -134,7 +134,15 @@ class ELRULE:
             return True
         else:
             return False
-               
+
+class ELVAR:
+    """ An internal representation of a binding """
+    def __init__(self,bindName):
+        self.value = bindName
+    def __repr__(self):
+        return "VAR({})".format(self.value)
+    def __eq__(self,other):
+        return self.value == other.value
     
 class ELFACT:
     """ An internal representation of an EL Fact string """
