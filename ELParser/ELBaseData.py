@@ -37,6 +37,22 @@ ELARITH_lookup = {
     '%' : ELARITH.MOD
 }
 
+#from stackoverflow question 483666
+def EL_ARITH_2_STR(enumValue):
+    lookup = {v: k for k,v in ELARITH_lookup.items()}
+    if enumValue in lookup:
+        return lookup[enumValue]
+    else:
+        raise ELE.ELParseException("Enum value {} not found".format(enumValue))
+
+def EL_COMP_2_STR(enumValue):
+    lookup = {v:k for k,v in ELCOMP.lookup.items()}
+    if enumValue in lookup:
+        return lookup[enumValue]
+    else:
+        raise ELE.ELParseException("Enum value {} not found".format(enumValue))
+
+
 def ELOP2STR(elop):
     assert isinstance(elop,EL)
     if elop == EL.DOT:
