@@ -18,6 +18,7 @@ import pyparsing as pp
 from pyparsing import pyparsing_common as ppc
 from fractions import Fraction
 import ELParser.ELBaseData as ELBD
+import ELParser.ELExceptions as ELE
 import IPython
 
 #Shortcuts:
@@ -54,7 +55,20 @@ def construct_num(toks):
         return Fraction(underscore_removed)
     else:
         return int(underscore_removed)
-        
+
+def construct_comp_op(tok):
+    if tok in ELBD.ELCOMP_lookup:
+        return ELBD.ELCOMP_lookup[tok]
+    else:
+        raise ELE.ELParseException('Unrecognised comparison operator')
+
+def construct_arith_op(tok):
+    if tok in ELBD.ELARITH_lookup:
+        return ELBD.ELARITH_lookup[tok]
+    else:
+        raise ELE.ELParseException('Unrecognised arithmetic operator')
+
+    
 def construct_rule(toks):
     conditions = toks[str(PARSENAMES.CONDITIONS)][:]
     actions = toks[str(PARSENAMES.ACTIONS)][:]
