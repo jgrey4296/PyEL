@@ -199,6 +199,8 @@ NUM.setParseAction(lambda toks: construct_num(toks[0]))
 #Get the binding, and lop off the $:
 VAR.setParseAction(lambda tok: ELBD.ELVAR(tok[0][1:]))
 
+EL_COMPARISON.setParseAction(lambda toks: ELBD.ELComparison(toks[0], toks[1], toks[2]))
+
 EL_ARRAY.setParseAction(lambda toks: [toks[:]])
 EL_RULE.setParseAction(lambda toks: construct_rule(toks))
 EL_RULE_ARRAY.setParseAction(lambda toks: [toks[:]])
