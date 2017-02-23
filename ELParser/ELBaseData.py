@@ -179,6 +179,22 @@ class ELVAR:
         return "VAR({})".format(self.value)
     def __eq__(self,other):
         return self.value == other.value
+
+
+class ELARITH_FACT:
+    """ An internal representation of an arithmetic operator fact,
+    for use in actions """
+    def __init__(self, data=None, op=None, val=None):
+        if not (isinstance(data,ELFACT) or isinstance(data,ELVAR)):
+            raise ELE.ELConsistencyException('All Arith facts need a fact or variable as a base')
+        if not isinstance(op,ELARITH):
+            raise ELE.ELConsistencyException('Arith Fact missing an operator')
+        self.data=data #A fact
+        self.op = op   #an operator
+        self.val = val #a value or binding       
+
+    def __repr__(self):
+        return "|ARITH: {} ({} {}) |".format(self.data,EL_ARITH_2_STR(self.op), self.val)
     
 class ELFACT:
     """ An internal representation of an EL Fact string """
