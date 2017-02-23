@@ -103,18 +103,29 @@ class ELTERM:
     
 class ELRULE:
     """ Internal representation of a rule """
-    def __init__(self,conditions,actions,bindings=[],binding_comparisons=[]):
+    def __init__(self,conditions,actions,binding_comparisons=[]):
         self.conditions = conditions
         self.actions = actions
-        self.bindings = bindings
+        self.condition_bindings = set([x.value for c in self.conditions for x in c.bindings])
+        self.action_bindings = set([x.value for a in self.actions for x in a.bindings])
+        #Array of tuples: (op b1 b2)
         self.binding_comparisons = binding_comparisons
 
     def __repr__(self):
-        return "Rule({},{},{},{})".format(str(self.conditions),
+        return "Rule({},{},{})".format(str(self.conditions),
                                              str(self.actions),
-                                             str(self.bindings),
                                              str(self.binding_comparisons))
 
+    def balanced_bindings(self):
+        #get the set of all bindings used in comparisons
+        comparison_set = set([x.b1.value for x in self.binding_comparisons]).union(set([x.b2.value for x in self.binding_comparisons]))
+        #get all bindings used in comparisons and actions:
+        combined_bindings = self.action_bindings.union(comparison_set)
+        #then get the ones that aren't in the condition_bindings
+        the_difference = combined_bindings.difference(self.condition_bindings)
+        return len(the_difference) == 0
+        
+            
     def __eq__(self,other):
         if all([x == y for x,y in zip(self.conditons,other.conditions)]) \
            and all([x == y for x,y in zip(self.actions, other.actions)]) \
