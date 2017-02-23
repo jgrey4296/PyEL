@@ -128,6 +128,15 @@ NUM       = pp.Word(pp.nums + '-_d/') #negation, formatting, decimal, and fracti
 STRING    = pp.dblQuotedString
 ELEMENT   = (VAR | NAME | STRING | NUM)
 
+#Comparison:
+EL_COMPARISON = VAR + COMP + VAR
+
+EL_COMPARISON_ARRAY = s(O_BRACKET) + opLn + \
+                      EL_COMPARISON + \
+                      pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
+                         + EL_COMPARISON) + \
+                         s(C_BRACKET)
+
 #Forward declaraction of fact:
 FACT = pp.Forward()
 
