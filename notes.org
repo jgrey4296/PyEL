@@ -1,0 +1,12 @@
+* iEL : Institutional Exclusion Logic 
+
+Parser: pyparsing / parser combinator
+Fact Base: Trie
++ Runtime
+** Parser
+*** TODO Add bindings
+
+** Trie
+** Parser -> Trie Integration
+** Runtime
+
