@@ -194,7 +194,16 @@ ROOT = pp.OneOrMore(FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
 #Top Level entry:
 def ELPARSE(string):
     results = []
-    results =  ROOT.parseString(string)
+    try:
+        results =  ROOT.parseString(string)[:]
+    except pp.ParseException as pe:
+        logging.exception("ParseException: L:{}_C:{}: {}".format(pe.lineno,pe.col,pe.line))
+        raise ELE.ELParseException("ELParseException: L:{}_C:{}: {}".format(pe.lineno,pe.col,pe.line))
+    except ELE.ELException as ele:
+        logging.exception("ELException: {}".format(ele))
+        raise ele
+    except Exception as e:
+        raise e
     return results
 
 
