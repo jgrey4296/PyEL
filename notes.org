@@ -9,4 +9,83 @@ Fact Base: Trie
 ** Trie
 ** Parser -> Trie Integration
 ** Runtime
+** Language notes:
+*** Assertions
+    Assertions are basic statements: .a.b.c
+*** Retractions
+    Retractions use ~ at the beginning: ~.a.b.c
+*** Rules
+    Rules have the form .a.b.c.{ [conditions] | [comparisons] -> [actions] }
+    Brackets are optional, multiple of each segment are separated by commas.
+    Bindings between segments use $name
+    Rules are checked at parse time for binding balance. Any binding used in the comparisons
+    or the actions *must* be in the conditions
 
+**** Bindings.
+     Bindings may be named (.a.b.$c) and unnamed (.a.b.$1)
+     If binding on an exclusion (.a.b!$c) it doesnt matter as to the name chosen.
+     If binding on a non-exclusion, numbers will select that entry if it exists, clipped.
+     Meanwhile names do nothing special, just bind the value
+
+**** Rule Actions
+
+     Rule actions can be assertions: .a.b.c.{ [] -> [.a.b.d]}
+     Retractions: .a.b.c.{[] -> [~.a.b.c]}
+     Or Arithmetic operations: .a.b.c.{[] -> .a.b.d + 20 }
+
+**** Comparisons
+     Normal ones of <, >, <=, >=, ==, !=, 
+     And contains '@' for both 'a' @ ['b','c','a']
+     and:
+     .a.b.c
+     .a.b.d
+     .a.b.e
+     => e @ .a.b..
+
+     And also '~=', the near operator. 
+     9 ~=(1) 10 => True
+     6 ~=(1) 10 => False
+     6 ~=(4) 10 => True
+     14 ~=(4) 10 => True
+
+*** Arrays / sequence
+    A fact can have a sequence of facts or values as a leaf node.
+    Allowed: .a.b.c.[1,2,3,4]
+    		 .a.b.c.[.a.b, .c.d]
+    Not Allowed:
+    		.a.b.c.[4,5].e.f
+*** Strings.
+    Strings are part of facts using double quotes:
+    .a.b.c."testing blah".e.f
+**** TODO String interpolation
+     .a.b.c."this is a ${blah}".blah.something => "this is a something"
+*** TODO Interfaces and tree application
+    Interfaces should work as an operator to do runtime checks on sub structure
+    Operator ::? *tests* the structure
+    Operator :: *applies* the structure
+    :: should work with variables
+    so:
+    .a.b.$c.f, .a.b.$d.g
+    .e :: .a.b($c=blah, $d=bloo)
+    =>
+    .e.blah.f
+    .e.bloo.g
+*** Numbers.
+    Numbers do not have to be leaves, and can take a number of forms:
+    Integers: .a.b.c.5
+    underscore integers: .a.b.c.5_000_000
+    decimals: .a.b.c.1d5
+    fractions: .a.b.c.1/5
+    negatives: .a.b.c.-15
+*** Exclusion semantics:
+    Upscaling:
+    .a.b.c  => .a.b!c
+    Auto replacement:
+    .a.b!c => .a.b.!d
+    DownScaling:
+    .a.b.!d => .a.b.c
+*** TODO Institutions
+    Institutions should be able to annotate:
+    Structure, IGUs, Inputs, Outputs, variables?
+
+** Tests
