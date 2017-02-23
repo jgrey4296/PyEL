@@ -8,6 +8,7 @@ from random import random
 from test_context import ELParser
 from ELParser import ELParser
 from ELParser import ELBaseData as ELBD
+from ELParser import ELExceptions as ELE
 from fractions import Fraction
 
 #Parser returns a ParseResult, which is an array of actual parse data structures
@@ -238,26 +239,88 @@ class ELParser_Tests(unittest.TestCase):
         """ Test .this.is.a.rule.{[.blah.bloo.$1] -> [.bloo.blee.$1]} """
         test_fact = ".this.is.a.rule.{[.blah.bloo.$1] -> [.bloo.blee.$1]}"
         results = self.parser.parseString(test_fact)
+        self.assertIsInstance(results[0][-1].value.conditions[0][-1].value, ELBD.ELVAR)
+        self.assertIsInstance(results[0][-1].value.actions[0][-1].value,ELBD.ELVAR)
 
-    def test_rule_name_binding(self):
-        """ Test .this.is.a.rule.{[.blah.bloo.$name] -> [.bloo.blee.$name]} """
-        None
+    def test_bindings_are_registered(self):
+        """ bindings need to be registered with their parent fact, and that facts parent rule """
+        test_fact = ".this.is.a.$binding"
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(len(results[0].bindings),1)
+        self.assertEqual(results[0].bindings[0].value,"binding")
 
+    def test_bindings_are_registered_when_non_terminal(self):
+        """ bindings should be registered even when they aren't at the end of a fact """
+        test_fact = ".this.is.a.$binding.blah"
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(len(results[0].bindings),1)
+        self.assertEqual(results[0].bindings[0].value,"binding")
+
+    def test_bindings_complain_when_unbalanced(self):
+        """ undefined bindings in actions should complain """
+        test_fact = ".this.is.a.rule.{[.blah.bloo] -> [.blah.bloo.$blee]}"
+        with self.assertRaises(ELE.ELConsistencyException):
+            self.parser.parseString(test_fact)
+
+    def test_fact_negation(self):
+        """ ~.a.fact.should.be.negatable """
+        test_fact = "~.a.fact.should.be.negatable """
+        results = self.parser.parseString(test_fact)
+        self.assertIsInstance(results[0][-1],ELBD.ELTERM)
+        self.assertEqual(results[0][-1].value,"negatable")
+        self.assertTrue(results[0].negated)
+
+    def test_fact_not_negated(self):
+        """ .a.normal.fact.shouldnt.be.negated """
+        test_fact = ".a.normal.fact.shouldnt.be.negated """
+        results = self.parser.parseString(test_fact)
+        self.assertFalse(results[0].negated)
+            
     def test_rule_negation_testing(self):
         """ Test .this.is.a.rule.{[~.blah.bloo.blee] -> [.blah.bloo.blee]} """
-        None
+        test_fact = ".this.is.a.rule.{[~.blah.bloo.blee] -> [.blah.bloo.blee]}"
+        results = self.parser.parseString(test_fact)
+        self.assertTrue(results[0][-1].value.conditions[0].negated)
+        self.assertFalse(results[0][-1].value.actions[0].negated)
 
-    def test_rule_retraction(self):
-        """ Test .this.is.a.rule.{[.blah.bloo.blee] -> [~.blah.bloo.blee]} """
-        None
+    def test_rule_action_negation(self):
+        """ test .this.is.a.rule.{[] -> [~.blah.bloo.blee]} """
+        test_fact = ".this.is.a.rule.{[] -> [~.blah.bloo.blee]}"
+        results = self.parser.parseString(test_fact)
+        self.assertTrue(results[0][-1].value.actions[0].negated)
 
     def test_rule_condition_comparison(self):
-        """ test .this.is.a.rule.{[.a.b.c > 20, a.b.c < 50] -> [] } """
-        None
+        """ .this.is.a.rule.{[.a.b.$c, .a.b.$d] | [$c > $d ] -> [] } """
+        test_fact = ".this.is.a.rule.{[.a.b.$c, .a.b.$d] | [$c > $d] -> [] } "
+        results = self.parser.parseString(test_fact)
+        self.assertEqual(len(results[0][-1].value.binding_comparisons),1)
+        self.assertEqual(results[0][-1].value.binding_comparisons[0].b1.value,'c')
+        self.assertEqual(results[0][-1].value.binding_comparisons[0].b2.value,'d')
+        self.assertEqual(results[0][-1].value.binding_comparisons[0].op,ELBD.ELCOMP.GREATER)
 
+    def test_simple_comparison_lookup(self):
+        test_comp = ">"
+        results = ELParser.COMP.parseString(test_comp)
+        self.assertEqual(results[0],ELBD.ELCOMP.GREATER)
+
+    def test_simple_arith_lookup(self):
+        test_arith = '+'
+        results = ELParser.ARITH.parseString(test_arith)
+        self.assertEqual(results[0],ELBD.ELARITH.PLUS)
+        
     def test_rule_arith_action(self):
         """ test .this.is.a.rule.{[] -> [.a.b.c + 20 ]} """
-        None
+        test_fact = ".this.is.a.rule.{[] -> [.a.b.c + 2]} """
+        
+        
+        
+    def test_only_actions_can_have_arith_ops(self):
+        """ The fact .a.b.c + 20 should fail """
+        test_fact = ".a.b.c + 20"
+        # with self.assertRaises(ELE.ELParseException):
+        #     self.parser.parseString(test_fact)
+
+        
 
     def test_rule_arith_action_expanded(self):
         """ test .this.is.a.rule.{[] -> [.a.b.c+2/3, .a.b.d-1d4, .a.b.c*5/6, .a.b.c / 2]} """
