@@ -105,16 +105,21 @@ def construct_rule(toks):
 #PARSER.parseString('')
 
 
-def array_template(element):
+def array_template(element,brackets_optional=False):
     """ An template function to create different types of arrays, 
     pass in the element form you want to parse, get back the generated parser
     """
-    parser = s(O_BRACKET) + \
+    o_bracket = s(O_BRACKET)
+    c_bracket = s(C_BRACKET)
+    if brackets_optional:
+        o_bracket = op(o_bracket)
+        c_bracket = op(c_bracket)
+    parser = o_bracket + \
              op( opLn \
                  + element
                  + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
                                  + element)) \
-                + s(C_BRACKET)
+                + c_bracket
     return parser
 
 #The Grammar Combinators, parse actions come later
