@@ -41,11 +41,16 @@ def debugPA(toks):
 #ELBD construction functions, only intended to be used in the parser 
 def construct_el_fact(toks):
     if str(PARSENAMES.BASEFACT) not in toks:
-        raise Exception('No BaseFact provided',toks)
-    root = [toks[0]]
+        raise ELE.ELParseException('No BaseFact provided',toks)
+    negated = str(PARSENAMES.NOT) in toks
+    root = [toks[str(PARSENAMES.ROOT)]]
     base = toks[str(PARSENAMES.BASEFACT)][:]
     term = [toks[str(PARSENAMES.TERMINAL)][0]]
-    return ELBD.ELFACT(root + base + term)
+    #values in basefact are wrapped in elpairs, need to unwrap:
+    bindings = [x.value for x in toks[str(PARSENAMES.BASEFACT)] if isinstance(x.value,ELBD.ELVAR)]
+    if isinstance(toks[str(PARSENAMES.TERMINAL)][0].value,ELBD.ELVAR):
+        bindings.append(toks[str(PARSENAMES.TERMINAL)][0].value)
+    return ELBD.ELFACT(root + base + term,bindings=bindings, negated=negated)
 
 def construct_num(toks):
     underscore_removed = toks.replace('_','')
