@@ -47,7 +47,20 @@ def ELOP2STR(elop):
 class ELAction:
     """ The Base class of actions """
 
+class ELComparison:
+    """ Holds a comparison operation between two bindings """
+    def __init__(self,b1,op,b2):
+        self.op = op
+        self.b1 = b1
+        self.b2 = b2
 
+    def __repr__(self):
+        return 
+        
+    def __eq__(self,other):
+        return self.op == other.op and \
+            self.b1 == other.b1 and \
+            self.b2 == other.b2
     
 #The main Intermediate Representations to feed to the runtime
 class ELROOT:
