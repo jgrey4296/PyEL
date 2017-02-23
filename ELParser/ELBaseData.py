@@ -6,6 +6,7 @@ from enum import Enum
 from collections import namedtuple
 import logging as root_logger
 logging = root_logger.getLogger(__name__)
+import ELParser.ELExceptions as ELE
 
 
 #Enums
