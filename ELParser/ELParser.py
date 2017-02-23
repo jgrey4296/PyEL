@@ -153,23 +153,27 @@ ELEMENT   = (VAR | NAME | STRING | NUM)
 
 #Comparison:
 EL_COMPARISON = VAR + COMP + VAR
-EL_COMPARISON_ARRAY = array_template(EL_COMPARISON)
+EL_COMPARISON_ARRAY = array_template(EL_COMPARISON,brackets_optional=True)
 
 #Forward declaraction of fact:
 FACT = pp.Forward()
 
-#An array in EL: [ e1, e2 ... en ]
-EL_ARRAY = array_template(ELEMENT)
+#TODO: EL_ARRAY -> SEQUENCE
+#a basic array of values in EL: [ e1, e2 ... en ]
+EL_ARRAY = array_template(ELEMENT | FACT)
 
 #An array for rules, as it contains facts
-EL_RULE_ARRAY = array_template(FACT)
+EL_RULE_ARRAY = array_template(FACT,brackets_optional=True)
+
+ARITH_FACT = (FACT | VAR) + pp.Group(ARITH + (VAR | NUM)).setResultsName(str(PARSENAMES.ARITH_OP))
+ARITH_FACT_ARRAY = array_template(ARITH_FACT | FACT,brackets_optional=True)
 
 #a Rule of conditions -> actions
 EL_RULE = s(O_BRACE) + opLn + \
           EL_RULE_ARRAY.setResultsName(str(PARSENAMES.CONDITIONS)) + \
           op(s(pp.Literal('|')) + pp.Group(EL_COMPARISON_ARRAY).setResultsName(str(PARSENAMES.BINDCOMPS))) + \
           opLn + ARROW + opLn + \
-          EL_RULE_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) + \
+          ARITH_FACT_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) + \
           opLn + s(C_BRACE)
 
 #Fact Components, [Root ... pairs ... terminal]
