@@ -125,6 +125,7 @@ S_TEST    = pp.Keyword('::?')
 
 ARITH     = pp.Word('-+*/^',exact=1)
 COMP      = pp.Word('=><@!c',max=2)
+COMP      = pp.Word('=><@!~',max=2)
 
 O_BRACKET = pp.Literal('[')
 C_BRACKET = pp.Literal(']')

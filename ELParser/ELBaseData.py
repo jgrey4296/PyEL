@@ -24,7 +24,7 @@ ELCOMP_lookup = {
     '!='  : ELCOMP.NOTEQUAL,
     '@'   : ELCOMP.CONTAINS,
     '!@'  : ELCOMP.NOTCONTAINS,
-    'c'   : ELCOMP.NEAR
+    '~='   : ELCOMP.NEAR
 }
 #EL ARITH OP
 ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW') 
