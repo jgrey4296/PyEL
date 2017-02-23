@@ -100,6 +100,9 @@ def construct_rule(toks):
 
 
 def array_template(element):
+    """ An template function to create different types of arrays, 
+    pass in the element form you want to parse, get back the generated parser
+    """
     parser = s(O_BRACKET) + \
              op( opLn \
                  + element
