@@ -168,12 +168,13 @@ EL_RULE = s(O_BRACE) + opLn + \
 #Core part of a fact:
 EL_PAIR = ELEMENT + pp.NotAny(pp.LineEnd()) + (DOT | EX)
 #Fact Components, [Root ... pairs ... terminal]
-EL_FACT_ROOT = pp.Group(DOT)
+EL_FACT_ROOT = pp.Group(DOT).setResultsName(str(PARSENAMES.ROOT))
 EL_FACT_TERMINAL = pp.Group(ELEMENT | EL_ARRAY | EL_RULE)
 #An Entire sequence, note the stopOn to not continue over lines
-FACT << EL_FACT_ROOT + \
-        pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + \
-        pp.Group(EL_FACT_TERMINAL).setResultsName(str(PARSENAMES.TERMINAL))
+FACT << op(NOT).setResultsName(str(PARSENAMES.NOT)) + \
+    EL_FACT_ROOT + \
+    pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + \
+    pp.Group(EL_FACT_TERMINAL).setResultsName(str(PARSENAMES.TERMINAL))
 
 #The entire grammar:
 ROOT = pp.OneOrMore(FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
