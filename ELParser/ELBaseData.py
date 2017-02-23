@@ -27,13 +27,14 @@ ELCOMP_lookup = {
     '~='   : ELCOMP.NEAR
 }
 #EL ARITH OP
-ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW') 
+ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW MOD') 
 ELARITH_lookup = {
     '-' : ELARITH.MINUS,
     '+' : ELARITH.PLUS,
     '*' : ELARITH.MUL,
     '/' : ELARITH.DIV,
-    '^' : ELARITH.POW
+    '^' : ELARITH.POW,
+    '%' : ELARITH.MOD
 }
 
 def ELOP2STR(elop):
