@@ -192,6 +192,8 @@ def ELPARSE(string):
 ##############################
 DOT.setParseAction(lambda toks: ELBD.EL.DOT)
 EX.setParseAction(lambda toks : ELBD.EL.EX)
+COMP.setParseAction(lambda toks: construct_comp_op(toks[0]))
+ARITH.setParseAction(lambda toks: construct_arith_op(toks[0]))
 NUM.setParseAction(lambda toks: construct_num(toks[0]))
 EL_ARRAY.setParseAction(lambda toks: [toks[:]])
 EL_RULE.setParseAction(lambda toks: construct_rule(toks))
