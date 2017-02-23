@@ -77,15 +77,14 @@ def construct_arith_op(tok):
 def construct_rule(toks):
     conditions = toks[str(PARSENAMES.CONDITIONS)][:]
     actions = toks[str(PARSENAMES.ACTIONS)][:]
-    if str(PARSENAMES.BINDINGS) in toks:
-        bindings = toks[str(PARSENAMES.BINDINGS)][:]
-    else:
-        bindings = []
-    if str(PARSENAMES.BINDCOMP) in toks:
-        bind_comp = toks[str(PARSENAMES.BINDCOMP)][:]
+    if str(PARSENAMES.BINDCOMPS) in toks:
+        bind_comp = toks[str(PARSENAMES.BINDCOMPS)][:]
     else:
         bind_comp = []
-    return ELBD.ELRULE(conditions,actions,bindings,bind_comp)
+    constructed_rule = ELBD.ELRULE(conditions,actions,bind_comp)
+    if not constructed_rule.balanced_bindings():
+        raise ELE.ELConsistencyException("Rule bindings are not balanced")
+    return constructed_rule
 
     
 #####################
