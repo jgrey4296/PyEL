@@ -160,6 +160,7 @@ EL_RULE_ARRAY = s(O_BRACKET) + \
 #a Rule of conditions -> actions
 EL_RULE = s(O_BRACE) + opLn + \
           EL_RULE_ARRAY.setResultsName(str(PARSENAMES.CONDITIONS)) + \
+          op(s(pp.Literal('|')) + pp.Group(EL_COMPARISON_ARRAY).setResultsName(str(PARSENAMES.BINDCOMPS))) + \
           opLn + ARROW + opLn + \
           EL_RULE_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) + \
           opLn + s(C_BRACE)
