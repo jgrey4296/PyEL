@@ -52,6 +52,12 @@ def construct_el_fact(toks):
         bindings.append(toks[str(PARSENAMES.TERMINAL)][0].value)
     return ELBD.ELFACT(root + base + term,bindings=bindings, negated=negated)
 
+def construct_arith_fact(toks):
+    if not (isinstance(toks[0], ELBD.ELFACT) or isinstance(toks[0], ELBD.ELVAR)):
+        raise ELE.ELParseException('Arith fact constructor not passed a fact or variable')
+    return ELBD.ELARITH_FACT(data=toks[0],op=toks[1][0],val=toks[1][1])
+    
+
 def construct_num(toks):
     underscore_removed = toks.replace('_','')
     if 'd' in toks:
