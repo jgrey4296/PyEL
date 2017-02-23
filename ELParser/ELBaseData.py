@@ -124,8 +124,26 @@ class ELRULE:
     def __init__(self,conditions,actions,binding_comparisons=[]):
         self.conditions = conditions
         self.actions = actions
+        #get the vars in each binding fact in conditions
         self.condition_bindings = set([x.value for c in self.conditions for x in c.bindings])
-        self.action_bindings = set([x.value for a in self.actions for x in a.bindings])
+        non_arith_facts = [x for x in self.actions if isinstance(x,ELFACT)]
+        arith_actions = [x for x in self.actions if isinstance(x,ELARITH_FACT)]
+        arith_facts = [x.data for x in arith_actions if isinstance(x.data,ELFACT)]
+        
+        #get the vars in from normal action: .a.b.$c
+        non_arith_vars = set([x.value for a in non_arith_facts for x in a.bindings])
+        #vars of .a.b.$c + 20
+        arith_fact_vars = set([x.value for a in arith_facts for x in a.bindings])
+        #vars of $c + 20
+        arith_raw_vars = set([x.data.value for x in arith_actions if isinstance(x.data,ELVAR)])
+        #vars of .a.b.c + $d
+        arith_values = set([x.val.value for x in arith_actions if isinstance(x.val,ELVAR)])
+
+        #combine them all together:
+        self.action_bindings = non_arith_vars.union(arith_fact_vars).union(arith_fact_vars, \
+                                                                           arith_raw_vars, \
+                                                                           arith_values)
+
         #Array of tuples: (op b1 b2)
         self.binding_comparisons = binding_comparisons
 
