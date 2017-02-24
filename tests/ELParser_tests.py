@@ -301,7 +301,8 @@ class ELParser_Tests(unittest.TestCase):
     def test_simple_comparison_lookup(self):
         test_comp = ">"
         results = ELParser.COMP.parseString(test_comp)
-        self.assertEqual(results[0],ELBD.ELCOMP.GREATER)
+        self.assertEqual(results[0][0],ELBD.ELCOMP.GREATER)
+        self.assertIsNone(results[0][1])
 
     def test_simple_arith_lookup(self):
         test_arith = '+'
@@ -358,37 +359,71 @@ class ELParser_Tests(unittest.TestCase):
                 
     def test_rule_binding_comparison_non_equality(self):
         """" test .this.is.a.rule.{[.a.b.c.$1, .a.b.d.$2] | [$1 != $2] -> []} """
-        None
+        test_fact = ".this.is.a.rule.{.a.b.c.$1, .a.b.d.$2 | $1 != $2 -> [] }"
+        result = self.parser(test_fact)
+        self.assertEqual(result[0][-1].value.binding_comparisons[0].op,ELBD.ELCOMP.NOTEQUAL)
 
-    def test_rule_binding_comparison_size(self):
+    def test_rule_binding_comparisons(self):
         """ test .this.is.a.rule.{[.a.b.c.$1,.a.b.d.$2] | [$1 < $2] -> []} """
-        None
+        test_fact = """.this.is.a.rule.{.a.b.c.$1,.a.b.d.$2 | 
+        $1 > $2, $1 < $2, $1 >= $2, $1 <= $2, $1 == $2, $1 != $2, $1 @ $2, $1 !@ $2 -> []}"""
+        result = self.parser(test_fact)
+        comparisons = result[0][-1].value.binding_comparisons
+        #pair with the enums apart from the 'near' enum
+        paired = zip(comparisons,list(ELBD.ELCOMP)[:-1])
+        for comp,enumValue in paired:
+            self.assertEqual(comp.op,enumValue)
 
-    def test_closure_binding(self):
-        """ test:
-        x <- .person.bob
-        x.likes.fish        
-        """
-        None
+    def test_near_operator(self):
+        """ The near operator ~=(num) """
+        test_fact = ".this.is.a.rule.{.a.b.$1.$2 | $1 ~=(2) $2 -> [] }"
+        result = self.parser(test_fact)
+        self.assertIsInstance(result[0][-1].value.binding_comparisons[0],ELBD.ELComparison)
+        self.assertEqual(result[0][-1].value.binding_comparisons[0].op,ELBD.ELCOMP.NEAR)
+        self.assertEqual(result[0][-1].value.binding_comparisons[0].nearVal,2)
+            
+    def test_global_binding(self):
+        """ test just the bind statement  """
+        test_fact = "$x <- .person.bob"
+        result = self.parser(test_fact)
+        root_fact = self.parser('.person.bob')[0]
+        self.assertIsInstance(result[0],ELBD.ELBIND)
+        self.assertEqual(result[0].var.value,'x')
+        self.assertEqual(result[0].root,root_fact)
 
-    def test_closure_unbinding(self):
-        """ test:
-        x <- .person.bob
-        x <- 
-        """
-        None
+    def test_global_unbinding(self):
+        """ test an empty bind statement """
+        test_fact = "$x <- "
+        result = self.parser(test_fact)
+        self.assertIsInstance(result[0],ELBD.ELBIND)
+        self.assertEqual(result[0].var.value,'x')
+        self.assertIsNone(result[0].root)
 
-    def test_closure_rebinding(self):
-        """ test:
-        x <- .person.bob
-        x <- .person.bill
-        """
-        None
+
+    def test_global_rebinding(self):
+        """ test sequence of bindings """
+        test_fact = """$x <- .person.bob\n$x <- .person.bill"""
+        results = self.parser(test_fact)
+        bob = self.parser('.person.bob')[0]
+        bill = self.parser('.person.bill')[0]
+        self.assertEqual(len(results),2)
+        #check bob binding:
+        self.assertIsInstance(results[0],ELBD.ELBIND)
+        self.assertEqual(results[0].var.value,'x')
+        self.assertEqual(results[0].root,bob)
+        #check bill binding:
+        self.assertIsInstance(results[1],ELBD.ELBIND)
+        self.assertEqual(results[1].var.value,'x')
+        self.assertEqual(results[1].root,bill)
 
     def test_statement_array(self):
-        """ test .a.b.list.[.a.b.c,.a.b.c,.a.b.d] """
-        None
-
+        """ test a sequence of facts """
+        test_fact = ".a.b.list.[.a.b.c,.a.b.c,.a.b.d]"
+        result = self.parser(test_fact)
+        self.assertEqual(len(result[0][-1].value),3)
+        for entry in result[0][-1].value:
+            self.assertIsInstance(entry,ELBD.ELFACT)
+        
     def test_condition_variables(self):
         """ test:
         .this.is.a.condition.set.{.a.b.c, .b.d.e, .e.f.$1}
