@@ -280,6 +280,17 @@ class ELFACT:
     def complete(self):
         return len(self) > 0 and isinstance(self.data[-1],ELTERM)
 
+class ELBIND:
+    """ An IR representation of the runtime 'bind' instruction """
+    def __init__(self,var, root):
+        if not (isinstance(root,ELFACT) or root is None):
+            raise ELE.ELConsistencyException("Global bindings need to use facts")
+        self.var = var
+        self.root = root
+
+    def __repr__(self):
+        return "({} <- {})".format(self.var, self.root)
+    
 #results from Trie manipualtion:
 class ELRESULT:
     """ Base Class of Results """
