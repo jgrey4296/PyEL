@@ -184,9 +184,9 @@ class ELParser_Tests(unittest.TestCase):
         test_fact = ".this.is.a.rule.{[.a,.b,.c] -> [.d,.e,.f]}"
         conditions = ".a\n.b\n.c"
         actions = ".d\n.e\.f"
-        results = self.parser.parseString(test_fact)
-        conditions_parsed = self.parser.parseString(conditions)
-        actions_parsed = self.parser.parseString(actions)
+        results = self.parser(test_fact)
+        conditions_parsed = self.parser(conditions)
+        actions_parsed = self.parser(actions)
         for x,y in zip(results[0][-1].value.conditions,conditions_parsed):
             self.assertIsInstance(x,ELBD.ELFACT)
             self.assertEqual(x,y)
