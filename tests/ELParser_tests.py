@@ -310,36 +310,58 @@ class ELParser_Tests(unittest.TestCase):
         
     def test_rule_arith_action(self):
         """ test .this.is.a.rule.{[] -> [.a.b.c + 20 ]} """
-        test_fact = ".this.is.a.rule.{[] -> [.a.b.c + 2]} """
-        
-        
-        
+        test_fact = ".this.is.a.rule.{[] -> [.a.b.c + 20]} """
+        results = self.parser(test_fact)
+        self.assertIsInstance(results[0][-1].value.actions[0],ELBD.ELARITH_FACT)
+       
     def test_only_actions_can_have_arith_ops(self):
         """ The fact .a.b.c + 20 should fail """
         test_fact = ".a.b.c + 20"
-        # with self.assertRaises(ELE.ELParseException):
-        #     self.parser.parseString(test_fact)
+        with self.assertRaises(ELE.ELParseException):
+            self.parser(test_fact)
 
-        
-
+    def test_rule_brackets_as_optional(self):
+        """ .this.is.a.rule.{ .a.b.$c, .d.e.$f | $c < $f -> .a.b.e } """
+        test_fact = ".this.is.a.rule.{ .a.b.$c, .d.e.$f | $c < $f -> .a.b.e }"
+        results = self.parser(test_fact)
+        self.assertIsInstance(results[0][-1].value,ELBD.ELRULE)
+        self.assertEqual(len(results[0][-1].value.binding_comparisons),1)
+        self.assertEqual(len(results[0][-1].value.condition_bindings),2)
+            
     def test_rule_arith_action_expanded(self):
         """ test .this.is.a.rule.{[] -> [.a.b.c+2/3, .a.b.d-1d4, .a.b.c*5/6, .a.b.c / 2]} """
-        None
+        test_fact = ".this.is.a.rule.{[] -> .a.b.c+2/3, .a.b.d-1d4, .a.b.c*5/6, .a.b.c/2}"
+        results = self.parser(test_fact)
+        self.assertEqual(len(results[0][-1].value.actions),4)
+        for action in results[0][-1].value.actions:
+            self.assertIsInstance(action,ELBD.ELARITH_FACT)
+
+    def test_arith_action_using_var_not_fact(self):
+        """ .this.is.a.rule.{ .a.b.$c -> $c + 2 } """
+        test_fact = ".this.is.a.rule.{ .a.b.$c -> $c + 2 } "
+        result = self.parser(test_fact)
+        self.assertIn('c',result[0][-1].value.condition_bindings)
+        self.assertIn('c',result[0][-1].value.action_bindings)
+            
 
     def test_rule_modulo_action(self):
-        """ test .this.is.a.rule.{[.a.b.c%5] -> [.a.b.c%2]} """
-        None
+        """ test .this.is.a.rule.{ [] -> [.a.b.c % 2]} """
+        test_fact = ".this.is.a.rule.{ [] -> .a.b.c % 5 }"
+        result = self.parser(test_fact)
+        self.assertIsInstance(result[0][-1].value.actions[0],ELBD.ELARITH_FACT)
 
-    def test_rule_binding_comparison(self):
+    def test_rule_implicit_binding_comparison(self):
         """ test .this.is.a.rule.{[.a.b.c.$1, .a.b.d.$1] -> []} """
-        None
-
+        test_fact = ".this.is.a.rule.{.a.b.c.$1, .a.b.d.$1 -> [] } """
+        result = self.parser(test_fact)
+        self.assertIn('1',result[0][-1].value.condition_bindings)
+                
     def test_rule_binding_comparison_non_equality(self):
-        """" test .this.is.a.rule.{[.a.b.c.$1, .a.b.d.$2, $1 != $2] -> []} """
+        """" test .this.is.a.rule.{[.a.b.c.$1, .a.b.d.$2] | [$1 != $2] -> []} """
         None
 
     def test_rule_binding_comparison_size(self):
-        """ test .this.is.a.rule.{[.a.b.c.$1,.a.b.d.$2, $1 < $2] -> []} """
+        """ test .this.is.a.rule.{[.a.b.c.$1,.a.b.d.$2] | [$1 < $2] -> []} """
         None
 
     def test_closure_binding(self):
