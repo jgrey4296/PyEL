@@ -199,7 +199,7 @@ FACT << op(NOT).setResultsName(str(PARSENAMES.NOT)) + \
     pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + \
     pp.Group(EL_FACT_TERMINAL).setResultsName(str(PARSENAMES.TERMINAL))
 
-BIND_STATEMENT = VAR - s(BIND) - op(FACT)
+BIND_STATEMENT = VAR + s(BIND) + op(FACT)
 
 #The entire grammar:
 ROOT = pp.OneOrMore(BIND_STATEMENT | FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
@@ -229,6 +229,7 @@ EX.setParseAction(lambda toks : ELBD.EL.EX)
 COMP.setParseAction(lambda toks: construct_comp_op(toks))
 ARITH.setParseAction(lambda toks: construct_arith_op(toks[0]))
 NUM.setParseAction(lambda toks: construct_num(toks[0]))
+STRING.setParseAction(pp.removeQuotes)
 
 #Get the binding, and lop off the $:
 VAR.setParseAction(lambda tok: ELBD.ELVAR(tok[0][1:]))
