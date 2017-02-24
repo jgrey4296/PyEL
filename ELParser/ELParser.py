@@ -21,24 +21,46 @@ import ELParser.ELBaseData as ELBD
 import ELParser.ELExceptions as ELE
 import IPython
 
+##############################
+# INTERNAL ENUMS
+####################
+#Allows management of Components in the parse, but remember to wrap in str()
+#Not intended to be human usable, or anywhere other than the parser.
+PARSENAMES = Enum('PARSENAMES','BASEFACT ARRAY FACT TERMINAL ROOT RULE CONDITIONS ACTIONS BINDINGS BINDCOMPS NOT ARITH_OP STANDARDCOMP_OP NEARCOMP_OP')
+
+##############################
+# Utilities
+####################
 #Shortcuts:
 s = pp.Suppress
 op = pp.Optional
 opLn = s(op(pp.LineEnd()))
 
-
-#Allows management of Components in the parse, but remember to wrap in str()
-#Not intended to be human usable, or anywhere other than the parser.
-PARSENAMES = Enum('PARSENAMES','BASEFACT ARRAY FACT TERMINAL ROOT RULE CONDITIONS ACTIONS BINDINGS BINDCOMPS NOT ARITH_OP STANDARDCOMP_OP NEARCOMP_OP')
-
-#Human usable names of the parser:
-FACTNAME = "Fact"
-
-#Utilities
 def debugPA(toks):
     IPython.embed(simple_prompt=True)
 
-#ELBD construction functions, only intended to be used in the parser 
+def array_template(element,brackets_optional=False):
+    """ An template function to create different types of arrays, 
+    pass in the element form you want to parse, get back the generated parser
+    """
+    o_bracket = s(O_BRACKET)
+    c_bracket = s(C_BRACKET)
+    if brackets_optional:
+        o_bracket = op(o_bracket)
+        c_bracket = op(c_bracket)
+    parser = o_bracket + \
+             op( opLn \
+                 + element
+                 + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
+                                 + element)) \
+                + c_bracket
+    return parser
+
+
+    
+##############################
+# PARSE focused Constructors
+####################
 def construct_el_fact(toks):
     if str(PARSENAMES.BASEFACT) not in toks:
         raise ELE.ELParseException('No BaseFact provided',toks)
@@ -103,53 +125,29 @@ def construct_bind_statement(toks):
     else:
         return ELBD.ELBIND(toks[0],None)
 
-    
-#####################
-# Grammar
-#Reference
-# Group, Suppress, ParseResults, Forward
-# OnlyOnce, , FollowedBy, NotAny, OneOrMore, ZeroOrMore, Optional, SkipTo, Combine, Dict
-# And, Each, MatchFirst, Or, CharsNotIn, Empty, Keyword, CaselessKeyword, Literal, CaselessLiteral,
-# NoMatch, QuotedString, Regex, White, Word
-#PARSER.setParseAction(lambda toks: toks))
-#PARSER.setResultsName('')
-#PARSER.parseString('')
 
-
-def array_template(element,brackets_optional=False):
-    """ An template function to create different types of arrays, 
-    pass in the element form you want to parse, get back the generated parser
-    """
-    o_bracket = s(O_BRACKET)
-    c_bracket = s(C_BRACKET)
-    if brackets_optional:
-        o_bracket = op(o_bracket)
-        c_bracket = op(c_bracket)
-    parser = o_bracket + \
-             op( opLn \
-                 + element
-                 + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
-                                 + element)) \
-                + c_bracket
-    return parser
-
-#The Grammar Combinators, parse actions come later
+##############################
+# Main Grammar
+####################
+#Symbols
 COMMENTS  = pp.Suppress(pp.Literal('#') + pp.SkipTo(pp.LineEnd()))
 DOT       = pp.Keyword('.', identChars='!')
 EX        = pp.Keyword('!', identChars='.')
 NOT       = pp.Keyword('~')
 ARROW     = pp.Keyword('->')
 BIND      = pp.Keyword('<-')
-#Subtree application and testing
-S_APP     = pp.Keyword('::', identChars='?')
-S_TEST    = pp.Keyword('::?')
-
+VBAR      = pp.Literal('|')
 O_BRACKET = pp.Literal('[')
 C_BRACKET = pp.Literal(']')
 O_BRACE   = pp.Literal('{')
 C_BRACE   = pp.Literal('}')
 O_PAREN   = pp.Literal('(')
 C_PAREN   = pp.Literal(')')
+
+#Subtree application and testing
+S_APP     = pp.Keyword('::', identChars='?!')
+S_APP_EX  = pp.Keyword('::!', identChars='?')
+S_TEST    = pp.Keyword('::?')
 
 ARITH     = pp.Word('-+*/^%',exact=1)
 
@@ -164,9 +162,8 @@ NEAR      = s(pp.Word('~=',exact=2)) + s(O_PAREN) + NUM + s(C_PAREN)
 COMP      = pp.Group(pp.Word('=><@!',max=2)).setResultsName(str(PARSENAMES.STANDARDCOMP_OP)) | \
             pp.Group(NEAR).setResultsName(str(PARSENAMES.NEARCOMP_OP))
 
-
-#Comparison:
-EL_COMPARISON = VAR + COMP + VAR
+#Comparison: $v1 < $V2
+EL_COMPARISON = VAR - COMP - VAR
 EL_COMPARISON_ARRAY = array_template(EL_COMPARISON,brackets_optional=True)
 
 #Forward declaraction of fact:
@@ -179,16 +176,17 @@ EL_ARRAY = array_template(ELEMENT | FACT)
 #An array for rules, as it contains facts
 EL_RULE_ARRAY = array_template(FACT,brackets_optional=True)
 
+#An arithmetic action fact: .a.b.c + 20
 ARITH_FACT = (FACT | VAR) + pp.Group(ARITH + (VAR | NUM)).setResultsName(str(PARSENAMES.ARITH_OP))
 ARITH_FACT_ARRAY = array_template(ARITH_FACT | FACT,brackets_optional=True)
 
 #a Rule of conditions -> actions
-EL_RULE = s(O_BRACE) + opLn + \
-          EL_RULE_ARRAY.setResultsName(str(PARSENAMES.CONDITIONS)) + \
-          op(s(pp.Literal('|')) + pp.Group(EL_COMPARISON_ARRAY).setResultsName(str(PARSENAMES.BINDCOMPS))) + \
-          opLn + ARROW + opLn + \
-          ARITH_FACT_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) + \
-          opLn + s(C_BRACE)
+EL_RULE = s(O_BRACE) - opLn - \
+          EL_RULE_ARRAY.setResultsName(str(PARSENAMES.CONDITIONS)) - \
+          op(s(VBAR) - pp.Group(EL_COMPARISON_ARRAY).setResultsName(str(PARSENAMES.BINDCOMPS))) - \
+          opLn - ARROW - opLn - \
+          ARITH_FACT_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) - \
+          opLn - s(C_BRACE)
 
 #Fact Components, [Root ... pairs ... terminal]
 #Core part of a fact: a.b!c => (a,DOT),(b.EX)
@@ -201,11 +199,7 @@ FACT << op(NOT).setResultsName(str(PARSENAMES.NOT)) + \
     pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + \
     pp.Group(EL_FACT_TERMINAL).setResultsName(str(PARSENAMES.TERMINAL))
 
-
-BIND_STATEMENT = VAR + s(BIND) + op(FACT)
-
-
-
+BIND_STATEMENT = VAR - s(BIND) - op(FACT)
 
 #The entire grammar:
 ROOT = pp.OneOrMore(BIND_STATEMENT | FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
@@ -253,7 +247,6 @@ EL_ARRAY.setParseAction(lambda toks: [toks[:]])
 ARITH_FACT.setParseAction(construct_arith_fact)
 
 FACT.setParseAction(lambda toks: construct_el_fact(toks))
-#FACT.setResultsName(FACTNAME)
 
 BIND_STATEMENT.setParseAction(construct_bind_statement)
 
