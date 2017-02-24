@@ -1,5 +1,16 @@
 """
 Base Data for EL
+Enums: EL, ELV, ELCOMP, ELARITH
+
+Classes: ELAction, ELComparison,
+ELROOT, ELPAIR, ELTERM, ELRULE, ELARITH_FACT,
+ELVAR
+ELFACT, ELBIND
+
+ELRESULT: ELSuccess, ELFail, ELGet,
+
+ELTrieNode
+
 """
 import IPython
 from enum import Enum
