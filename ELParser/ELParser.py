@@ -202,13 +202,13 @@ FACT << op(NOT).setResultsName(str(PARSENAMES.NOT)) + \
     pp.Group(EL_FACT_TERMINAL).setResultsName(str(PARSENAMES.TERMINAL))
 
 
-BIND_STATEMENT = VAR + BIND + op(FACT) + pp.LineEnd() 
+BIND_STATEMENT = VAR + s(BIND) + op(FACT)
 
 
 
 
 #The entire grammar:
-ROOT = pp.OneOrMore(FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
+ROOT = pp.OneOrMore(BIND_STATEMENT | FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
 
 
 #Top Level entry:
