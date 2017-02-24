@@ -253,7 +253,9 @@ EL_ARRAY.setParseAction(lambda toks: [toks[:]])
 ARITH_FACT.setParseAction(construct_arith_fact)
 
 FACT.setParseAction(lambda toks: construct_el_fact(toks))
-FACT.setResultsName(FACTNAME)
+#FACT.setResultsName(FACTNAME)
+
+BIND_STATEMENT.setParseAction(construct_bind_statement)
 
 ##############################
 # TODO : FAIL ACTIONS
