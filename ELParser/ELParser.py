@@ -187,6 +187,12 @@ FACT << op(NOT).setResultsName(str(PARSENAMES.NOT)) + \
     pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + \
     pp.Group(EL_FACT_TERMINAL).setResultsName(str(PARSENAMES.TERMINAL))
 
+
+BIND_STATEMENT = VAR + BIND + op(FACT) + pp.LineEnd() 
+
+
+
+
 #The entire grammar:
 ROOT = pp.OneOrMore(FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
 
