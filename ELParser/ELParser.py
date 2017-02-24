@@ -97,6 +97,12 @@ def construct_rule(toks):
         raise ELE.ELConsistencyException("Rule bindings are not balanced")
     return constructed_rule
 
+def construct_bind_statement(toks):
+    if len(toks) == 2:
+        return ELBD.ELBIND(toks[0],toks[1])
+    else:
+        return ELBD.ELBIND(toks[0],None)
+
     
 #####################
 # Grammar
