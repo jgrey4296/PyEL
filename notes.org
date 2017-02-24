@@ -1,8 +1,10 @@
 * iEL : Institutional Exclusion Logic 
+ Parser: pyparsing / parser combinator
+ Fact Base: Trie
+ + Runtime
 
-Parser: pyparsing / parser combinator
-Fact Base: Trie
-+ Runtime
+** TODOs
+*** TODO strip quotes from strings?
 ** Parser
 *** TODO Add bindings
 
