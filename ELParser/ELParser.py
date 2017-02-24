@@ -29,7 +29,7 @@ opLn = s(op(pp.LineEnd()))
 
 #Allows management of Components in the parse, but remember to wrap in str()
 #Not intended to be human usable, or anywhere other than the parser.
-PARSENAMES = Enum('PARSENAMES','BASEFACT ARRAY FACT TERMINAL ROOT RULE CONDITIONS ACTIONS BINDINGS BINDCOMPS NOT ARITH_OP')
+PARSENAMES = Enum('PARSENAMES','BASEFACT ARRAY FACT TERMINAL ROOT RULE CONDITIONS ACTIONS BINDINGS BINDCOMPS NOT ARITH_OP STANDARDCOMP_OP NEARCOMP_OP')
 
 #Human usable names of the parser:
 FACTNAME = "Fact"
