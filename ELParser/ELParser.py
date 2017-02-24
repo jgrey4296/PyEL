@@ -144,10 +144,6 @@ BIND      = pp.Keyword('<-')
 S_APP     = pp.Keyword('::', identChars='?')
 S_TEST    = pp.Keyword('::?')
 
-
-ARITH     = pp.Word('-+*/^%',exact=1)
-COMP      = pp.Word('=><@!~',max=2)
-
 O_BRACKET = pp.Literal('[')
 C_BRACKET = pp.Literal(']')
 O_BRACE   = pp.Literal('{')
@@ -155,12 +151,19 @@ C_BRACE   = pp.Literal('}')
 O_PAREN   = pp.Literal('(')
 C_PAREN   = pp.Literal(')')
 
+ARITH     = pp.Word('-+*/^%',exact=1)
+
 VAR       = pp.Word('$', pp.alphas + pp.nums)
 NAME      = pp.Word(pp.alphas)
 IG_NAME   = pp.Word('_',pp.alphas)
 NUM       = pp.Word(pp.nums + '-_d/') #negation, formatting, decimal, and fraction
 STRING    = pp.dblQuotedString
 ELEMENT   = (VAR | NAME | STRING | NUM)
+
+NEAR      = s(pp.Word('~=',exact=2)) + s(O_PAREN) + NUM + s(C_PAREN)
+COMP      = pp.Group(pp.Word('=><@!',max=2)).setResultsName(str(PARSENAMES.STANDARDCOMP_OP)) | \
+            pp.Group(NEAR).setResultsName(str(PARSENAMES.NEARCOMP_OP))
+
 
 #Comparison:
 EL_COMPARISON = VAR + COMP + VAR
