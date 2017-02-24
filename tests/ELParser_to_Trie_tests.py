@@ -14,7 +14,7 @@ from fractions import Fraction
 class ELParser_to_Trie_tests(unittest.TestCase):
 
     def setUp(self):
-        self.parser = ELParser.ROOT
+        self.parser = ELParser.ELPARSE
         self.trie = ELTrie()
 
     def tearDown(self):
