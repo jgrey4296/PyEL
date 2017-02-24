@@ -67,11 +67,16 @@ def construct_num(toks):
     else:
         return int(underscore_removed)
 
-def construct_comp_op(tok):
-    if tok in ELBD.ELCOMP_lookup:
-        return ELBD.ELCOMP_lookup[tok]
+def construct_comp_op(toks):
+    if str(PARSENAMES.STANDARDCOMP_OP) in toks:
+        if toks[str(PARSENAMES.STANDARDCOMP_OP)][0] in ELBD.ELCOMP_lookup:
+            return (ELBD.ELCOMP_lookup[toks[str(PARSENAMES.STANDARDCOMP_OP)][0]],None)
+        else:
+            raise ELE.ELParseException('Unrecognised comparison operator')
+    elif str(PARSENAMES.NEARCOMP_OP) in toks:
+        return (ELBD.ELCOMP.NEAR, toks[str(PARSENAMES.NEARCOMP_OP)][0])
     else:
-        raise ELE.ELParseException('Unrecognised comparison operator')
+        raise ELE.ELParseException("Comparison isn't standard OR the near operator")
 
 def construct_arith_op(tok):
     if tok in ELBD.ELARITH_lookup:
