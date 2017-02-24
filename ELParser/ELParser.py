@@ -253,7 +253,7 @@ BIND_STATEMENT.setParseAction(construct_bind_statement)
 ##############################
 # TODO : FAIL ACTIONS
 ##############################
-#notes for the ParseException:
+#Likely not suitable as fail actions interact with backtracking
 
 ##############################
 # TODO: Name Parser components
