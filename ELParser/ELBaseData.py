@@ -19,13 +19,17 @@ import logging as root_logger
 logging = root_logger.getLogger(__name__)
 import ELParser.ELExceptions as ELE
 
-
-#Enums
+##############################
+# ENUMS
+####################
 EL = Enum('EL','DOT EX')
-#El Value enum
 ELV = Enum('ELV','ARR')
-#EL comparison operations:
 ELCOMP = Enum('ELCOMP','GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL NOTEQUAL CONTAINS NOTCONTAINS NEAR')
+ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW MOD')
+
+##############################
+# Enum Utilities
+####################
 ELCOMP_lookup = {
     '<'   : ELCOMP.LESSER,
     '>'   : ELCOMP.GREATER,
@@ -37,8 +41,7 @@ ELCOMP_lookup = {
     '!@'  : ELCOMP.NOTCONTAINS,
     '~='   : ELCOMP.NEAR
 }
-#EL ARITH OP
-ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW MOD') 
+
 ELARITH_lookup = {
     '-' : ELARITH.MINUS,
     '+' : ELARITH.PLUS,
@@ -73,6 +76,10 @@ def ELOP2STR(elop):
     else:
         return elop
 
+##############################
+# Classes
+####################
+    
 class ELAction:
     """ The Base class of actions """
 
@@ -125,6 +132,7 @@ class ELPAIR:
     
 class ELTERM:
     """ Internal representation of the terminal of the EL String
+    Houses a value, which may be a rule, or array, or simple value
     """
     def __init__(self,value):
         self.value = value
@@ -167,16 +175,6 @@ class ELRULE:
         return "Rule({},{},{})".format(str(self.conditions),
                                              str(self.actions),
                                              str(self.binding_comparisons))
-
-    def balanced_bindings(self):
-        #get the set of all bindings used in comparisons
-        comparison_set = set([x.b1.value for x in self.binding_comparisons]).union(set([x.b2.value for x in self.binding_comparisons]))
-        #get all bindings used in comparisons and actions:
-        combined_bindings = self.action_bindings.union(comparison_set)
-        #then get the ones that aren't in the condition_bindings
-        the_difference = combined_bindings.difference(self.condition_bindings)
-        return len(the_difference) == 0
-        
             
     def __eq__(self,other):
         if all([x == y for x,y in zip(self.conditons,other.conditions)]) \
@@ -186,6 +184,17 @@ class ELRULE:
             return True
         else:
             return False
+
+    
+    def balanced_bindings(self):
+        #get the set of all bindings used in comparisons
+        comparison_set = set([x.b1.value for x in self.binding_comparisons]).union(set([x.b2.value for x in self.binding_comparisons]))
+        #get all bindings used in comparisons and actions:
+        combined_bindings = self.action_bindings.union(comparison_set)
+        #then get the ones that aren't in the condition_bindings
+        the_difference = combined_bindings.difference(self.condition_bindings)
+        return len(the_difference) == 0
+        
 
 class ELVAR:
     """ An internal representation of a binding """
@@ -199,7 +208,9 @@ class ELVAR:
 
 class ELARITH_FACT:
     """ An internal representation of an arithmetic operator fact,
-    for use in actions """
+    for use in actions 
+    Essentially a wrapper to house a fact, an operation, and a value to apply
+    """
     def __init__(self, data=None, op=None, val=None):
         if not (isinstance(data,ELFACT) or isinstance(data,ELVAR)):
             raise ELE.ELConsistencyException('All Arith facts need a fact or variable as a base')
@@ -233,10 +244,57 @@ class ELFACT:
             return True
         else:
             return False
-            
+                
+    def __repr__(self):
+        return "| {} |" .format("".join([str(x) for x in self]))
+
+    def __len__(self):
+        return len(self.data[1:])
+
+    def __iter__(self):
+        return iter(self.data)
+
+    def __getitem__(self,i):
+        return self.data[i]
+    
+    def root(self):
+        return self.data[0]
+    
+    def push(self,statement):
+        """ Utility for easy construction of a fact """
+        self.data.append(statement)
+        return self
+
+    def pair(self,*args):
+        """ Utility for easy construction of a fact:
+        Internally create a new ELPAIR
+        """
+        return self.push(ELPAIR(*args))
+
+    def epair(self,arg):
+        """ Utility for easy construction of a fact:
+        Internally create a new Exclusive ELPair
+        """
+        return self.push(ELPAIR(arg,EL.EX))
+
+    def term(self,*args):
+        """ Utility for construction of a new fact:
+        Internally create a new terminal
+        """
+        return self.push(ELTERM(*args))
+    
+    def pop(self):
+        """ Get the last element of the fact """
+        return self.data.pop()
+
+    def complete(self):
+        """ Check to see if the fact is 'whole' (ended with a terminal) """
+        return len(self) > 0 and isinstance(self.data[-1],ELTERM)
 
     def is_valid(self):
-        """ Ensure this is a valid fact """
+        """ Ensure this is a valid fact. 
+        Validity means the fact is made of ELPAIRS and is finished with an ELTERM
+        """
         #Must end with a term
         if not isinstance(self.data[-1],ELTERM):
             raise Exception("Fact is not valid: No ELTERM")
@@ -255,42 +313,8 @@ class ELFACT:
                     #must not have arrays as pairs, only terminals
                     raise Exception("Fact is not valid: has Array in non-terminal")
 
-                
-    def __repr__(self):
-        return "| {} |" .format("".join([str(x) for x in self]))
-        
-    def root(self):
-        return self.data[0]
-
-    def __len__(self):
-        return len(self.data[1:])
-
-    def push(self,statement):
-        self.data.append(statement)
-        return self
-
-    def pair(self,*args):
-        return self.push(ELPAIR(*args))
-
-    def epair(self,arg):
-        return self.push(ELPAIR(arg,EL.EX))
-
-    def term(self,*args):
-        return self.push(ELTERM(*args))
 
     
-    def pop(self):
-        return self.data.pop()
-
-    def __iter__(self):
-        return iter(self.data)
-
-    def __getitem__(self,i):
-        return self.data[i]
-
-    def complete(self):
-        return len(self) > 0 and isinstance(self.data[-1],ELTERM)
-
 class ELBIND:
     """ An IR representation of the runtime 'bind' instruction """
     def __init__(self,var, root):
@@ -337,15 +361,19 @@ class ELGet(ELRESULT):
         return "({} , {})".format(str(self.value),str(self.children))
         
     def __len__(self):
+        """ Get the number of children of this result """
         return len(self.children)
         
     def __getitem__(self,i):
+        """ get a specified child """
         return self.children[i]
 
     def __iter__(self):
+        """ Allow for each looping through the children """
         return iter(self.children)
 
     def __contains__(self,key):
+        """ Check the result for a value in the children """
         if isinstance(key,ELPAIR):
             return key.value in self.children
         elif isinstance(key,ELTERM):
@@ -354,6 +382,7 @@ class ELGet(ELRESULT):
             return key in self.children
 
     def __eq__(self,other):
+        """ Compare a value to the internal value """
         if isinstance(other,ELPAIR):
             return self.value == other.value
         elif isinstance(other,ELTERM):
@@ -368,6 +397,7 @@ class ELTrieNode:
     """
     
     def __init__(self,val):
+        #Default to Dot, update later if necessary
         self.elop = EL.DOT
         self.value = None
         self.children = {}
@@ -385,9 +415,6 @@ class ELTrieNode:
     def __repr__(self):
         return "EL_Trie_Node({},{})".format(str(self.value),str(self.elop))
             
-    def is_empty(self):
-        return len(self.children) == 0
-        
     def __eq__(self,other):
         """ Check that EL ops match """
         if isinstance(other, ELPAIR):
@@ -437,3 +464,6 @@ class ELTrieNode:
         if ELV.ARR in keys:
             keys[keys.index(ELV.ARR)] = self.children[ELV.ARR].value        
         return keys
+
+    def is_empty(self):
+        return len(self.children) == 0

@@ -29,20 +29,21 @@ class ELTrie:
             assert isinstance(el_string.data[-1],ELBD.ELTERM)
         try:
             el_string.is_valid()
-        
-            #First change is (Parent,Original,New) for rewinding
             returnVal = ELBD.ELSuccess()
             changes = []
             current = None
+            #Go through the passed in string
             for statement in el_string:
                 if isinstance(statement,ELBD.ELROOT):
                     logging.debug("Hit Root")
                     current = self.root
                     continue
                 elif isinstance(statement,ELBD.ELTERM) and statement not in current:
+                    #came to the terminal, and it is missing
                     logging.debug("Missing TERM: {}".format(str(statement)))
                     current[statement] = ELTrieNode(statement)
                 elif isinstance(statement,ELBD.ELPAIR) and statement not in current:
+                    #came to a pair, and it is missing
                     logging.debug("Missing PAIR: {}".format(str(statement)))
                     current[statement] = ELTrieNode(statement)
                 logging.debug("-> {}".format(str(statement)))
