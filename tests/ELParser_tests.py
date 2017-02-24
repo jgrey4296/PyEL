@@ -86,7 +86,7 @@ class ELParser_Tests(unittest.TestCase):
         """ check facts can have strings inside them """
         test_fact = '.this.is.a."string fact"'
         results = self.parser(test_fact)
-        self.assertEqual(results[0].data[-1].value,'"string fact"')
+        self.assertEqual(results[0].data[-1].value,'string fact')
 
     def test_fact_with_string_sub_values(self):
         """ check that a string fact can continue having sub values """
@@ -106,7 +106,7 @@ class ELParser_Tests(unittest.TestCase):
         test_fact = '.this.is."a !test"'
         results = self.parser(test_fact)
         self.assertEqual(len(results[0].data),4)
-        self.assertEqual(results[0].data[-1].value,'"a !test"')
+        self.assertEqual(results[0].data[-1].value,'a !test')
 
     def test_fact_with_number(self):
         """ check that facts can include numbers """
