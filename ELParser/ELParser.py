@@ -221,21 +221,28 @@ VAR.setParseAction(lambda tok: ELBD.ELVAR(tok[0][1:]))
 
 EL_COMPARISON.setParseAction(lambda toks: ELBD.ELComparison(toks[0], toks[1], toks[2]))
 
-EL_ARRAY.setParseAction(lambda toks: [toks[:]])
-
 EL_RULE.setParseAction(construct_rule)
 
 EL_PAIR.setParseAction(lambda tok: ELBD.ELPAIR(tok[0],tok[1]))
 EL_FACT_ROOT.setParseAction(lambda tok: ELBD.ELROOT(ELBD.EL.DOT))
 #tok[0][0] for the group wrapping then element/array wrapping
 EL_FACT_TERMINAL.setParseAction(lambda tok: ELBD.ELTERM(tok[0][0]))
+
+EL_ARRAY.setParseAction(lambda toks: [toks[:]])
+
+ARITH_FACT.setParseAction(construct_arith_fact)
+
 FACT.setParseAction(lambda toks: construct_el_fact(toks))
 FACT.setResultsName(FACTNAME)
 
 ##############################
 # TODO : FAIL ACTIONS
 ##############################
+#notes for the ParseException:
 
+##############################
+# TODO: Name Parser components
+##############################
 
 
 ########################################
