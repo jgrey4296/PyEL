@@ -46,7 +46,7 @@ def EL_ARITH_2_STR(enumValue):
         raise ELE.ELParseException("Enum value {} not found".format(enumValue))
 
 def EL_COMP_2_STR(enumValue):
-    lookup = {v:k for k,v in ELCOMP.lookup.items()}
+    lookup = {v:k for k,v in ELCOMP_lookup.items()}
     if enumValue in lookup:
         return lookup[enumValue]
     else:
