@@ -68,12 +68,17 @@ class ELAction:
 class ELComparison:
     """ Holds a comparison operation between two bindings """
     def __init__(self,b1,op,b2):
-        self.op = op
+        self.op = op[0]
+        #only used for ~= operator
+        self.nearVal = op[1]
         self.b1 = b1
         self.b2 = b2
 
     def __repr__(self):
-        return 
+        if self.nearVal is None:
+            return "({} {} {})".format(self.b1, EL_COMP_2_STR(self.op), self.b2)
+        else:
+            return "({} {}({}) {})".format(self.b1, EL_COMP_2_STR(self.op), self.nearVal, self.b2)
         
     def __eq__(self,other):
         return self.op == other.op and \
