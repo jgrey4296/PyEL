@@ -496,4 +496,4 @@ class ELQUERY:
             return False
         
     def __repr__(self):
-        return self.value + "?"
+        return repr(self.value) + "?"
