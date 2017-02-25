@@ -136,6 +136,7 @@ EX        = pp.Keyword('!', identChars='.')
 NOT       = pp.Keyword('~')
 ARROW     = pp.Keyword('->')
 BIND      = pp.Keyword('<-')
+QUERYOP   = pp.Literal('?')
 VBAR      = pp.Literal('|')
 O_BRACKET = pp.Literal('[')
 C_BRACKET = pp.Literal(']')
@@ -174,7 +175,8 @@ FACT = pp.Forward()
 EL_ARRAY = array_template(ELEMENT | FACT)
 
 #An array for rules, as it contains facts
-EL_RULE_ARRAY = array_template(FACT,brackets_optional=True)
+CONDITION = FACT + s(QUERYOP)
+EL_CONDITIONS = array_template(CONDITION,brackets_optional=True)
 
 #An arithmetic action fact: .a.b.c + 20
 ARITH_FACT = (FACT | VAR) + pp.Group(ARITH + (VAR | NUM)).setResultsName(str(PARSENAMES.ARITH_OP))
@@ -182,7 +184,7 @@ ARITH_FACT_ARRAY = array_template(ARITH_FACT | FACT,brackets_optional=True)
 
 #a Rule of conditions -> actions
 EL_RULE = s(O_BRACE) - opLn - \
-          EL_RULE_ARRAY.setResultsName(str(PARSENAMES.CONDITIONS)) - \
+          EL_CONDITIONS.setResultsName(str(PARSENAMES.CONDITIONS)) - \
           op(s(VBAR) - pp.Group(EL_COMPARISON_ARRAY).setResultsName(str(PARSENAMES.BINDCOMPS))) - \
           opLn - ARROW - opLn - \
           ARITH_FACT_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) - \
@@ -202,7 +204,7 @@ FACT << op(NOT).setResultsName(str(PARSENAMES.NOT)) + \
 BIND_STATEMENT = VAR + s(BIND) + op(FACT)
 
 #The entire grammar:
-ROOT = pp.OneOrMore(BIND_STATEMENT | FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
+ROOT = pp.OneOrMore((BIND_STATEMENT | CONDITION | FACT) + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
 
 
 
@@ -219,6 +221,8 @@ STRING.setParseAction(pp.removeQuotes)
 
 #Get the binding, and lop off the $:
 VAR.setParseAction(lambda tok: ELBD.ELVAR(tok[0][1:]))
+
+CONDITION.setParseAction(lambda toks: ELBD.ELQUERY(toks[0]))
 
 EL_COMPARISON.setParseAction(lambda toks: ELBD.ELComparison(toks[0], toks[1], toks[2]))
 
