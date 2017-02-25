@@ -429,6 +429,8 @@ class ELTrieNode:
             if isinstance(key.value,list):
                 #Only terminals can have arrays, but they are unhashable so use the ELV.ARR enum
                 return self.children[ELV.ARR]
+            elif isinstance(key.value,ELRULE):
+                return self.children[ELV.RULE]
             else:
                 return self.children[key.value]
         else:
@@ -443,6 +445,8 @@ class ELTrieNode:
             #Only terminals can have arrays, but they are unhashable so use the ELV.ARR enum
             if isinstance(key.value,list):
                 self.children[ELV.ARR] = value
+            elif isinstance(key.value,ELRULE):
+                self.children[ELV.RULE] = value
             else:
                 self.children[key.value] = value
         else:
@@ -454,7 +458,12 @@ class ELTrieNode:
             return key.value in self.children and self.children[key.value] == key
         elif isinstance(key,ELTERM):
             #only check the key is right, as a terminal doesn't specify exclusion status
-            return key.value in self.keys()
+            if isinstance(key.value,list):
+                return key.value in self.keys()
+            elif isinstance(key.value,ELRULE):
+                return key.value in self.keys()
+            else:
+                return key.value in self.children 
         else:
             return key in self.children
         
@@ -462,7 +471,9 @@ class ELTrieNode:
         #get keys, but replace arrays with their actual values
         keys = list(self.children.keys())
         if ELV.ARR in keys:
-            keys[keys.index(ELV.ARR)] = self.children[ELV.ARR].value        
+            keys[keys.index(ELV.ARR)] = self.children[ELV.ARR].value
+        if ELV.RULE in keys:
+            keys[keys.index(ELV.RULE)] = self.children[ELV.RULE].value
         return keys
 
     def is_empty(self):
