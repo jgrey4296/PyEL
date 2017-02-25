@@ -149,7 +149,7 @@ class ELRULE:
         self.conditions = conditions
         self.actions = actions
         #get the vars in each binding fact in conditions
-        self.condition_bindings = set([x.value for c in self.conditions for x in c.bindings])
+        self.condition_bindings = set([x.value for c in self.conditions for x in c.value.bindings])
         non_arith_facts = [x for x in self.actions if isinstance(x,ELFACT)]
         arith_actions = [x for x in self.actions if isinstance(x,ELARITH_FACT)]
         arith_facts = [x.data for x in arith_actions if isinstance(x.data,ELFACT)]
