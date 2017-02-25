@@ -24,13 +24,42 @@ class ELRuntime:
         self.trie = ELTrie.ELTrie()
         self.history = []
         self.bindings = []
+
+    def __call__(self,string):
+        """ Parse a string, act accordingly with the results """
+        results = self.parser(string)
+        for r in results:
+            self.act(r)
+
+    def query(self,string):
+        parsed = self.parser(string)
+        results = [self.fact_query(x) for x in parsed]
+        return all(results)
+
+            
+    def run(self):
+        """ run the simulation """
+        None
+
         
     def act(self,action):
         """ Given an action (one of ELBDs action types),
         perform it
         """
-        if not isinstance(action,ELBD.ELAction):
-            raise Exception("Action is invalid")
+        #Perform based on parsed type
+        if isinstance(action,ELBD.ELFACT):
+            if action.negated:
+                self.fact_retract(action)
+            else:
+                self.fact_assert(action)
+        elif isinstance(action,ELBD.ELRULE):
+            None
+        elif isinstance(action,ELBD.ELBIND):
+            None
+        elif isinstance(action,ELBD.ELARITH_FACT):
+            None
+        elif isinstance(action,ELBD.ELQUERY):
+            return self.fact_query(action)
 
 
     def act_on_array(self, actions):
@@ -39,41 +68,52 @@ class ELRuntime:
             raise Exception("An Action is invalid")
 
 
-    def act_add_fact(self,fact):
+    def fact_assert(self,fact):
         """ Add a fact """
-        None
+        self.trie.push(fact)
 
-    def act_remove_fact(self,fact):
+    def fact_retract(self,fact):
         """ Remove a fact """
         None
         
-    def act_test_fact(self,fact):
+    def fact_query(self,fact):
         """ Test a fact """
-        None
+        return self.trie.query(fact)
 
-    def act_run_rule(self,rule):
+    def run_rule(self,rule):
         """ Given a rule, check its conditions then queue its results """
         None
 
-    def act_rule_rules(self,rule):
-        """ Given a set of rules, run them all """
-        None
-
-    def act_set_bindings(self,binding_strings):
+    def set_binding(self,binding):
         """ Given a binding string, set the runtime variables """
         None
-
-    def act_format_string(self,format_string):
+        
+    def format_string(self,format_string):
         """ Given a format_string, use defined variables in the runtime
         to fill it in """
         None
 
-    def act_verify_interface(self, interface_string):
+    def subtree_query(self, interface_string):
         """ Verify the trie location fulfills the defined interface """
         None
 
-    def act_apply_subtree(self, subtree_application):
+    def subtree_application(self, subtree_application):
         """ Apply the subtree to the given location """
         None
     
+    #### METRICS
+    def max_depth(self):
+        None
 
+    def num_leaves(self):
+        None
+
+    def num_rules(self):
+        None
+
+    def num_assertions(self):
+        None
+
+    def num_retractions(self):
+        None
+        
