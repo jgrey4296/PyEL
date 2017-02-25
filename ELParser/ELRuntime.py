@@ -20,10 +20,11 @@ class ELRuntime:
     """
 
     def __init__(self):
-        self.parser = ELParser.ROOT
+        self.parser = ELParser.ELPARSE
         self.trie = ELTrie.ELTrie()
         self.history = []
-
+        self.bindings = []
+        
     def act(self,action):
         """ Given an action (one of ELBDs action types),
         perform it
