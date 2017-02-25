@@ -177,9 +177,9 @@ class ELRULE:
                                              str(self.binding_comparisons))
             
     def __eq__(self,other):
-        if all([x == y for x,y in zip(self.conditons,other.conditions)]) \
+        #no need to compare condition/action_bindings as they are generated from these:
+        if all([x == y for x,y in zip(self.conditions,other.conditions)]) \
            and all([x == y for x,y in zip(self.actions, other.actions)]) \
-           and all([x == y for x,y in zip(self.bindings, other.bindings)]) \
            and all([x == y for x,y in zip(self.binding_comparisons, other.binding_comparisons)]):
             return True
         else:
