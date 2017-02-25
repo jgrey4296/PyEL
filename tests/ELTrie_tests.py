@@ -319,7 +319,8 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(gotten,-5)
         self.assertEqual(len(gotten),1)
         self.assertTrue("c" in gotten)
-        
+
+    #TODO: test trie query
         
     #Test removing
     #test trie dump
