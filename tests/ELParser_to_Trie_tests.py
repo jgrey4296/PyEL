@@ -175,14 +175,39 @@ class ELParser_to_Trie_tests(unittest.TestCase):
         self.assertIn('else',retrieved_2)
         self.assertNotIn('exclusion',retrieved_2)
 
+    def test_number_usage_post_retrieval(self):
+        """ make sure numbers can be used when retrieved from the trie """
+        base_facts = ".this.is.a.test.5\n.this.is.some.other!10"
+        retrieval_string_1 = ".this.is.a.test"
+        retrieval_string_2 = ".this.is.some.other"
+        for f in self.parser(base_facts):
+            self.trie.push(f)
+        retrieved_1 = self.trie.get(self.parser(retrieval_string_1)[0])
+        retrieved_2 = self.trie.get(self.parser(retrieval_string_2)[0])
+        added = retrieved_1[0] + retrieved_2[0]
+        self.assertEqual(added,15)
+        subbed = retrieved_2[0] - retrieved_1[0]
+        self.assertEqual(subbed,5)
+                                    
+    def test_empty_rule(self):
+        """ Check rules are stored in the trie appropriately """
+        base_fact = ".this.is.a.rule.{ [] -> [] }"
+        retrieval_string = ".this.is.a.rule"
+        isAdded = self.trie.push(self.parser(base_fact)[0])
+        self.assertTrue(isAdded)
+        retrieved = self.trie.get(self.parser(retrieval_string)[0])
+        self.assertEqual(retrieved[0],self.parser(base_fact)[0][-1].value)
 
+    def test_simple_rule(self):
+        """ Check that a simple rule is stored appropriately """
+        base_fact = ".this.is.a.rule.{ .a.b.c -> .a.b.d }"
+        retrieval_string = ".this.is.a.rule"
+        isAdded = self.trie.push(self.parser(base_fact)[0])
+        self.assertTrue(isAdded)
+        retrieved = self.trie.get(self.parser(retrieval_string)[0])
+        self.assertEqual(retrieved[0],self.parser(base_fact)[0][-1].value)
 
-        
-    #test numbers (including getting values and performing math on them)
-
-    #test rules:
-    ##empty rule
-    ##simple rules
+    
     ##rule with bindings
     ##rule with comparisons
     ##rule with actions

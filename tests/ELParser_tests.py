@@ -423,7 +423,14 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(len(result[0][-1].value),3)
         for entry in result[0][-1].value:
             self.assertIsInstance(entry,ELBD.ELFACT)
-        
+
+    def test_rules_cant_have_sub_facts(self):
+        """ Rules must be terminals """
+        test_fact = ".a.b.rule.{ [] -> [] }.d"
+        with self.assertRaises(ELE.ELParseException):
+            self.parser(test_fact)
+
+            
     def test_condition_variables(self):
         """ test:
         .this.is.a.condition.set.{.a.b.c, .b.d.e, .e.f.$1}
