@@ -205,20 +205,6 @@ BIND_STATEMENT = VAR + s(BIND) + op(FACT)
 ROOT = pp.OneOrMore(BIND_STATEMENT | FACT + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
 
 
-#Top Level entry:
-def ELPARSE(string):
-    results = []
-    try:
-        results =  ROOT.parseString(string)[:]
-    except pp.ParseException as pe:
-        logging.exception("ParseException: L:{}_C:{}: {}".format(pe.lineno,pe.col,pe.line))
-        raise ELE.ELParseException("ELParseException: L:{}_C:{}: {}".format(pe.lineno,pe.col,pe.line))
-    except ELE.ELException as ele:
-        logging.exception("ELException: {}".format(ele))
-        raise ele
-    except Exception as e:
-        raise e
-    return results
 
 
 ##############################
@@ -252,13 +238,21 @@ FACT.setParseAction(lambda toks: construct_el_fact(toks))
 BIND_STATEMENT.setParseAction(construct_bind_statement)
 
 ##############################
-# TODO : FAIL ACTIONS
-##############################
-#Likely not suitable as fail actions interact with backtracking
-
-##############################
-# TODO: Name Parser components
-##############################
+# MAIN PARSER FUNCTION:
+####################
+def ELPARSE(string):
+    results = []
+    try:
+        results =  ROOT.parseString(string, parseAll=True)[:]
+    except pp.ParseBaseException as pe:
+        logging.warning("ParseException: L:{}_C:{}: {}".format(pe.lineno,pe.col,pe.line))
+        raise ELE.ELParseException("ELParseException: L:{}_C:{}: {}".format(pe.lineno,pe.col,pe.line))
+    except ELE.ELException as ele:
+        logging.warning("ELException: {}".format(ele))
+        raise ele
+    except Exception as e:
+        raise e
+    return results
 
 
 ########################################
