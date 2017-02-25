@@ -207,20 +207,6 @@ class ELParser_to_Trie_tests(unittest.TestCase):
         retrieved = self.trie.get(self.parser(retrieval_string)[0])
         self.assertEqual(retrieved[0],self.parser(base_fact)[0][-1].value)
 
-    
-    ##rule with bindings
-    ##rule with comparisons
-    ##rule with actions
-    ##unbalanced bindings
-    ##negatable facts
-        
-    ##rule with arith actions
-    ##rule with var arith actions
-    ##rule with near operator
-
-
-    #BIND statements not applicable
-       
 if __name__ == "__main__":
     LOGLEVEL = root_logger.DEBUG
     LOG_FILE_NAME = "ELParser_Trie_tests.log"
