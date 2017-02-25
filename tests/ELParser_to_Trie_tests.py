@@ -200,7 +200,7 @@ class ELParser_to_Trie_tests(unittest.TestCase):
 
     def test_simple_rule(self):
         """ Check that a simple rule is stored appropriately """
-        base_fact = ".this.is.a.rule.{ .a.b.c -> .a.b.d }"
+        base_fact = ".this.is.a.rule.{ .a.b.c? -> .a.b.d }"
         retrieval_string = ".this.is.a.rule"
         isAdded = self.trie.push(self.parser(base_fact)[0])
         self.assertTrue(isAdded)
