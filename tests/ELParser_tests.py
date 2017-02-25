@@ -179,11 +179,11 @@ class ELParser_Tests(unittest.TestCase):
         
                 
     
-    def test_rule_defintion(self):
+    def test_rule_definition(self):
         """ Test .this.is.a.rule.{[.blah.bloo.blee] -> [.wee.bloo.blah]} """
         test_fact = ".this.is.a.rule.{[.a,.b,.c] -> [.d,.e,.f]}"
         conditions = ".a\n.b\n.c"
-        actions = ".d\n.e\.f"
+        actions = ".d\n.e\n.f"
         results = self.parser(test_fact)
         conditions_parsed = self.parser(conditions)
         actions_parsed = self.parser(actions)
