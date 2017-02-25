@@ -478,3 +478,22 @@ class ELTrieNode:
 
     def is_empty(self):
         return len(self.children) == 0
+
+
+class ELQUERY:
+    """ A wrapper around a fact to signify it should be a query """
+    def __init__(self,fact):
+        if not isinstance(fact,ELFACT):
+            raise ELE.ELConsistencyException("Queries need a fact")
+        self.value = fact
+
+    def __eq__(self,query):
+        if isinstance(query,ELQUERY):
+            return self.value == query.value
+        elif isinstance(query,ELFACT):
+            return self.value == query
+        else:
+            return False
+        
+    def __repr__(self):
+        return self.value + "?"
