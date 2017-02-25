@@ -60,9 +60,11 @@ class ELTrie:
         """ Remove an EL String from the Trie """
         return False
         
-    def test(self,el_string):
+    def query(self,query):
         """ Given an EL String, test the Trie to see if it is true """
-        result = self.get(el_string)
+        if not isinstance(query,ELBD.ELQUERY):
+            raise ELE.ELConsistencyException("To query, wrap a fact in an ELBD.ELQUERY")
+        result = self.get(query.value)
         if isinstance(result,ELBD.ELGet):
             return ELBD.ELSuccess()
         else:
