@@ -102,6 +102,9 @@ class ELComparison:
         return self.op == other.op and \
             self.b1 == other.b1 and \
             self.b2 == other.b2
+
+    def copy(self):
+        return ELComparison(self.b1,(self.op, self.nearVal), self.b2)
     
 #The main Intermediate Representations to feed to the runtime
 class ELROOT:
@@ -115,6 +118,9 @@ class ELROOT:
     def __eq__(self,other):
         return self.elop == other.elop
 
+    def copy(self):
+        return ELROOT(self.elop)
+    
 class ELPAIR:
     """ Internal pairs of statements of |test.|blah!|something.|
     Does not represent terminals 
@@ -129,6 +135,12 @@ class ELPAIR:
 
     def __eq__(self,other):
         return self.elop == other.elop and self.value == other.value
+
+    def copy(self):
+        try:
+            return ELPAIR(self.value.copy(),self.elop)
+        except AttributeError as e:
+            return ELPAIR(self.value,self.elop)
     
 class ELTERM:
     """ Internal representation of the terminal of the EL String
@@ -142,12 +154,20 @@ class ELTERM:
 
     def __eq__(self,other):
         return self.value == other.value
+
+    def copy(self):
+        try:
+            return ELTERM(self.value.copy())
+        except AttributeError as e:
+            return ELTERM(self.value)
     
 class ELRULE:
     """ Internal representation of a rule """
     def __init__(self,conditions,actions,binding_comparisons=[]):
         self.conditions = conditions
         self.actions = actions
+        self.binding_comparisons = binding_comparisons
+
         #get the vars in each binding fact in conditions
         self.condition_bindings = set([x.value for c in self.conditions for x in c.value.bindings])
         non_arith_facts = [x for x in self.actions if isinstance(x,ELFACT)]
@@ -168,9 +188,15 @@ class ELRULE:
                                                                            arith_raw_vars, \
                                                                            arith_values)
 
-        #Array of tuples: (op b1 b2)
-        self.binding_comparisons = binding_comparisons
 
+    def copy(self):
+        conditionsCopy = [x.copy() for x in self.conditions]
+        actionsCopy = [x.copy() for x in self.actions]
+        bindingsCopy = [x.copy() for x in self.binding_comparisons]
+        return ELRULE(conditionsCopy,actionsCopy,bindingsCopy)
+        
+
+        
     def __repr__(self):
         return "Rule({},{},{})".format(str(self.conditions),
                                              str(self.actions),
@@ -204,7 +230,8 @@ class ELVAR:
         return "VAR({})".format(self.value)
     def __eq__(self,other):
         return self.value == other.value
-
+    def copy(self):
+        return ELVAR(self.value)
 
 class ELARITH_FACT:
     """ An internal representation of an arithmetic operator fact,
@@ -222,11 +249,14 @@ class ELARITH_FACT:
 
     def __repr__(self):
         return "|ARITH: {} ({} {}) |".format(self.data,EL_ARITH_2_STR(self.op), self.val)
+
+    def copy(self):
+        return ELARITH_FACT(self.data.copy(),self.op,self.val.copy())
     
 class ELFACT:
     """ An internal representation of an EL Fact string """
 
-    def __init__(self,data=None, r=False, bindings = None, negated=False):
+    def __init__(self,data=None, r=False, bindings=None, negated=False):
         self.negated = negated
         if bindings is not None:
             self.bindings = bindings
@@ -239,6 +269,15 @@ class ELFACT:
         else:
             self.data = data
 
+    def copy(self):
+        dataCopy = [x.copy() for x in self.data]
+        bindingsCopy = [x.copy() for x in self.bindings]
+        return ELFACT(dataCopy,bindings=bindingsCopy, negated=self.negated)
+
+    def negate(self):
+        self.negated = not self.negated
+        return self
+    
     def __eq__(self,other):
         if all([x == y for x,y in zip(self.data,other.data)]):
             return True
@@ -325,6 +364,8 @@ class ELBIND:
 
     def __repr__(self):
         return "({} <- {})".format(self.var, self.root)
+    def copy(self):
+        return ELBIND(self.var.copy(),self.root.copy())
     
 #results from Trie manipualtion:
 class ELRESULT:
@@ -497,3 +538,6 @@ class ELQUERY:
         
     def __repr__(self):
         return repr(self.value) + "?"
+    
+    def copy(self):
+        return ELQUERY(self.value.copy())
