@@ -197,7 +197,7 @@ class ELParser_Tests(unittest.TestCase):
 
     def test_exclusion_rewrite(self):
         """ Check that updating a value of an exclusion node works 
-        .test!bloo -> .test!blah
+        .test!bloo => .test!blah
         """
         root_logger.disable(root_logger.NOTSET)
         logging.debug("Exclusion rewrite")
@@ -213,7 +213,7 @@ class ELParser_Tests(unittest.TestCase):
         root_logger.disable(root_logger.CRITICAL)
         
     def test_exclusion_to_non_downscale(self):
-        """ Check that .a.b!c -> a.b.c passes but updates """
+        """ Check that .a.b!c => a.b.c passes and updates """
         ex_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("a")).push(ELBD.ELPAIR("b",ELBD.EL.EX)).push(ELBD.ELTERM("c"))
         non_ex_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("a")).push(ELBD.ELPAIR("b")).push(ELBD.ELTERM("c"))
         non_ex_fact_2 = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("a")).push(ELBD.ELPAIR("b")).push(ELBD.ELTERM("d"))
