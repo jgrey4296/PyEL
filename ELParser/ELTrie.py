@@ -17,6 +17,16 @@ class ELTrie:
         #Is essentially the opening '.'
         self.root = ELTrieNode('ROOT')
 
+    def __getitem__(self,key):
+        if key in self.root:
+            return self.root[key]
+        else:
+            raise KeyError("{} not found in {}".format(str(key),str(self.root)))
+
+        
+    def __repr__(self):
+        return "Trie: {}".format(self.root)
+        
     def is_empty(self):
         return self.root.is_empty()
         
