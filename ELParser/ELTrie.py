@@ -69,7 +69,27 @@ class ELTrie:
         
     def pop(self,el_string):
         """ Remove an EL String from the Trie """
-        return False
+        retrieved = self.get(el_string,log_path=True)
+        if not retrieved:
+            return retrieved
+
+        #now go up the chain, cleaning up as necessary
+        path = retrieved.path
+        prior = None
+        focus = None
+        while len(path) > 0 and len(path[-1]) < 2:
+            prior = focus
+            focus = path.pop()
+        if len(path) > 0:
+            prior = focus
+            focus = path.pop()            
+
+        if prior in focus:
+            del focus[prior]
+        else:
+            raise ELE.ELConsistencyException("""Got to a state when a parent node somehow
+            doesn't have the child just retrieved """)
+        
         
     def query(self,query):
         """ Given an EL String, test the Trie to see if it is true """
