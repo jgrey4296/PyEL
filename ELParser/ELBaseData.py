@@ -451,12 +451,13 @@ class ELTrieNode:
         else:
             self.value = val
 
-    #def __del__(self):
-    #    logging.warning("ELTrie Node being destroyed: {}".format(str(self)))
             
     def __repr__(self):
-        return "EL_Trie_Node({},{})".format(str(self.value),str(self.elop))
-            
+        return "EL_Trie_Node({},{} > {})".format(str(self.value),str(self.elop), str(self.keys()))
+
+    def __len__(self):
+        return len(self.children)
+    
     def __eq__(self,other):
         """ Check that EL ops match """
         if isinstance(other, ELPAIR):
