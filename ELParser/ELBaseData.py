@@ -391,10 +391,11 @@ class ELFail(ELRESULT):
     
 class ELGet(ELRESULT):
     """ A Successful result """
-    def __init__(self,value,children):
+    def __init__(self,value,children,path=None):
         self.value = value
         self.children = children
-
+        self.path = path
+        
     def __bool__(self):
         return True
         

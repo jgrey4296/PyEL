@@ -71,7 +71,7 @@ class ELTrie:
             return ELBD.ELFail()
         
         
-    def get(self,el_string):
+    def get(self,el_string,log_path=False):
         """ Get the values at the leaf of the specified EL String
             Returns an ELBD.ELRESULT
 
@@ -79,7 +79,7 @@ class ELTrie:
         assert isinstance(el_string,ELBD.ELFACT)
         try:
             el_string.is_valid_for_searching()
-        
+            path = []
             returnVal = None
             if len(el_string.data) == 1 and isinstance(el_string.data[0],ELBD.ELROOT):
                 returnVal = ELBD.ELGet(self.root.value, list(self.root.keys()))
@@ -93,10 +93,14 @@ class ELTrie:
                     else:
                         returnVal = ELBD.ELFail()
                         break
+                    path.append(current)
+                    
+            if not log_path:
+                path = None
             #get the final current value:
             if returnVal is None:
-                returnVal = ELBD.ELGet(current.value,list(current.keys()))
-        except Exception as e:
+                returnVal = ELBD.ELGet(current.value,list(current.keys()),path=path)
+        except ELE.ELException as e:
             logging.critical(e)
             returnVal = ELBD.ELFail()
         finally:
