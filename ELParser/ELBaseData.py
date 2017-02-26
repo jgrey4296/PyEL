@@ -465,6 +465,22 @@ class ELTrieNode:
         else:
             return False
 
+    def __delitem__(self,key):
+        if isinstance(key,ELTrieNode):
+            del self.children[key.value]
+        elif isinstance(key,ELPAIR):
+            del self.children[key.value]
+        elif isinstance(key,ELTERM):
+            if isisntance(key.value,list):
+                del self.children[ELV.ARR]
+            elif isinstance(key.value,ELRULE):
+                del self.children[ELV.RULE]
+            else:
+                del self.children[key.value]
+        else:
+            del self.children[key]
+        
+        
     def __getitem__(self,key):
         if isinstance(key,ELPAIR):
             return self.children[key.value]
