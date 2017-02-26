@@ -512,6 +512,8 @@ class ELTrieNode:
             self.children[key] = value
             
     def __contains__(self,key):
+        if isinstance(key,ELTrieNode):
+            return key.value in self.keys()
         if isinstance(key,ELPAIR):
             #check the key is right, and the elop is right
             return key.value in self.children and self.children[key.value] == key
