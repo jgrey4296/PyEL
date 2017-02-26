@@ -117,3 +117,6 @@ class ELRuntime:
     def num_retractions(self):
         None
         
+    #EXPORTING
+    def export_to_string(self):
+        None

@@ -69,6 +69,7 @@ def construct_el_fact(toks):
     base = toks[str(PARSENAMES.BASEFACT)][:]
     term = [toks[str(PARSENAMES.TERMINAL)][0]]
     #values in basefact are wrapped in elpairs, need to unwrap:
+    #TODO: should i check the terminal deeply (ie: for rules) for bindings?
     bindings = [x.value for x in toks[str(PARSENAMES.BASEFACT)] if isinstance(x.value,ELBD.ELVAR)]
     if isinstance(toks[str(PARSENAMES.TERMINAL)][0].value,ELBD.ELVAR):
         bindings.append(toks[str(PARSENAMES.TERMINAL)][0].value)

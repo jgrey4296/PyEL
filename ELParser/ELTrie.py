@@ -49,7 +49,7 @@ class ELTrie:
                 if isinstance(statement,ELBD.ELROOT):
                     logging.debug("Hit Root")
                     current = self.root
-                    continue
+                    continue # <---- note this
                 elif isinstance(statement,ELBD.ELTERM) and statement not in current:
                     #came to the terminal, and it is missing
                     logging.debug("Missing TERM: {}".format(str(statement)))
@@ -58,6 +58,7 @@ class ELTrie:
                     #came to a pair, and it is missing
                     logging.debug("Missing PAIR: {}".format(str(statement)))
                     current[statement] = ELTrieNode(statement)
+                #for everything but finding the root:
                 logging.debug("-> {}".format(str(statement)))
                 current = current[statement]
         except Exception as e:
