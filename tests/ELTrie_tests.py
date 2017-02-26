@@ -320,9 +320,44 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(len(gotten),1)
         self.assertTrue("c" in gotten)
 
-    #TODO: test trie query
+    def test_trie_query(self):
+        """ Check that queries return accurately """
+        base_fact = ELBD.ELFACT(r=True).pair('a').pair('b').term('c')
+        s = self.trie.push(base_fact)
+        queried = self.trie.query(ELBD.ELQUERY(base_fact))
+        self.assertTrue(queried)
         
-    #Test removing
+    def test_trie_retraction(self):
+        """ Check that a fact can be retracted """
+        base_fact = ELBD.ELFACT(r=True).pair('a').pair('b').term('c')
+        self.trie.push(base_fact)
+        self.assertTrue(self.trie.query(ELBD.ELQUERY(base_fact)))
+        self.trie.pop(base_fact)
+        self.assertFalse(self.trie.query(ELBD.ELQUERY(base_fact)))
+        
+
+    def test_trie_retraction_doesnt_clobber(self):
+        """ make sure only nodes that don't have other children are retracted """
+        base_fact1 = ELBD.ELFACT(r=True).pair('a').pair('b')
+        base_fact2 = base_fact1.copy()
+        base_fact1.term('c')
+        base_fact2.term('d')
+        self.trie.push(base_fact1)
+        self.trie.push(base_fact2)
+        self.assertTrue(self.trie.query(ELBD.ELQUERY(base_fact1)))
+        self.assertTrue(self.trie.query(ELBD.ELQUERY(base_fact2)))
+        self.trie.pop(base_fact1)
+        self.assertTrue(self.trie.query(ELBD.ELQUERY(base_fact2)))
+        self.assertFalse(self.trie.query(ELBD.ELQUERY(base_fact1)))
+
+    def test_trie_exclusive_retraction(self):
+        base_fact = ELBD.ELFACT(r=True).pair('a').epair('b').term('c')
+        self.trie.push(base_fact)
+        self.assertTrue(self.trie.query(ELBD.ELQUERY(base_fact)))
+        self.trie.pop(base_fact)
+        self.assertFalse(self.trie.query(ELBD.ELQUERY(base_fact)))
+        
+    
     #test trie dump
     #test trie pickle?
 
