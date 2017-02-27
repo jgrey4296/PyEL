@@ -26,7 +26,36 @@ class ELTrie:
         
     def __repr__(self):
         return "Trie: {}".format(self.root)
+
+
+    def dfs_for_metrics(self):
+        #Queue is an array of (node,depth)
+        queue = [(self.root,0)]
+        processed = set()
+        maxDepth = 0
+        leaves = []
+        rules = []
+        while len(queue) > 0:
+            current,depth = queue.pop(0)
+            if current in processed:
+                raise ELE.ELConsistencyException("DFS on Trie, cross edges should be impossible")
+            queue.extend([(x,depth+1) for x in current.values()])
+            if depth > maxDepth:
+                maxDepth = depth
+            if len(current) == 0:
+                leaves.append(current)
+            if current.contains_rule():
+                rules.append(current)
+            processed.add(current)
+
+        return {
+            'maxDepth': maxDepth,
+            'leaves'  : len(leaves),
+            'rules'   : len(rules)
+        }
+    
         
+    
     def is_empty(self):
         return self.root.is_empty()
         
