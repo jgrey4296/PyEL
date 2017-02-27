@@ -368,6 +368,26 @@ class ELParser_Tests(unittest.TestCase):
         self.assertTrue(self.trie.query(ELBD.ELQUERY(base_fact)))
                         
 
+    def test_trie_metrics(self):
+        """ Check the dfs of the trie for metrics works in a simple case """
+        base_fact1 = ELBD.ELFACT(r=True).pair('a').epair('b').term('c')
+        base_fact2 = ELBD.ELFACT(r=True).pair('a').pair('d').term('e')
+        self.trie.push(base_fact1)
+        self.trie.push(base_fact2)
+        results = self.trie.dfs_for_metrics()
+        self.assertEqual(results['maxDepth'],3)
+        self.assertEqual(results['leaves'],2)
+        self.assertEqual(results['rules'],0)
+        base_fact3 = ELBD.ELFACT(r=True).pair('a').pair('d').pair('f').term('g')
+        self.trie.push(base_fact3)
+        results2 = self.trie.dfs_for_metrics()
+        self.assertEqual(results2['maxDepth'],4)
+        self.assertEqual(results2['leaves'],3)
+        retract_fact = ELBD.ELFACT(r=True).pair('a').term('d')
+        self.trie.pop(retract_fact)
+        results3 = self.trie.dfs_for_metrics()
+        self.assertEqual(results3['maxDepth'],3)
+        
 
 
 
