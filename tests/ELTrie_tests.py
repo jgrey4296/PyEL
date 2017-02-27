@@ -351,11 +351,22 @@ class ELParser_Tests(unittest.TestCase):
         self.assertFalse(self.trie.query(ELBD.ELQUERY(base_fact1)))
 
     def test_trie_exclusive_retraction(self):
+        """ Check that retracting a fact with an exclusive component works """
         base_fact = ELBD.ELFACT(r=True).pair('a').epair('b').term('c')
         self.trie.push(base_fact)
         self.assertTrue(self.trie.query(ELBD.ELQUERY(base_fact)))
         self.trie.pop(base_fact)
         self.assertFalse(self.trie.query(ELBD.ELQUERY(base_fact)))
+
+    def test_trie_retraction_of_non_existent_fact(self):
+        """ check that retracting something non-existent works """
+        base_fact = ELBD.ELFACT(r=True).pair('a').epair('b').term('c')
+        retraction = ELBD.ELFACT(r=True).pair('a').epair('b').term('d')
+        self.trie.push(base_fact)
+        self.assertTrue(self.trie.query(ELBD.ELQUERY(base_fact)))
+        self.trie.pop(retraction)
+        self.assertTrue(self.trie.query(ELBD.ELQUERY(base_fact)))
+                        
         
     
     #test trie dump
