@@ -21,7 +21,7 @@ class ELTrie:
         if key in self.root:
             return self.root[key]
         else:
-            raise KeyError("{} not found in {}".format(str(key),str(self.root)))
+            raise KeyError("{} not found in {}".format(repr(key),repr(self.root)))
 
         
     def __repr__(self):
@@ -34,7 +34,7 @@ class ELTrie:
         """ Take an ELFact of [ROOT, [PAIRS], TERM],
         and attempt to add to the trie
         """
-        logging.debug("Starting to push: {}".format(str(el_string)))
+        logging.debug("Starting to push: {}".format(repr(el_string)))
         assert isinstance(el_string,ELBD.ELFACT)
         assert isinstance(el_string.data[0],ELBD.ELROOT)
         if len(el_string.data) > 1:
@@ -52,14 +52,14 @@ class ELTrie:
                     continue # <---- note this
                 elif isinstance(statement,ELBD.ELTERM) and statement not in current:
                     #came to the terminal, and it is missing
-                    logging.debug("Missing TERM: {}".format(str(statement)))
+                    logging.debug("Missing TERM: {}".format(repr(statement)))
                     current[statement] = ELTrieNode(statement)
                 elif isinstance(statement,ELBD.ELPAIR) and statement not in current:
                     #came to a pair, and it is missing
-                    logging.debug("Missing PAIR: {}".format(str(statement)))
+                    logging.debug("Missing PAIR: {}".format(repr(statement)))
                     current[statement] = ELTrieNode(statement)
                 #for everything but finding the root:
-                logging.debug("-> {}".format(str(statement)))
+                logging.debug("-> {}".format(repr(statement)))
                 current = current[statement]
         except Exception as e:
             logging.critical(e)

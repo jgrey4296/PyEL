@@ -367,6 +367,10 @@ class ELParser_Tests(unittest.TestCase):
         self.trie.pop(retraction)
         self.assertTrue(self.trie.query(ELBD.ELQUERY(base_fact)))
                         
+
+
+
+
         
     
     #test trie dump

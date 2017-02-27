@@ -83,6 +83,7 @@ def ELOP2STR(elop):
 class ELAction:
     """ The Base class of actions """
 
+    
 class ELComparison:
     """ Holds a comparison operation between two bindings """
     def __init__(self,b1,op,b2):
@@ -97,6 +98,9 @@ class ELComparison:
             return "({} {} {})".format(self.b1, EL_COMP_2_STR(self.op), self.b2)
         else:
             return "({} {}({}) {})".format(self.b1, EL_COMP_2_STR(self.op), self.nearVal, self.b2)
+
+    def __str__(self):
+        raise Exception("Unimplemented")
         
     def __eq__(self,other):
         return self.op == other.op and \
@@ -115,6 +119,9 @@ class ELROOT:
     def __repr__(self):
         return "ROOT{}".format(ELOP2STR(self.elop))
 
+    def __str__(self):
+        raise Exception("Unimplemented")
+
     def __eq__(self,other):
         return self.elop == other.elop
 
@@ -131,8 +138,12 @@ class ELPAIR:
 
     def __repr__(self):
         op = ELOP2STR(self.elop)
-        return "{}{}".format(str(self.value),op)
+        return "{}{}".format(repr(self.value),op)
 
+    def __str__(self):
+        raise Exception("Unimplemented")
+
+    
     def __eq__(self,other):
         return self.elop == other.elop and self.value == other.value
 
@@ -150,8 +161,11 @@ class ELTERM:
         self.value = value
         
     def __repr__(self):
-        return "{} ||".format(str(self.value))
+        return "{} ||".format(repr(self.value))
 
+    def __str__(self):
+        raise Exception("Unimplemented")
+    
     def __eq__(self,other):
         return self.value == other.value
 
@@ -198,10 +212,13 @@ class ELRULE:
 
         
     def __repr__(self):
-        return "Rule({},{},{})".format(str(self.conditions),
-                                             str(self.actions),
-                                             str(self.binding_comparisons))
-            
+        return "Rule({},{},{})".format(repr(self.conditions),
+                                             repr(self.actions),
+                                             repr(self.binding_comparisons))
+
+    def __str__(self):
+        raise Exception("Unimplemented")
+
     def __eq__(self,other):
         #no need to compare condition/action_bindings as they are generated from these:
         if all([x == y for x,y in zip(self.conditions,other.conditions)]) \
@@ -228,6 +245,8 @@ class ELVAR:
         self.value = bindName
     def __repr__(self):
         return "VAR({})".format(self.value)
+    def __str__(self):
+        raise Exception("Unimplemented")
     def __eq__(self,other):
         return self.value == other.value
     def copy(self):
@@ -250,6 +269,9 @@ class ELARITH_FACT:
     def __repr__(self):
         return "|ARITH: {} ({} {}) |".format(self.data,EL_ARITH_2_STR(self.op), self.val)
 
+    def __str__(self):
+        raise Exception("Unimplemented")
+    
     def copy(self):
         return ELARITH_FACT(self.data.copy(),self.op,self.val.copy())
     
@@ -285,8 +307,11 @@ class ELFACT:
             return False
                 
     def __repr__(self):
-        return "| {} |" .format("".join([str(x) for x in self]))
+        return "| {} |" .format("".join([repr(x) for x in self]))
 
+    def __str__(self):
+        raise Exception("Unimplemented")
+    
     def __len__(self):
         return len(self.data[1:])
 
@@ -364,6 +389,8 @@ class ELBIND:
 
     def __repr__(self):
         return "({} <- {})".format(self.var, self.root)
+    def __str__(self):
+        raise Exception("Unimplemented")
     def copy(self):
         return ELBIND(self.var.copy(),self.root.copy())
     
@@ -379,6 +406,9 @@ class ELSuccess(ELRESULT):
         return other == True
     def __repr__(self):
         return "ELSuccess"
+    def __str__(self):
+        raise Exception("Unimplemented")
+
     
 class ELFail(ELRESULT):
     """ Indication of failure """
@@ -388,6 +418,8 @@ class ELFail(ELRESULT):
         return other == False
     def __repr__(self):
         return "ELFailure"
+    def __str__(self):
+        raise Exception("Unimplemented")
     
 class ELGet(ELRESULT):
     """ A Successful result """
@@ -400,7 +432,10 @@ class ELGet(ELRESULT):
         return True
         
     def __repr__(self):
-        return "({} , {})".format(str(self.value),str(self.children))
+        return "({} , {})".format(repr(self.value),repr(self.children))
+
+    def __str__(self):
+        raise Exception("Unimplemented")
         
     def __len__(self):
         """ Get the number of children of this result """
@@ -453,8 +488,12 @@ class ELTrieNode:
 
             
     def __repr__(self):
-        return "EL_Trie_Node({},{} > {})".format(str(self.value),str(self.elop), str(self.keys()))
+        return "EL_Trie_Node({},{} > {})".format(repr(self.value),repr(self.elop), repr(self.keys()))
 
+    def __str__(self):
+        raise Exception("Unimplemented")
+
+    
     def __len__(self):
         return len(self.children)
     
@@ -558,6 +597,9 @@ class ELQUERY:
         
     def __repr__(self):
         return repr(self.value) + "?"
+
+    def __str__(self):
+        raise Exception("Unimplemented")
     
     def copy(self):
         return ELQUERY(self.value.copy())
