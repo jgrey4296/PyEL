@@ -101,20 +101,14 @@ class ELTrie:
         retrieved = self.get(el_string,log_path=True)
         if not retrieved:
             return retrieved
-
-        #now go up the chain, cleaning up as necessary
+        
+        #now go up the chain
         path = retrieved.path
-        prior = None
-        focus = None
-        while len(path) > 0 and len(path[-1]) < 2:
-            prior = focus
-            focus = path.pop()
-        if len(path) > 0:
-            prior = focus
-            focus = path.pop()            
+        focus = path.pop()
+        parent = path.pop()
 
-        if prior in focus:
-            del focus[prior]
+        if focus in parent:
+            del parent[focus]
         else:
             raise ELE.ELConsistencyException("""Got to a state when a parent node somehow
             doesn't have the child just retrieved """)
