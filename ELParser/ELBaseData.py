@@ -18,7 +18,7 @@ from collections import namedtuple
 import logging as root_logger
 logging = root_logger.getLogger(__name__)
 import ELParser.ELExceptions as ELE
-
+import uuid
 ##############################
 # ENUMS
 ####################
@@ -475,6 +475,7 @@ class ELTrieNode:
     
     def __init__(self,val):
         #Default to Dot, update later if necessary
+        self.uuid = uuid.uuid1()
         self.elop = EL.DOT
         self.value = None
         self.children = {}
@@ -485,6 +486,15 @@ class ELTrieNode:
             self.value = val.value
         else:
             self.value = val
+
+    def contains_rule(self):
+        return isinstance(self.value,ELRULE)
+
+            
+    def __hash__(self):
+        """ Not a true hashing of the object, but good enough to enable
+        usage in sets """
+        return hash(self.uuid)
 
             
     def __repr__(self):
@@ -535,6 +545,7 @@ class ELTrieNode:
             return self.children[key]
 
     def __setitem__(self,key,value):
+        assert isinstance(value,ELTrieNode)
         if self.elop == EL.EX:
             self.children.clear()
         if isinstance(key,ELPAIR):
@@ -576,6 +587,9 @@ class ELTrieNode:
             keys[keys.index(ELV.RULE)] = self.children[ELV.RULE].value
         return keys
 
+    def values(self):
+        return self.children.values()
+    
     def is_empty(self):
         return len(self.children) == 0
 
