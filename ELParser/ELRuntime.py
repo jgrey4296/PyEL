@@ -27,10 +27,13 @@ class ELRuntime:
 
     def __call__(self,string):
         """ Parse a string, act accordingly with the results """
-        results = self.parser(string)
-        for r in results:
-            self.act(r)
+        parsed_representations = self.parser(string)
+        actResults = []
+        for r in parsed_representations:
+            actResults.append(self.act(r))
+        return actResults
 
+            
     def query(self,string):
         parsed = self.parser(string)
         results = [self.fact_query(x) for x in parsed]
@@ -46,12 +49,15 @@ class ELRuntime:
         """ Given an action (one of ELBDs action types),
         perform it
         """
+        result = None
         #Perform based on parsed type
         if isinstance(action,ELBD.ELFACT):
             if action.negated:
-                self.fact_retract(action)
+                logging.debug("Hit a negation, retracting")
+                result = self.fact_retract(action)
             else:
-                self.fact_assert(action)
+                logging.debug("Hit an assertion")
+                result = self.fact_assert(action)
         elif isinstance(action,ELBD.ELRULE):
             None
         elif isinstance(action,ELBD.ELBIND):
@@ -59,8 +65,10 @@ class ELRuntime:
         elif isinstance(action,ELBD.ELARITH_FACT):
             None
         elif isinstance(action,ELBD.ELQUERY):
-            return self.fact_query(action)
+            logging.debug("Querying")
+            result = self.fact_query(action)
 
+        return result
 
     def act_on_array(self, actions):
         """ Given a collection of actions, perform each """
@@ -74,7 +82,7 @@ class ELRuntime:
 
     def fact_retract(self,fact):
         """ Remove a fact """
-        None
+        self.trie.pop(fact)
         
     def fact_query(self,fact):
         """ Test a fact """

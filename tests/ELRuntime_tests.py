@@ -60,24 +60,25 @@ class ELRuntime_Tests(unittest.TestCase):
         as_queries = [x + "?" for x in facts]
         self.assertTrue(self.runtime.query("\n".join(as_queries)))
 
-            
-    def test_metrics_max_depth(self):
-        None
-
-    def test_metrics_num_leaves(self):
-        None
-
-    def test_metrics_num_rules(self):
-        None
-
-    def test_metrics_num_assertions(self):
-        None
-
-    def test_metrics_num_retractions(self):
-        None
+    def test_query_call(self):
+        base_fact = ".this.is.a.test"
+        query = ".this.is?"
+        self.runtime(base_fact)
+        self.assertTrue(self.runtime(query)[0])
         
         
     def test_simple_fact_retraction(self):
+        assert_fact = ".retraction.test.this.is.a.test"
+        retract_fact = "~.retraction.test.this.is"
+        query = ".retraction.test.this.is.a.test?"
+        root_logger.disable(root_logger.NOTSET)
+        self.runtime(assert_fact)
+        self.assertTrue(self.runtime.query(query))
+        self.runtime(retract_fact)
+        self.assertFalse(self.runtime(query)[0])
+        root_logger.disable(root_logger.CRITICAL)
+        
+    def test_negated_query(self):
         None
         
     def test_exclusion_semantics(self):
