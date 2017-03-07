@@ -22,7 +22,11 @@ class ELRuntime:
     def __init__(self):
         self.parser = ELParser.ELPARSE
         self.trie = ELTrie.ELTrie()
+        #Rule dictionary using hash(repr(rule))
+        self.rules = {}
+        #list of tuples (asserted, retracted) for each action?
         self.history = []
+        #Stack of dictionaries of bindings and their values
         self.bindings = []
 
     def __call__(self,string):
@@ -52,6 +56,7 @@ class ELRuntime:
         result = None
         #Perform based on parsed type
         if isinstance(action,ELBD.ELFACT):
+            #Fact: Assert /retract
             if action.negated:
                 logging.debug("Hit a negation, retracting")
                 result = self.fact_retract(action)
@@ -59,12 +64,16 @@ class ELRuntime:
                 logging.debug("Hit an assertion")
                 result = self.fact_assert(action)
         elif isinstance(action,ELBD.ELRULE):
+            #Rule... enact?
             None
         elif isinstance(action,ELBD.ELBIND):
+            #Binding, update current stack
             None
         elif isinstance(action,ELBD.ELARITH_FACT):
+            #enact arithmetic on the fact /binding
             None
         elif isinstance(action,ELBD.ELQUERY):
+            #Query
             logging.debug("Querying")
             result = self.fact_query(action)
 
