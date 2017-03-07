@@ -475,8 +475,8 @@ class ELTrieNode:
     """
     
     def __init__(self,val):
-        #Default to Dot, update later if necessary
         self.uuid = uuid.uuid1()
+        #Default to Dot, update later if necessary
         self.elop = EL.DOT
         self.value = None
         self.children = {}
