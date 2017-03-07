@@ -121,7 +121,9 @@ class ELTrie:
         if not isinstance(query,ELBD.ELQUERY):
             raise ELE.ELConsistencyException("To query, wrap a fact in an ELBD.ELQUERY")
         result = self.get(query.value)
-        if isinstance(result,ELBD.ELGet):
+        if isinstance(result,ELBD.ELGet) and not query.value.negated:
+            return ELBD.ELSuccess()
+        elif isinstance(result, ELBD.ELFail) and query.value.negated:
             return ELBD.ELSuccess()
         else:
             return ELBD.ELFail()
