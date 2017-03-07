@@ -494,7 +494,8 @@ class ELTrieNode:
             
     def __hash__(self):
         """ Not a true hashing of the object, but good enough to enable
-        usage in sets """
+        usage in sets.
+        Can't hash the value as that isn't unique"""
         return hash(self.uuid)
 
             
