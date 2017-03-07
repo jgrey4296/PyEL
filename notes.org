@@ -91,3 +91,50 @@
     Structure, IGUs, Inputs, Outputs, variables?
 
 ** Tests
+
+
+** TODO 
+implement the allNodes dictionary:
+add and remove from it whenever nodes are created and destroyed.
+use the uuid as the value of a binding, look up as necessary.
+
+update trie node methods so instead of ELV.ARR and ELV.RULE,
+add hash(repr(value)) to the children instead.
+
+check that the semantics don't have to be .a.b!{} or .a.b![],
+but can be .a.b.{} .a.b.{}' .a.c.[] .a.c.[]'
+so check __contains__, __delitem__, __setitem__, __getitem__...
+
+Should add type checking / subtree checking in though,
+ to ensure children are all the same *shallow*? type.
+
+Operations to get leaves? A Breadth first collection of nodes at a certain depth?
+
+
+change :: to type specifier? is there a difference between type specifier and subtree app?
+have   ::? as type check
+
+type specifier / check ensures that any fact starts with the defined string?
+
+subtree app would become << :
+.a.b.c
+.a.b.d
+.a.e
+
+.d << .a
+# .d.b.c, .d.b.d, .d.e
+
+.a.b.c :: int 
+# marks c as an int
+.a.b.c ::? int
+#checks it is an int
+
+a.b.c :: .e.f.g
+a.b.c ::? .e.f.g
+
+
+#
+.tool.requirements_to_build.[x] :: item
+.tool.produceds.[x]             :: item
+.tool.time.to.use.x             :: int
+.tool.text.x                    :: string
