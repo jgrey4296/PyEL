@@ -201,7 +201,8 @@ class ELRULE:
         self.action_bindings = non_arith_vars.union(arith_fact_vars).union(arith_fact_vars, \
                                                                            arith_raw_vars, \
                                                                            arith_values)
-
+    def __hash__(self):
+        return hash(repr(self))
 
     def copy(self):
         conditionsCopy = [x.copy() for x in self.conditions]
