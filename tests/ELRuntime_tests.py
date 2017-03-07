@@ -71,21 +71,35 @@ class ELRuntime_Tests(unittest.TestCase):
         assert_fact = ".retraction.test.this.is.a.test"
         retract_fact = "~.retraction.test.this.is"
         query = ".retraction.test.this.is.a.test?"
-        root_logger.disable(root_logger.NOTSET)
         self.runtime(assert_fact)
         self.assertTrue(self.runtime.query(query))
         self.runtime(retract_fact)
         self.assertFalse(self.runtime(query)[0])
-        root_logger.disable(root_logger.CRITICAL)
         
     def test_negated_query(self):
-        None
+        base_fact = ".this.is.a.test"
+        query = "~.this.is.a.test?"
+        self.assertTrue(self.runtime(query)[0])
+        self.runtime(base_fact)
+        self.assertFalse(self.runtime(query)[0])
         
     def test_exclusion_semantics(self):
-        None
+        self.runtime(".this.is.a.test")
+        self.runtime(".this.is.a.blah")
+        self.assertTrue(all(self.runtime(".this.is.a.test?\n.this.is.a.blah?")))
+        self.runtime(".this.is.a!bloo")
+        self.assertTrue(all(self.runtime("~.this.is.a.test?\n~.this.is.a.blah?\n.this.is.a!bloo?")))
+
+    def test_exclusion_query_resolution(self):
+        self.runtime(".this.is.a!test")
+        self.assertFalse(self.runtime(".this.is.a.test?")[0])
+        self.assertTrue(self.runtime(".this.is.a!test?")[0])
+
 
     def test_rule_definition(self):
-        None
+        self.runtime(".this.is.a.test.rule.{ [] -> [] }")
+        self.assertTrue(self.runtime(".this.is.a.test.rule?"))
+        
 
     def test_rule_firing(self):
         None
