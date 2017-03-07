@@ -117,7 +117,35 @@ class ELRuntime:
     def subtree_application(self, subtree_application):
         """ Apply the subtree to the given location """
         None
+
+    #Rule store:
+    def add_rule(self,rule):
+        None
+
+    def remove_rule(self,rule):
+        None
+
+    #Bindings
+    def push_frame(self):
+        None
+
+    def pop_frame(self):
+        None
+
+    def set_binding(self,var,val):
+        None
+
+    def get_binding(self,var,val):
+        None
+
+    #history:
+    def add_change(self,changes):
+        None
+
+    def rewind_change(self,changes):
+        None
     
+        
     #### METRICS
     def max_depth(self):
         None
