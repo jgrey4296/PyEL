@@ -16,6 +16,8 @@ class ELTrie:
         #The root element of the trie, everything starts here.
         #Is essentially the opening '.'
         self.root = ELTrieNode('ROOT')
+        #all nodes indexed by uuid
+        self.allNodes = {}        
 
     def __getitem__(self,key):
         if key in self.root:
