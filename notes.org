@@ -4,6 +4,17 @@
  + Runtime
 
 ** TODOs
+
+*** TODO Query results
+    Have Trie queries return Result | Failure
+    Where Results are nested arrays of bindings
+    So for .a.b.c, a.b.d, a.b.e:
+    .a.b.$x?    =>  Result([c,d,e])
+    For .a.b.c.x, .a.b.d.x, .a.b.e.y, a.b.e.z:
+    .a.b.$g.x =>   Result([c,d])
+    And For:
+    .a.b.$g.$h => Result([(c,[x]),(d,[x]),(e,[y,z])])
+
 *** TODO strip quotes from strings?
 ** Parser
 *** TODO Add bindings
@@ -109,7 +120,6 @@ Should add type checking / subtree checking in though,
  to ensure children are all the same *shallow*? type.
 
 Operations to get leaves? A Breadth first collection of nodes at a certain depth?
-
 
 change :: to type specifier? is there a difference between type specifier and subtree app?
 have   ::? as type check
