@@ -8,8 +8,6 @@ from ELParser.ELBaseData import ELTrieNode
 from ELParser import ELExceptions as ELE
 logging = root_logger.getLogger(__name__)
 
-
-    
 class ELTrie:
     """ A Simple Python Trie implementation for EL """
     def __init__(self):
@@ -84,11 +82,15 @@ class ELTrie:
                 elif isinstance(statement,ELBD.ELTERM) and statement not in current:
                     #came to the terminal, and it is missing
                     logging.debug("Missing TERM: {}".format(repr(statement)))
-                    current[statement] = ELTrieNode(statement)
+                    newNode = ELTrieNode(statement)
+                    current[statement] = newNode
+                    self.allNodes[newNode.uuid] = newNode
                 elif isinstance(statement,ELBD.ELPAIR) and statement not in current:
                     #came to a pair, and it is missing
                     logging.debug("Missing PAIR: {}".format(repr(statement)))
-                    current[statement] = ELTrieNode(statement)
+                    newNode = ELTrieNode(statement)
+                    current[statement] = newNode
+                    self.allNodes[newNode.uuid] = newNode
                 #for everything but finding the root:
                 logging.debug("-> {}".format(repr(statement)))
                 current = current[statement]
@@ -121,8 +123,9 @@ class ELTrie:
         if not isinstance(query,ELBD.ELQUERY):
             raise ELE.ELConsistencyException("To query, wrap a fact in an ELBD.ELQUERY")
         result = self.get(query.value)
+        logging.info('Get Result: {}'.format(result))
         if isinstance(result,ELBD.ELGet) and not query.value.negated:
-            return ELBD.ELSuccess()
+            return result
         elif isinstance(result, ELBD.ELFail) and query.value.negated:
             return ELBD.ELSuccess()
         else:
@@ -139,19 +142,24 @@ class ELTrie:
             el_string.is_valid_for_searching()
             path = []
             returnVal = None
-            if len(el_string.data) == 1 and isinstance(el_string.data[0],ELBD.ELROOT):
-                returnVal = ELBD.ELGet(self.root.value, list(self.root.keys()))
-            else:
-                current = None
-                for statement in el_string:
-                    if isinstance(statement,ELBD.ELROOT):
-                        current = self.root
-                    elif statement in current:
-                        current = current[statement]
-                    else:
-                        returnVal = ELBD.ELFail()
-                        break
-                    path.append(current)
+            current = None
+            for statement in el_string:
+                logging.info('Getting: {}'.format(statement))
+                if isinstance(statement,ELBD.ELROOT):
+                    current = self.root
+                elif isinstance(statement.value, ELBD.ELVAR):
+                    #is a variable. get all options, bind them
+                    #then filter by the rest of the test
+                    children = current.keys()
+                    logging.info('Returning: {}'.format(children))
+                    returnVal = ELBD.ELGet(statement.value.value,children, path=path.copy(), root=current)
+                    break
+                elif statement in current:
+                    current = current[statement]
+                else:
+                    returnVal = ELBD.ELFail()
+                    break
+                path.append(current)
                     
             if not log_path:
                 path = None
@@ -159,12 +167,8 @@ class ELTrie:
             if returnVal is None:
                 returnVal = ELBD.ELGet(current.value,list(current.keys()),path=path)
         except ELE.ELException as e:
-            logging.critical(e)
+            logging.critical("Trie Get Exception: {}".format(e))
             returnVal = ELBD.ELFail()
         finally:
             return returnVal
-        
-        
-
-          
 
