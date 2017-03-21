@@ -13,4 +13,5 @@ import ELParser
 import IPython
 
 r = ELParser.ELRuntime()
+p = ELParser.ELPARSE
 IPython.embed(simple_prompt=True)

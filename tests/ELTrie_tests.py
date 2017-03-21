@@ -389,8 +389,34 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(results3['maxDepth'],3)
         
 
+    def test_trie_get_variables(self):
+        """ Get the possible entries for a variable """
+        base_fact1 = ELBD.ELFACT(r=True).pair('a').epair('b').term('c')
+        base_fact2 = ELBD.ELFACT(r=True).pair('a').pair('d').term('e')
+        self.trie.push(base_fact1)
+        self.trie.push(base_fact2)
+        query_fact = ELBD.ELFACT(r=True).pair('a').term(ELBD.ELVAR('x'))
+        results = self.trie.get(query_fact)
 
+        self.assertIsInstance(results,ELBD.ELGet)
+        self.assertEqual(results.value,'x')
+        self.assertEqual(results.children,['b','d'])
+        self.assertTrue(results)
 
+    def test_trie_get_variables_when_only_one_child(self):
+        """ Get the possible entry for a variable """
+        base_fact1 = ELBD.ELFACT(r=True).pair('a').epair('b').term('c')
+        base_fact2 = ELBD.ELFACT(r=True).pair('b').pair('d').term('e')
+        self.trie.push(base_fact1)
+        self.trie.push(base_fact2)
+        query_fact = ELBD.ELFACT(r=True).pair('a').term(ELBD.ELVAR('x'))
+        results = self.trie.get(query_fact)
+
+        self.assertIsInstance(results,ELBD.ELGet)
+        self.assertEqual(results.value,'x')
+        self.assertEqual(results.children,['b'])
+        self.assertTrue(results)
+        
         
     
     #test trie dump

@@ -6,7 +6,7 @@ import logging as root_logger
 import IPython
 from random import random
 from test_context import ELParser
-from ELParser import ELParser
+from ELParser import ELPARSE
 from ELParser import ELBaseData as ELBD
 from ELParser import ELExceptions as ELE
 from ELParser import ELRuntime as ELR
@@ -19,14 +19,14 @@ gen_n = lambda: 1 + int(random()*20)
 class ELRuntime_Tests(unittest.TestCase):
 
     def setUp(self):
-        self.runtime = ELR.ELRuntime()
+        self.runtime = ELR()
     def tearDown(self):
         self.runtime = None
  
     def test_simple(self):
         """ Check the runtime works in a minimal case """
         self.assertIsNotNone(self.runtime)
-        self.assertIsInstance(self.runtime,ELR.ELRuntime)
+        self.assertIsInstance(self.runtime,ELR)
 
     def test_simple_fact_assertion(self):
         """ Check facts can be asserted """
@@ -44,26 +44,26 @@ class ELRuntime_Tests(unittest.TestCase):
         """ check an asserted fact can be tested for """
         test_fact = ".this.is.a.test"
         self.runtime(test_fact)
-        self.assertTrue(self.runtime.query(test_fact + "?"))
+        self.assertTrue(self.runtime.query_b(test_fact + "?"))
 
     def test_simple_fact_query_fail(self):
         """ Check a non asserted fact fails a query """
         test_fact = ".this.hasnt.been.added"
-        self.assertFalse(self.runtime.query(test_fact + "?"))
+        self.assertFalse(self.runtime.query_b(test_fact + "?"))
         
     def test_multi_fact_assertion(self):
         """ Check multiple assertions in are all added """
         facts = [".this.is.a.test", ".this.is.another.test", ".and.a.third"]
         self.runtime("\n".join(facts))
         for fact in facts:
-            self.assertTrue(self.runtime.query(fact + "?"))
+            self.assertTrue(self.runtime.query_b(fact + "?"))
 
     def test_multi_query(self):
         """ Check multiple queries at the same tiem work """
         facts = [".this.is.a.test", ".this.is.another.test", ".and.a.third"]
         self.runtime("\n".join(facts))
         as_queries = [x + "?" for x in facts]
-        self.assertTrue(self.runtime.query("\n".join(as_queries)))
+        self.assertTrue(self.runtime.query_b("\n".join(as_queries)))
 
     def test_query_call(self):
         """ Check queries can be triggered by calling the runtime """
@@ -79,7 +79,7 @@ class ELRuntime_Tests(unittest.TestCase):
         retract_fact = "~.retraction.test.this.is"
         query = ".retraction.test.this.is.a.test?"
         self.runtime(assert_fact)
-        self.assertTrue(self.runtime.query(query))
+        self.assertTrue(self.runtime.query_b(query))
         self.runtime(retract_fact)
         self.assertFalse(self.runtime(query)[0])
         
@@ -111,6 +111,31 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime(".this.is.a.test.rule.{ [] -> [] }")
         self.assertTrue(self.runtime(".this.is.a.test.rule?")[0])
         self.assertTrue(".this.is.a.test.rule." in self.runtime.rules)
+
+    def test_getting_variables(self):
+        """ Check that querying can retrieve potential bindings """
+        self.runtime(".this.is.a.test\n.this.is.a.second")
+        parsed = ELPARSE(".this.is.a.$x?")[0]
+        results = self.runtime.fact_query(parsed)
+        self.assertIsInstance(results,ELBD.ELGet)
+        self.assertEqual(results.value,'x')
+        self.assertIn('test',results.children)
+        self.assertIn('second',results.children)
+
+    def test_getting_chained_variables(self):
+        """ Check that multiple variables in a string are retrieved correctly """
+        self.runtime(".this.is.a.first.test\n.this.is.a.second.test")
+        parsed = ELPARSE(".this.is.a.$x.$y?")[0]
+        results = self.runtime.fact_query(parsed)
+        self.assertIsInstance(results,ELBD.ELGet)
+        self.assertEqual(results.value,"x")
+        self.assertEqual(len(results.children),2)
+        for res in results.children:
+            self.assertIsInstance(res,ELBD.ELGet)
+            self.assertEqual(res.value,'y')
+            self.assertEqual(len(res.children),1)
+            self.assertEqual(res.children,['test'])
+            
         
 
     def test_rule_firing(self):
