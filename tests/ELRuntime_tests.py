@@ -36,9 +36,11 @@ class ELRuntime_Tests(unittest.TestCase):
         parsed = self.runtime.parser(check_fact)[0]
         retrieved = self.runtime.trie.get(parsed)
         self.assertTrue(retrieved)
-        self.assertEqual(retrieved,'a')
-        self.assertIn('test',retrieved)
 
+        parsed_false_fact = self.runtime.parser('.this.is.not.a.fact')[0]
+        retrieved_false = self.runtime.trie.get(parsed_false_fact)
+        self.assertFalse(retrieved_false)
+        
 
     def test_simple_fact_query(self):
         """ check an asserted fact can be tested for """
@@ -59,12 +61,20 @@ class ELRuntime_Tests(unittest.TestCase):
             self.assertTrue(self.runtime.query_b(fact + "?"))
 
     def test_multi_query(self):
-        """ Check multiple queries at the same tiem work """
+        """ Check multiple queries at the same time work """
         facts = [".this.is.a.test", ".this.is.another.test", ".and.a.third"]
         self.runtime("\n".join(facts))
         as_queries = [x + "?" for x in facts]
         self.assertTrue(self.runtime.query_b("\n".join(as_queries)))
 
+    def test_multi_query_fail(self):
+        """ check that a multi query fails if one of the conditions fails """
+        facts = [".this.is.a.test", ".this.is.another.test"]
+        self.runtime("\n".join(facts))
+        as_queries = [x+"?" for x in facts]
+        as_queries.append(".and.a.third?")
+        self.assertFalse(self.runtime.query_b("\n".join(as_queries)))
+        
     def test_query_call(self):
         """ Check queries can be triggered by calling the runtime """
         base_fact = ".this.is.a.test"
@@ -117,25 +127,25 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime(".this.is.a.test\n.this.is.a.second")
         parsed = ELPARSE(".this.is.a.$x?")[0]
         results = self.runtime.fact_query(parsed)
+        self.assertTrue(results)
         self.assertIsInstance(results,ELBD.ELGet)
-        self.assertEqual(results.value,'x')
-        self.assertIn('test',results.children)
-        self.assertIn('second',results.children)
+        self.assertEqual(len(results),2)
+        bindings = [x[1] for x in results.bindings]
+        self.assertIn({'x': 'test'}, bindings)
+        self.assertIn({'x': 'second'}, bindings)
 
+        
     def test_getting_chained_variables(self):
         """ Check that multiple variables in a string are retrieved correctly """
-        self.runtime(".this.is.a.first.test\n.this.is.a.second.test")
+        self.runtime(".this.is.a.first.test\n.this.is.a.second.blahh")
         parsed = ELPARSE(".this.is.a.$x.$y?")[0]
         results = self.runtime.fact_query(parsed)
-        self.assertIsInstance(results,ELBD.ELGet)
-        self.assertEqual(results.value,"x")
-        self.assertEqual(len(results.children),2)
-        for res in results.children:
-            self.assertIsInstance(res,ELBD.ELGet)
-            self.assertEqual(res.value,'y')
-            self.assertEqual(len(res.children),1)
-            self.assertEqual(res.children,['test'])
-            
+        self.assertTrue(results)
+        self.assertEqual(len(results),2)
+        bindings = [x[1] for x in results.bindings]
+        self.assertIn({'x':'first','y':'test'}, bindings)
+        self.assertIn({'x':'second','y':'blahh'}, bindings)
+                    
         
 
     def test_rule_firing(self):
