@@ -6,6 +6,7 @@ import logging as root_logger
 from ELParser import ELBaseData as ELBD
 from ELParser.ELBaseData import ELTrieNode
 from ELParser import ELExceptions as ELE
+import uuid
 logging = root_logger.getLogger(__name__)
 
 class ELTrie:
@@ -15,10 +16,13 @@ class ELTrie:
         #Is essentially the opening '.'
         self.root = ELTrieNode('ROOT')
         #all nodes indexed by uuid
-        self.allNodes = {}        
+        self.allNodes = {self.root.uuid : self.root}
+        
 
     def __getitem__(self,key):
-        if key in self.root:
+        if isinstance(key, uuid.UUID) and key in self.allNodes:
+            return self.allNodes[key]
+        elif key in self.root:
             return self.root[key]
         else:
             raise KeyError("{} not found in {}".format(repr(key),repr(self.root)))
@@ -82,13 +86,13 @@ class ELTrie:
                 elif isinstance(statement,ELBD.ELTERM) and statement not in current:
                     #came to the terminal, and it is missing
                     logging.debug("Missing TERM: {}".format(repr(statement)))
-                    newNode = ELTrieNode(statement)
+                    newNode = ELTrieNode(statement,parent=current)
                     current[statement] = newNode
                     self.allNodes[newNode.uuid] = newNode
                 elif isinstance(statement,ELBD.ELPAIR) and statement not in current:
                     #came to a pair, and it is missing
                     logging.debug("Missing PAIR: {}".format(repr(statement)))
-                    newNode = ELTrieNode(statement)
+                    newNode = ELTrieNode(statement, parent=current)
                     current[statement] = newNode
                     self.allNodes[newNode.uuid] = newNode
                 #for everything but finding the root:
@@ -102,20 +106,23 @@ class ELTrie:
         
     def pop(self,el_string):
         """ Remove an EL String from the Trie """
-        retrieved = self.get(el_string,log_path=True)
-        if not retrieved:
-            return retrieved
-        
-        #now go up the chain
-        path = retrieved.path
-        focus = path.pop()
-        parent = path.pop()
+        theTarget = None
+        if isinstance(el_string, ELBD.ELFACT):
+            searchResult = self.get(el_string)
+            if searchResult:
+                theTarget = self.allNodes[searchResult.bindings[0][0]]
+            else:
+                return ELBD.ELFail()
+        elif isinstance(el_string, ELBD.ELGet):
+            theTarget = self.allNodes[el_string.bindings[0][0]]
 
-        if focus in parent:
-            del parent[focus]
-        else:
-            raise ELE.ELConsistencyException("""Got to a state when a parent node somehow
-            doesn't have the child just retrieved """)
+        if theTarget is None:
+            raise ELE.ELConsistencyException('Pop requires a valid target')
+        
+        target_parent = theTarget.parent
+        
+        del target_parent[theTarget]
+        return ELBD.ELSuccess()
         
         
     def query(self,query):
@@ -123,7 +130,7 @@ class ELTrie:
         if not isinstance(query,ELBD.ELQUERY):
             raise ELE.ELConsistencyException("To query, wrap a fact in an ELBD.ELQUERY")
         result = self.get(query.value)
-        logging.info('Get Result: {}'.format(result))
+        #logging.info('Get Result: {}'.format(result))
         if isinstance(result,ELBD.ELGet) and not query.value.negated:
             return result
         elif isinstance(result, ELBD.ELFail) and query.value.negated:
@@ -132,43 +139,64 @@ class ELTrie:
             return ELBD.ELFail()
         
         
-    def get(self,el_string,log_path=False):
-        """ Get the values at the leaf of the specified EL String
-            Returns an ELBD.ELRESULT
+    def get(self,el_string):
+        assert isinstance(el_string, ELBD.ELFACT)
+        assert el_string.is_valid_for_searching()
+        #todo: deal with non-root starts
+        results = self.sub_get(self.root, el_string.data[1:])
+        if len(results) == 1 and isinstance(results[0], ELBD.ELFail):
+            return ELBD.ELFail()
+        if len(results) == 1 and len(results[0]) == 0:
+            return ELBD.ELGet(path=el_string,bindings=results)
+        else:
+            #verify all bindings are the same:
+            first = results[0][1].keys()
+            allSame = all([first == bindings.keys() for node,bindings in results])
+            if not allSame:
+                return ELBD.ELFail()
+            return ELBD.ELGet(path=el_string,bindings=results)        
 
-        """
-        assert isinstance(el_string,ELBD.ELFACT)
-        try:
-            el_string.is_valid_for_searching()
-            path = []
-            returnVal = None
-            current = None
-            for statement in el_string:
-                logging.info('Getting: {}'.format(statement))
-                if isinstance(statement,ELBD.ELROOT):
-                    current = self.root
-                elif isinstance(statement.value, ELBD.ELVAR):
-                    #is a variable. get all options, bind them
-                    #then filter by the rest of the test
-                    children = current.keys()
-                    logging.info('Returning: {}'.format(children))
-                    returnVal = ELBD.ELGet(statement.value.value,children, path=path.copy(), root=current)
-                    break
-                elif statement in current:
-                    current = current[statement]
-                else:
-                    returnVal = ELBD.ELFail()
-                    break
-                path.append(current)
-                    
-            if not log_path:
-                path = None
-            #get the final current value:
-            if returnVal is None:
-                returnVal = ELBD.ELGet(current.value,list(current.keys()),path=path)
-        except ELE.ELException as e:
-            logging.critical("Trie Get Exception: {}".format(e))
-            returnVal = ELBD.ELFail()
-        finally:
-            return returnVal
+    def sub_get(self, root, el_string, current_bindings={}, new_binding=None):
+        internal_bindings = current_bindings.copy()
+        if new_binding is not None:
+            internal_bindings[new_binding[0]] = new_binding[1]
+        current = root
+        results = []
+        remaining_string = el_string.copy()
+        while len(remaining_string) > 0:
+            statement = remaining_string.pop(0)
+            #if a var
+            if (isinstance(statement, ELBD.ELPAIR) or \
+               isinstance(statement, ELBD.ELTERM)) and \
+               statement.isVar():
+                #todo: complain on duplicate keys
+                varKey = statement.value.value
+                for child in current.children.values():
+                    results.extend(self.sub_get(self[child.uuid],
+                                                remaining_string,
+                                                internal_bindings,
+                                                (varKey,child.value)))
+                remaining_string = []
+            #not a var
+            elif (isinstance(statement, ELBD.ELPAIR) or \
+                 isinstance(statement, ELBD.ELTERM)) and \
+                 statement in current:
+                current = current[statement]
+            #not anything usable
+            elif not isinstance(statement, ELBD.ELPAIR) and \
+                 not isinstance(statement, ELBD.ELTERM):
+                raise ELE.ELConsistencyException('Getting something that is not a pair or term')
+            else:
+                results.append(ELBD.ELFail())
+                remaining_string = []
 
+        #remove all ELBD.ELFails
+        containsAFail = any([isinstance(x, ELBD.ELFail) for x in results])
+        results = [x for x in results if not isinstance(x, ELBD.ELFail)]
+        #if nothing remains, return just an ELFail
+        if len(results) == 0 and containsAFail:
+            results = [ ELBD.ELFail()]
+        elif len(results) == 0:
+            results = [ (current.uuid,internal_bindings) ]
+        return results
+        
