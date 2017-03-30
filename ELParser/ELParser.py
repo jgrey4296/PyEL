@@ -1,5 +1,4 @@
 """
-An experiment in generating text using a combinator parser
 There are a couple of main segments to this file:
 1) Constant names / enums for internal use of the parser
 2) Utility functions to construct data structures from parse data, 
