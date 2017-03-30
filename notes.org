@@ -148,3 +148,16 @@ a.b.c ::? .e.f.g
 .tool.produceds.[x]             :: item
 .tool.time.to.use.x             :: int
 .tool.text.x                    :: string
+
+
+.a.b.c.d
+.a.b.c.e.i
+.a.b.f.g
+
+.a.b? -> ELSuccess
+.a.c? -> ELFail
+.a.b.$x? -> ELGet(.a.b.$x,[{'x':'c'},{'x':'f'}])
+.a.c.$x? -> ELFail
+.a.b.$x.$y? -> ELGet(.a.b.$x.$y,[{'x':'c','y':'d'},{'x':'f','y':'g'}])
+.a.b.$x.e.$y? -> ELGet(.a.b.$x.e.$y, [{'x':'c'},{'y':'i'}])]
+
