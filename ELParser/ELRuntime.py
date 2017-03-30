@@ -105,7 +105,11 @@ class ELRuntime:
         
     def fact_query(self,fact):
         """ Test a fact,  """
+        if not isinstance(fact,ELBD.ELQUERY):
+            raise ELE.ELConsistencyException('Querying requires the use of a query')
         #todo: split into sections [root - var_n, var_n+1 - var_n',var_'+1..]
+        
+        
         #For each section, test then aggregate
 
         #test first section, get results
