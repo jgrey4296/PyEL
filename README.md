@@ -11,14 +11,14 @@ The Trie is in ELParser/ELTrie.py
 ## Language
 
 ```
-    #a commentx
+    #a comment
     .this.is.an.assertion  
     .this.is.an!exclusive.assertion  
     
     #exclusion semantics:
     .a.first
     .a.second
-    # => .a.(first/second)
+    # => .a.first && a.second
     .a!first
     # => .a!first   no .a.second
     .a.first
