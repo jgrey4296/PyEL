@@ -33,9 +33,7 @@ class ELParser_to_Trie_tests(unittest.TestCase):
         parsed_string = self.parser(fact_string)[0]
         successOrFail = self.trie.push(parsed_string)
         self.assertTrue(successOrFail)
-        retrieved = self.trie.get(self.parser(".this.is.a")[0])
-        self.assertEqual(retrieved,"a")
-        self.assertTrue("test" in retrieved)
+        self.assertTrue(self.trie.query(self.parser('.this.is.a.test?')[0]))
 
     def test__n_facts(self):
         """ parse a number of facts and add them all """
@@ -45,83 +43,65 @@ class ELParser_to_Trie_tests(unittest.TestCase):
             success = self.trie.push(s)
             self.assertTrue(success)
         #now test:
-        retrieved = self.trie.get(self.parser('.this.is')[0])
-        self.assertEqual(retrieved,'is')
-        self.assertTrue('a' in retrieved)
-        self.assertTrue('another' in retrieved)
-        self.assertTrue('yet' in retrieved)
+        self.assertTrue(self.trie.query(self.parser('.this.is.a.test?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.another.test?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.yet.another.test?')[0]))
+
 
     def test_empty_array(self):
         fact_string = ".this.is.an.empty.array.[]"
         #add
         result = self.trie.push(self.parser(fact_string)[0])
         self.assertTrue(result)
-        retrieved = self.trie.get(self.parser('.this.is.an.empty.array')[0])
-        self.assertEqual(retrieved,'array')
+        self.assertTrue(self.trie.query(self.parser('.this.is.an.empty.array?')[0]))
         
     def test_non_empty_array(self):
         fact_string = ".this.is.an.array.[1,2,3,4]"
         result = self.trie.push(self.parser(fact_string)[0])
         self.assertTrue(result)
-        retrieved = self.trie.get(self.parser('.this.is.an.array')[0])
-        self.assertEqual(retrieved,'array')
-        self.assertEqual(retrieved[0],[1,2,3,4])
+        self.assertTrue(self.trie.query(self.parser('.this.is.an.array.[1,2,3,4]?')[0]))
+        self.assertFalse(self.trie.query(self.parser('.this.is.an.array.[1,2,2,4]?')[0]))
+        self.assertFalse(self.trie.query(self.parser('.this.is.an.array.[1,2,2,4]?')[0]))       
 
     def test_fraction_array(self):
         fact_string = ".this.is.an.array.[1/2,3/4,5/6]"
         result = self.trie.push(self.parser(fact_string)[0])
-        retrieved = self.trie.get(self.parser('.this.is.an.array')[0])
-        compareTo = [Fraction(1,2),Fraction(3,4),Fraction(5,6)]
-        self.assertEqual(retrieved[0],compareTo)
+        self.assertTrue(self.trie.query(self.parser('.this.is.an.array.[1/2,3/4,5/6]?')[0]))
+
 
     def test_fact_with_string(self):
         fact_string = """.this.is."a longer test".blah"""
         result = self.trie.push(self.parser(fact_string)[0])
         self.assertTrue(result)
-        retrieved = self.trie.get(self.parser('.this.is')[0])
-        self.assertEqual(retrieved,'is')
-        self.assertIn('a longer test',retrieved)
-        retrieved2 = self.trie.get(self.parser('.this.is."a longer test"')[0])
-        self.assertEqual(retrieved2,'a longer test')
-        self.assertIn('blah',retrieved2)
+        self.assertTrue(self.trie.query(self.parser('.this.is."a longer test".blah?')[0]))
 
     def test_fact_sequence(self):
         """ Check an array of facts is parsed and integrated appropriately """
         fact_string = ".this.is.a.test.[.a.b.c, .d.e.f]"
-        retrieval_string = ".this.is.a.test"
         parsed = self.parser(fact_string)
-        added = self.trie.push(parsed[0])
-        retrieved = self.trie.get(self.parser(retrieval_string)[0])
-        self.assertEqual(len(retrieved[0]),2)
-        self.assertIsInstance(retrieved[0][0],ELBD.ELFACT)
-        self.assertIsInstance(retrieved[0][1],ELBD.ELFACT)
+        self.trie.push(parsed[0])
+        self.assertTrue(self.trie.query(self.parser('.this.is.a.test.[.a.b.c, .d.e.f]?')[0]))
+
 
     def test_fact_sequence_re_add(self):
         """ Check that a fact stored in an array is valid to be re-added """
         fact_string = ".this.is.a.test.[.a.b.c, .d.e.f]"
-        retrieval_string = ".this.is.a.test"
-        second_retrieval = ".a.b"
         parsed = self.parser(fact_string)
-        added = self.trie.push(parsed[0])
-        retrieved = self.trie.get(self.parser(retrieval_string)[0])
-        first_fact = retrieved[0][0]
-        re_added = self.trie.push(first_fact)
-        second_retrieved = self.trie.get(self.parser(second_retrieval)[0])
-        self.assertEqual(second_retrieved,'b')
-        self.assertIn('c',second_retrieved)
+        self.trie.push(parsed[0])
+        result1 = self.trie.get(self.parser('.this.is.a.test.[.a.b.c, .d.e.f]')[0])
+        self.trie.push(parsed[0])
+        result2 = self.trie.get(self.parser('.this.is.a.test.[.a.b.c, .d.e.f]')[0])
+        self.assertTrue(result1)
+        self.assertTrue(result2)
+        self.assertEqual(result1.bindings[0][0],result2.bindings[0][0])
+        
 
+        
     def test_modifying_retrieved_data_doesnt_change_trie(self):
         """ Trie data should be safe from accidental modification """
-        fact_string = ".this.is.a.test"
-        retrieval_string = ".this.is.a"
-        self.trie.push(self.parser(fact_string)[0])
-        retrieved = self.trie.get(self.parser(retrieval_string)[0])
-        self.assertIn('test',retrieved)
-        retrieved.children[0] = 'blah'
-        self.assertNotIn('test',retrieved)
-        retrieved_2 = self.trie.get(self.parser(retrieval_string)[0])
-        self.assertIn('test',retrieved_2)
-        
+        #TODO
+        None
+                
     def test_exclusion_semantics_1(self):
         """ Testing non-exclusive additions """
         test_fact = ".this.is.a.fact\n.this.is.a.second"
@@ -129,64 +109,62 @@ class ELParser_to_Trie_tests(unittest.TestCase):
         parsed = self.parser(test_fact)
         for f in parsed:
             self.trie.push(f)
-        retrieved = self.trie.get(self.parser(retrieval_string)[0])
-        self.assertIn('fact',retrieved)
-        self.assertIn('second',retrieved)
-
+        self.assertTrue(self.trie.query(self.parser('.this.is.a.fact?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.a.second?')[0]))
+        
     def test_exclusion_semantics_2(self):
         """ Test exclusion upcasting """
         base_facts = ".this.is.a.fact\n.this.is.a.second"
         retrieval_string = ".this.is.a"
         for f in self.parser(base_facts):
             self.trie.push(f)
+        self.assertTrue(self.trie.query(self.parser('.this.is.a.fact?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.a.second?')[0]))
         exclusion_fact = ".this.is.a!exclusive"
         self.trie.push(self.parser(exclusion_fact)[0])
-        retrieved = self.trie.get(self.parser(retrieval_string)[0])
-        self.assertEqual('a',retrieved)
-        self.assertIn('exclusive',retrieved)
-        self.assertNotIn('fact',retrieved)
-        self.assertNotIn('second',retrieved)
-
+        self.assertFalse(self.trie.query(self.parser('.this.is.a.fact?')[0]))
+        self.assertFalse(self.trie.query(self.parser('.this.is.a.second?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.a!exclusive?')[0]))
+        
     def test_exclusion_semantics_3(self):
         """ Test exclusion re-definition """
         base_fact = ".this.is.an!exclusion"
         update_string = ".this.is.an!other"
         retrieval_string = ".this.is.an"
         self.trie.push(self.parser(base_fact)[0])
-        retrieved = self.trie.get(self.parser(retrieval_string)[0])
-        self.assertIn('exclusion',retrieved)
+        self.assertTrue(self.trie.query(self.parser('.this.is.an!exclusion?')[0]))
         self.trie.push(self.parser(update_string)[0])
-        updated = self.trie.get(self.parser(retrieval_string)[0])
-        self.assertIn('other',updated)
-        self.assertNotIn('exclusion',updated)
+        self.assertFalse(self.trie.query(self.parser('.this.is.an!exclusion?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.an!other?')[0]))
 
     def test_exclsuion_semantics_3(self):
-        """ test exlcusion down-casting """
+        """ test exclusion down-casting """
         base_fact = ".this.is.an!exclusion"
         update_string = ".this.is.an.other\n.this.is.an.else"
-        retrieval_string = ".this.is.an"
         self.trie.push(self.parser(base_fact)[0])
-        retrieved_1 = self.trie.get(self.parser(retrieval_string)[0])
-        self.assertIn('exclusion',retrieved_1)
+        self.assertTrue(self.trie.query(self.parser('.this.is.an!exclusion?')[0]))
+
         for f in self.parser(update_string):
             self.trie.push(f)
-        retrieved_2 = self.trie.get(self.parser(retrieval_string)[0])
-        self.assertIn('other',retrieved_2)
-        self.assertIn('else',retrieved_2)
-        self.assertNotIn('exclusion',retrieved_2)
+
+        self.assertFalse(self.trie.query(self.parser('.this.is.an!exclusion?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.an.other?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.an.else?')[0]))
 
     def test_number_usage_post_retrieval(self):
         """ make sure numbers can be used when retrieved from the trie """
         base_facts = ".this.is.a.test.5\n.this.is.some.other!10"
-        retrieval_string_1 = ".this.is.a.test"
-        retrieval_string_2 = ".this.is.some.other"
+        retrieval_string_1 = ".this.is.a.test.$x"
+        retrieval_string_2 = ".this.is.some.other!$y"
         for f in self.parser(base_facts):
             self.trie.push(f)
         retrieved_1 = self.trie.get(self.parser(retrieval_string_1)[0])
         retrieved_2 = self.trie.get(self.parser(retrieval_string_2)[0])
-        added = retrieved_1[0] + retrieved_2[0]
+        val1 = retrieved_1.bindings[0][1]['x']
+        val2 = retrieved_2.bindings[0][1]['y']
+        added = val1 + val2
         self.assertEqual(added,15)
-        subbed = retrieved_2[0] - retrieved_1[0]
+        subbed = val2 - val1
         self.assertEqual(subbed,5)
                                     
     def test_empty_rule(self):
@@ -195,8 +173,8 @@ class ELParser_to_Trie_tests(unittest.TestCase):
         retrieval_string = ".this.is.a.rule"
         isAdded = self.trie.push(self.parser(base_fact)[0])
         self.assertTrue(isAdded)
-        retrieved = self.trie.get(self.parser(retrieval_string)[0])
-        self.assertEqual(retrieved[0],self.parser(base_fact)[0][-1].value)
+        self.assertTrue(self.trie.query(self.parser('.this.is.a.rule.{ [] -> [] }?')[0]))
+
 
     def test_simple_rule(self):
         """ Check that a simple rule is stored appropriately """
@@ -204,8 +182,7 @@ class ELParser_to_Trie_tests(unittest.TestCase):
         retrieval_string = ".this.is.a.rule"
         isAdded = self.trie.push(self.parser(base_fact)[0])
         self.assertTrue(isAdded)
-        retrieved = self.trie.get(self.parser(retrieval_string)[0])
-        self.assertEqual(retrieved[0],self.parser(base_fact)[0][-1].value)
+        self.assertTrue(self.trie.query(self.parser('.this.is.a.rule.{ .a.b.c? -> .a.b.d }?')[0]))
 
 if __name__ == "__main__":
     LOGLEVEL = root_logger.DEBUG
