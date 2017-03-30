@@ -134,6 +134,9 @@ class ELROOT:
 
     def copy(self):
         return ELROOT(self.elop)
+
+    def isVar():
+        return False;
     
 class ELPAIR:
     """ Internal pairs of statements of |test.|blah!|something.|
@@ -143,6 +146,12 @@ class ELPAIR:
         self.value = value
         self.elop = elop
 
+    def toTerminal(self):
+        return ELTERM(self.value)
+        
+    def isVar(self):
+        return isinstance(self.value, ELVAR)
+        
     def __repr__(self):
         op = ELOP2STR(self.elop)
         return "{}{}".format(repr(self.value),op)
@@ -166,6 +175,9 @@ class ELTERM:
     """
     def __init__(self,value):
         self.value = value
+
+    def isVar(self):
+        return isinstance(self.value, ELVAR)
         
     def __repr__(self):
         return "{} ||".format(repr(self.value))
@@ -313,6 +325,33 @@ class ELFACT:
         else:
             self.data = data
 
+    def bind(self,bindings):
+        #return a copy of the fact, where the var has been switched out
+        assert isinstance(bindings,dict)
+        assert len(bindings) > 0
+        new_string = []
+        for x in self.data:
+            if not x.isVar():
+                new_string.append(x)
+            elif isinstance(x, ELPAIR) and x.value.value in bindings:
+                newPair = ELPAIR(bindings[x.value.value],x.elop)
+                new_string.append(newPair)
+            elif isinstance(x, ELTERM) and x.value.value in bindings:
+                newPair = ELTERM(bindings[x.value.value])
+                new_string.append(newPair)
+        return ELFACT(new_string)
+
+    def split_into_var_sections(self):
+        sections = [[]]
+        for d in self.data:
+            if isinstance(d,ELTERM):
+                sections[-1].append(d.value)
+            elif not isinstance(d,ELVAR):
+                sections[-1].append(d)
+            else:
+                sections[-1].append(d)
+                sections.append([])
+            
     def copy(self):
         dataCopy = [x.copy() for x in self.data]
         bindingsCopy = [x.copy() for x in self.bindings]
@@ -403,7 +442,7 @@ class ELFACT:
         	if isinstance(x,ELPAIR) and isinstance(x.value,list):
                     #must not have arrays as pairs, only terminals
                     raise Exception("Fact is not valid: has Array in non-terminal")
-
+        return True
 
     
 class ELBIND:
@@ -443,32 +482,30 @@ class ELFail(ELRESULT):
         return other == False
     def __repr__(self):
         return "ELFailure"
-    
+
 class ELGet(ELRESULT):
     """ A Successful result """
-    def __init__(self,value,children,path=None,root=None):
-        self.value = value
-        self.children = children
+    def __init__(self,path=None,bindings={}):
+        self.bindings = bindings
         self.path = path
-        self.root = root
         
     def __bool__(self):
         return True
         
     def __repr__(self):
-        return "({} , {})".format(repr(self.value),repr(self.children))
+        return "({} , {})".format(repr(self.path),repr(self.bindings))
 
     def __len__(self):
         """ Get the number of children of this result """
-        return len(self.children)
+        return len(self.bindings)
         
     def __getitem__(self,i):
         """ get a specified child """
-        return self.children[i]
+        return self.bindings[i]
 
     def __iter__(self):
-        """ Allow for each looping through the children """
-        return iter(self.children)
+        """ Allow for each looping through the bindings """
+        return iter(self.bindings)
 
     def __contains__(self,key):
         """ Check the result for a value in the children """
@@ -494,11 +531,12 @@ class ELTrieNode:
     Nominally an EL Operator (DOT or EX), and a value, usually a dict 
     """
     
-    def __init__(self,val):
+    def __init__(self,val,parent=None):
         self.uuid = uuid.uuid1()
         #Default to Dot, update later if necessary
         self.elop = EL.DOT
         self.value = None
+        self.parent = parent
         self.children = {}
         if isinstance(val,ELPAIR):
             self.elop = val.elop
@@ -532,9 +570,13 @@ class ELTrieNode:
     def __eq__(self,other):
         """ Check that EL ops match """
         if isinstance(other, ELPAIR):
-            return self.elop == other.elop
-        else:
-            return False
+            return self.elop == other.elop and self.value == other.value
+        elif isinstance(other,ELTrieNode):
+            return self.elop == other.elop and \
+                self.value == other.value and \
+                self.children == other.children
+        else: #else compare to the internal vaue
+            return self.value == other
 
     def __delitem__(self,key):
         if isinstance(key,ELTrieNode):
@@ -643,3 +685,4 @@ class ELQUERY:
     
     def copy(self):
         return ELQUERY(self.value.copy())
+
