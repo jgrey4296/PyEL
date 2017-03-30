@@ -33,7 +33,7 @@ class ELParser_Tests(unittest.TestCase):
         self.assertTrue(self.trie.is_empty())
 
     def test_empty_invalidation_upon_add(self):
-        """ Check the trie is no longer empty upong adding: ".test  """
+        """ Check the trie is no longer empty upon adding: '.test' """
         self.assertTrue(self.trie.is_empty())
         #Create the fact: .test
         base_term = ELBD.ELTERM("test")
@@ -60,16 +60,15 @@ class ELParser_Tests(unittest.TestCase):
         result = self.trie.get(ELBD.ELFACT([base_root]))
         self.assertTrue(add_response)
         self.assertIsInstance(result,ELBD.ELGet)
-        self.assertEqual(result.value,"ROOT")
-        #One child, test.
-        self.assertEqual(result.children,["test"])
+        retrieved_node = self.trie[result.bindings[0][0]]
+        self.assertEqual(retrieved_node,"ROOT")
+        #One child only
+        self.assertEqual(len(retrieved_node),1)
 
     def test_multi_add(self):
         """ check adding .test and .blah non exclusively works in simplest case """
-        base_term1 = ELBD.ELTERM("test")
-        base_term2 = ELBD.ELTERM("blah")
-        base_fact1 = ELBD.ELFACT([base_root,base_term1])
-        base_fact2 = ELBD.ELFACT([base_root,base_term2])
+        base_fact1 = ELBD.ELFACT(r=True).term('test')
+        base_fact2 = ELBD.ELFACT(r=True).term('blah')
         #now add:
         add_result1 = self.trie.push(base_fact1)
         add_result2 = self.trie.push(base_fact2)
@@ -77,8 +76,7 @@ class ELParser_Tests(unittest.TestCase):
         self.assertTrue(add_result1)
         self.assertTrue(add_result2)
         #Now get the root and see the children are there:
-        root = self.trie.get(root_fact)
-        self.assertIsInstance(root,ELBD.ELGet)
+        root = self.trie.root
         self.assertEqual(root.value,"ROOT")
         self.assertTrue("test" in root.children)
         self.assertTrue("blah" in root.children)
@@ -111,7 +109,7 @@ class ELParser_Tests(unittest.TestCase):
         """ Check that facts of greater depths can be added 
         + .test.bloo
         """
-        base_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("test")).push(ELBD.ELTERM("bloo"))
+        base_fact = ELBD.ELFACT(r=True).pair("test").term("bloo")
         self.assertEqual(len(base_fact),2)
         self.assertTrue(self.trie.is_empty())
         result = self.trie.push(base_fact)
@@ -122,78 +120,71 @@ class ELParser_Tests(unittest.TestCase):
         """ check that the data added to the trie of a depth 2 fact is actually added 
         + .test.bloo, get .test and .test.bloo
         """
-        base_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("test")).push(ELBD.ELTERM("bloo"))
+        base_fact = ELBD.ELFACT(r=True).pair("test").term("bloo")
         self.assertEqual(len(base_fact),2)
         self.assertTrue(self.trie.is_empty())
         successOrFail = self.trie.push(base_fact)
         self.assertTrue(successOrFail)
-        result = self.trie.get(ELBD.ELFACT(r=True))
-        self.assertEqual(result.value,"ROOT")
-        self.assertTrue("test" in result)
-        self.assertFalse("bloo" in result)
-        result_depth1 = self.trie.get(ELBD.ELFACT(r=True).push(ELBD.ELTERM("test")))
-        self.assertNotEqual(result_depth1.value,"ROOT")
-        self.assertFalse("test" in result_depth1)
-        self.assertTrue("bloo" in result_depth1)
-        self.assertEqual(result_depth1,"test")
-        self.assertEqual(len(result_depth1),1)
-        result_depth2 = self.trie.get(ELBD.ELFACT(r=True).push(ELBD.ELTERM("test")).push(ELBD.ELTERM("bloo")))
-        self.assertEqual(len(result_depth2), 0)
-        self.assertEqual(result_depth2,"bloo")
+        self.assertEqual(len(self.trie.root),1)
+        
+        #Get the first node:
+        query = ELBD.ELFACT(r=True).term("test")
+        result_depth1 = self.trie.get(query)
+        result_depth1_node_uuid = result_depth1.bindings[0][0]
+        result_depth1_node = self.trie[result_depth1_node_uuid]
+        self.assertEqual(len(result_depth1_node),1)
+        
+        
 
     def test_fact_addition_doesnt_duplicate(self):
         """ Check that adding the same fact, or head components of the same fact
         twice, doesnt duplicate those facts. .test.bloo * 2
         """
-        base_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("test")).push(ELBD.ELTERM("bloo"))
+        base_fact = ELBD.ELFACT(r=True).pair("test").term("bloo")
         self.trie.push(base_fact)
         successOrFail = self.trie.push(base_fact)
         self.assertTrue(successOrFail)
-        base_result = self.trie.get(ELBD.ELFACT(r=True))
-        self.assertEqual(base_result.value,"ROOT")
-        self.assertEqual(len(base_result.children),1)
-        self.assertTrue("test" in base_result.children)
-        self.assertFalse("bloo" in base_result.children)
-        depth1_result = self.trie.get(ELBD.ELFACT(r=True).push(ELBD.ELTERM("test")))
-        self.assertEqual(depth1_result.value,"test")
-        self.assertEqual(len(depth1_result.children),1)
-        self.assertFalse("test" in depth1_result.children)
-        self.assertTrue("bloo" in depth1_result.children)
+        #check the root node:
+        self.assertEqual(len(self.trie.root),1)
+        
+        #Check the test node:
+        test_node_result = self.trie.get(ELBD.ELFACT(r=True).pair('test'))
+        self.assertTrue(test_node_result)
+        self.assertIsInstance(test_node_result, ELBD.ELGet)
+        test_node_uuid = test_node_result.bindings[0][0]
+        test_node_actual = self.trie[test_node_uuid]
+        self.assertEqual(len(test_node_actual),1)
 
     def test_exclusion_addition(self):
         """ Check adding an exclusion operator works .test!blah """
-        base_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("test",ELBD.EL.EX)).push(ELBD.ELTERM('blah'))
+        base_fact = ELBD.ELFACT(r=True).epair("test").term('blah')
         successOrFail = self.trie.push(base_fact)
         self.assertTrue(successOrFail)
-        result = self.trie.get(ELBD.ELFACT(r=True).push(ELBD.ELTERM("test")))
+        result = self.trie.get(ELBD.ELFACT(r=True).epair("test"))
+        self.assertTrue(result)
         self.assertIsInstance(result,ELBD.ELGet)
-        self.assertEqual(result,"test")
-        self.assertTrue("blah" in result)
 
     def test_non_exclusion_lift_to_exclusion(self):
         """ Check lifting a trie node to exclusive works
         .test.bloo -> .test!bloo
         .test.blah -> ''
         """
-        root_logger.disable(root_logger.NOTSET)
-        logging.debug("Exclusion lift")
-        base_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("test")).push(ELBD.ELTERM("bloo"))
-        base_fact2 = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("test")).push(ELBD.ELTERM("blah"))
-        ex_fact =  ELBD.ELFACT(r=True).push(ELBD.ELPAIR("test",ELBD.EL.EX)).push(ELBD.ELTERM("bloo"))
-        s = self.trie.push(base_fact)
-        s2 = self.trie.push(base_fact2)
-        self.assertTrue(s)
-        result = self.trie.get(ELBD.ELFACT(r=True).push(ELBD.ELTERM("test")))
-        self.assertEqual(len(result),2)
-        self.assertTrue("bloo" in result)
-        self.assertTrue("blah" in result)
-        s3 = self.trie.push(ex_fact)
-        self.assertTrue(s2)
-        result_2 = self.trie.get(ELBD.ELFACT(r=True).push(ELBD.ELTERM("test")))
-        self.assertEqual(len(result_2),1)
-        self.assertTrue("bloo" in result_2)
-        self.assertFalse("blah" in result_2)
-        root_logger.disable(root_logger.CRITICAL)
+        base_fact = ELBD.ELFACT(r=True).pair("test").term("bloo")
+        base_fact2 = ELBD.ELFACT(r=True).pair("test").term("blah")
+        ex_fact =  ELBD.ELFACT(r=True).epair("test").term("bloo")
+        self.trie.push(base_fact)
+        self.trie.push(base_fact2)
+        self.assertTrue(self.trie.query(ELBD.ELQUERY(base_fact)))
+        self.assertTrue(self.trie.query(ELBD.ELQUERY(base_fact2)))
+        self.assertFalse(self.trie.query(ELBD.ELQUERY(ex_fact)))
+
+        self.trie.push(ex_fact)
+        
+        self.assertFalse(self.trie.query(ELBD.ELQUERY(base_fact)))
+        self.assertFalse(self.trie.query(ELBD.ELQUERY(base_fact2)))
+        self.assertTrue(self.trie.query(ELBD.ELQUERY(ex_fact)))
+
+        
 
     def test_exclusion_rewrite(self):
         """ Check that updating a value of an exclusion node works 
@@ -201,34 +192,42 @@ class ELParser_Tests(unittest.TestCase):
         """
         root_logger.disable(root_logger.NOTSET)
         logging.debug("Exclusion rewrite")
-        orig_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("test",ELBD.EL.EX)).push(ELBD.ELTERM("bloo"))
-        update_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("test",ELBD.EL.EX)).push(ELBD.ELTERM("blah"))
+        orig_fact = ELBD.ELFACT(r=True).epair("test").term("bloo")
+        update_fact = ELBD.ELFACT(r=True).epair("test").term("blah")
         self.trie.push(orig_fact)
-        gotten = self.trie.get(ELBD.ELFACT(r=True).push(ELBD.ELTERM("test")))
-        self.assertTrue("bloo" in gotten)
+        gotten = self.trie.get(ELBD.ELFACT(r=True).epair("test").pair('bloo'))
+        self.assertTrue(gotten)
+        
         self.trie.push(update_fact)
-        gotten_2 = self.trie.get(ELBD.ELFACT(r=True).push(ELBD.ELTERM("test")))
-        self.assertTrue("blah" in gotten_2)
-        self.assertFalse("bloo" in gotten_2)
+        gotten_2 = self.trie.get(ELBD.ELFACT(r=True).epair("test").pair('bloo'))
+        self.assertFalse(gotten_2)
+        gotten_3 = self.trie.get(ELBD.ELFACT(r=True).epair('test').pair('blah'))
+        self.assertTrue(gotten_3)
         root_logger.disable(root_logger.CRITICAL)
         
     def test_exclusion_to_non_downscale(self):
         """ Check that .a.b!c => a.b.c passes and updates """
-        ex_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("a")).push(ELBD.ELPAIR("b",ELBD.EL.EX)).push(ELBD.ELTERM("c"))
-        non_ex_fact = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("a")).push(ELBD.ELPAIR("b")).push(ELBD.ELTERM("c"))
-        non_ex_fact_2 = ELBD.ELFACT(r=True).push(ELBD.ELPAIR("a")).push(ELBD.ELPAIR("b")).push(ELBD.ELTERM("d"))
+        ex_fact = ELBD.ELFACT(r=True).pair("a").epair("b").term("c")
+        non_ex_fact = ELBD.ELFACT(r=True).pair("a").pair("b").term("c")
+        non_ex_fact_2 = ELBD.ELFACT(r=True).pair("a").pair("b").term("d")
         result_1 = self.trie.push(ex_fact)
-        result_2 = self.trie.push(non_ex_fact)
-        result_3 = self.trie.push(non_ex_fact_2)
         self.assertTrue(result_1)
-        self.assertTrue(result_2)
-        self.assertTrue(result_3)
-        gotten = self.trie.get(ELBD.ELFACT(r=True).push(ELBD.ELPAIR("a")).push(ELBD.ELTERM("b")))
-        self.assertTrue(gotten)
-        self.assertEqual(len(gotten),2)
-        self.assertEqual(gotten,"b")
-        self.assertTrue("c" in gotten)
-        self.assertTrue("d" in gotten)
+        initial = self.trie.get(ELBD.ELFACT(r=True).pair("a").epair("b").term('c'))
+        self.assertTrue(initial)
+        #then update:
+        update_1 = self.trie.push(non_ex_fact)
+        update_2 = self.trie.push(non_ex_fact_2)
+        self.assertTrue(update_1)
+        self.assertTrue(update_2)
+        old_fact = self.trie.get(ELBD.ELFACT(r=True).pair("a").epair("b").term('c'))
+        self.assertFalse(old_fact)
+        new_fact_1 = self.trie.get(ELBD.ELFACT(r=True).pair('a').pair('b').term('c'))
+        self.assertTrue(new_fact_1)
+        new_fact_2 = self.trie.get(ELBD.ELFACT(r=True).pair('a').pair('b').term('d'))
+        self.assertTrue(new_fact_2)
+
+
+        
 
     def test_adding_array(self):
         """ Check .a.b.[1,2,3] succeeds """
@@ -238,18 +237,8 @@ class ELParser_Tests(unittest.TestCase):
 
     def test_getting_array(self):
         """ Check you can get .a.b.[1,2,3] """
-        test_fact = ELBD.ELFACT(r=True).pair("a").pair("b").term([1,2,3])
-        self.trie.push(test_fact)
-        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b"))
-        self.assertEqual(gotten,"b")
-        self.assertEqual(len(gotten),1)
-        self.assertTrue([1,2,3] in gotten)
-        self.assertFalse([3,4,5] in gotten)
-        gotten_2 = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b").term([1,2,3]))
-        self.assertEqual(gotten_2,[1,2,3])
-        self.assertEqual(gotten_2.value[1],2)
-        self.assertNotEqual(gotten_2,[2,3,4])
-        self.assertEqual(len(gotten_2),0)
+        #todo: utilize variables here
+        None
 
 
     def test_array_subvalues_fails(self):
@@ -263,62 +252,62 @@ class ELParser_Tests(unittest.TestCase):
         decimal = ELBD.ELFACT(r=True).pair("a").pair("b").term(1.5)
         s = self.trie.push(decimal)
         self.assertTrue(s)
-        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b"))
-        self.assertEqual(gotten,"b")
-        self.assertEqual(len(gotten),1)
-        self.assertTrue(1.5 in gotten)
-        gotten2 = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b").pair(1.5))
-        self.assertEqual(gotten2,1.5)
-        self.assertEqual(len(gotten2),0)
+        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b").term(1.5))
+        self.assertTrue(gotten)
+        self.assertIsInstance(gotten, ELBD.ELGet)
+        gotten2 = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b"))
+        self.assertTrue(gotten2)
+        self.assertIsInstance(gotten2, ELBD.ELGet)
 
     def test_fraction(self):
         """ Check .a.b.1/5 works """
         fraction = ELBD.ELFACT(r=True).pair("a").pair("b").term(Fraction(1,5))
-        s = self.trie.push(fraction)
-        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b"))
-        self.assertEqual(gotten,"b")
-        self.assertEqual(len(gotten),1)
-        self.assertTrue(Fraction(1,5) in gotten)
+        self.trie.push(fraction)
+        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b").term(Fraction(1,5)))
+        self.assertTrue(gotten)
+        fraction_node_uuid = gotten.bindings[0][0]
+        fraction_node = self.trie[fraction_node_uuid]
+        self.assertEqual(fraction_node,Fraction(1,5))
                 
 
     def test_terminal_string(self):
         """ Check .a.b."blah bloo" works """
         string_fact = ELBD.ELFACT(r=True).pair("a").pair("b").term("blah bloo")
+        query = ELBD.ELQUERY(string_fact)
         s = self.trie.push(string_fact)
-        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b"))
-        self.assertEqual(gotten,"b")
-        self.assertEqual(len(gotten),1)
-        self.assertTrue("blah bloo" in gotten)
+        result = self.trie.query(query)
+        self.assertTrue(result)
+        
         
 
     def test_non_terminal_string(self):
-        """ Check .a.b."blah "bloo".c works """
+        """ Check .a.b."blah bloo".c works """
         string_fact = ELBD.ELFACT(r=True).pair("a").pair("b").pair("blah bloo").term("c")
-        s = self.trie.push(string_fact)
-        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b").pair("blah bloo"))
-        self.assertEqual(gotten,"blah bloo")
-        self.assertEqual(len(gotten),1)
-        self.assertTrue("c" in gotten)
+        query = ELBD.ELQUERY(string_fact)
+        self.trie.push(string_fact)
+        result = self.trie.query(query)
+        self.assertTrue(result)
         
 
     def test_negative_number(self):
         """ Check that .a.b.-5 works """
+        #todo: utilize variable getting
         neg_fact = ELBD.ELFACT(r=True).pair("a").pair("b").term(-5)
-        s = self.trie.push(neg_fact)
-        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b"))
-        self.assertEqual(gotten,"b")
-        self.assertEqual(len(gotten),1)
-        self.assertTrue(-5 in gotten)
+        query = ELBD.ELQUERY(neg_fact)
+        pre_assertion = self.trie.query(query)
+        self.assertFalse(pre_assertion)
+        self.trie.push(neg_fact)
+        post_assertion = self.trie.query(query)
+        self.assertTrue(post_assertion)
         
 
     def test_negative_number_subvalues(self):
         """ Check that .a.b.-5.c works """
         neg_sub_fact = ELBD.ELFACT(r=True).pair("a").pair("b").pair(-5).term("c")
+        query = ELBD.ELQUERY(neg_sub_fact)
         s = self.trie.push(neg_sub_fact)
-        gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b").pair(-5))
-        self.assertEqual(gotten,-5)
-        self.assertEqual(len(gotten),1)
-        self.assertTrue("c" in gotten)
+        result = self.trie.query(query)
+        self.assertTrue(result)
 
     def test_trie_query(self):
         """ Check that queries return accurately """
@@ -397,11 +386,16 @@ class ELParser_Tests(unittest.TestCase):
         self.trie.push(base_fact2)
         query_fact = ELBD.ELFACT(r=True).pair('a').term(ELBD.ELVAR('x'))
         results = self.trie.get(query_fact)
-
-        self.assertIsInstance(results,ELBD.ELGet)
-        self.assertEqual(results.value,'x')
-        self.assertEqual(results.children,['b','d'])
         self.assertTrue(results)
+        self.assertIsInstance(results,ELBD.ELGet)
+        self.assertEqual(results.path, query_fact)
+        self.assertEqual(len(results),2)
+        bindings = [x[1] for x in results.bindings]
+
+        self.assertIn({'x':'b'},  bindings)
+        self.assertIn({'x':'d'}, bindings)
+
+        
 
     def test_trie_get_variables_when_only_one_child(self):
         """ Get the possible entry for a variable """
@@ -411,14 +405,70 @@ class ELParser_Tests(unittest.TestCase):
         self.trie.push(base_fact2)
         query_fact = ELBD.ELFACT(r=True).pair('a').term(ELBD.ELVAR('x'))
         results = self.trie.get(query_fact)
-
-        self.assertIsInstance(results,ELBD.ELGet)
-        self.assertEqual(results.value,'x')
-        self.assertEqual(results.children,['b'])
         self.assertTrue(results)
+        self.assertIsInstance(results,ELBD.ELGet)
+        self.assertEqual(results.path, query_fact)
+        bindings = [x[1] for x in results.bindings]
+        self.assertEqual(len(results.bindings),1)        
+        self.assertIn({'x':'b'},bindings)
+
+
+
+    def test_trie_get_dfs_of_query(self):
+        """ Get all the possible bindings as a flat array for queries like:
+        	.a.b.$x.$y 
+        """
+        #both match .a.$x.c.$y
+        base_fact1 = ELBD.ELFACT(r=True).pair('a').pair('b').pair('c').term('d')
+        base_fact2 = ELBD.ELFACT(r=True).pair('a').pair('f').pair('c').term('e')
+        self.trie.push(base_fact1)
+        self.trie.push(base_fact2)
+        query = ELBD.ELFACT(r=True).pair('a').pair(ELBD.ELVAR('x')).pair('c').term(ELBD.ELVAR('y'))
+        results = self.trie.get(query)
+        self.assertIsInstance(results,ELBD.ELGet);
+        self.assertEqual(results.path, query)
+        self.assertEqual(len(results.bindings),2)
+
+        bindings = [x[1] for x in results.bindings]
+        self.assertIn({'x':'b', 'y':'d'}, bindings)
+        self.assertIn({'x':'f', 'y':'e'}, bindings)
+
+
+    def test_trie_get_dfs_of_query_expanded_base(self):
+        """ Check that variation of the lower variable are retrieved, even
+        when the higher term remains the same
+        """
+        base_fact1 = ELBD.ELFACT(r=True).pair('a').pair('b').pair('c').term('d')
+        base_fact2 = ELBD.ELFACT(r=True).pair('a').pair('b').pair('c').term('e')
+        self.trie.push(base_fact1)
+        self.trie.push(base_fact2)
+        query = ELBD.ELFACT(r=True).pair('a').pair(ELBD.ELVAR('x')).pair('c').term(ELBD.ELVAR('y'))
+        results = self.trie.get(query);
+        self.assertIsInstance(results,ELBD.ELGet);
+        self.assertEqual(results.path, query)
+        self.assertEqual(len(results.bindings),2)
+        bindings = [x[1] for x in results.bindings]
+        
+        self.assertIn({'x':'b', 'y':'d'}, bindings)
+        self.assertIn({'x':'b', 'y':'e'}, bindings)
+
+    def test_trie_get_dfs_of_query_excluding_non_matches(self):
+        """ Similar to getting dfs of query, but rejecting only partial matches """
+        #both match .a.$x but not .a.$x.c.$y
+        base_fact1 = ELBD.ELFACT(r=True).pair('a').pair('b').pair('c').term('d')
+        base_fact2 = ELBD.ELFACT(r=True).pair('a').pair('f').pair('g').term('e')
+        self.trie.push(base_fact1)
+        self.trie.push(base_fact2)        
+        query = ELBD.ELFACT(r=True).pair('a').pair(ELBD.ELVAR('x')).pair('c').term(ELBD.ELVAR('y'))
+        results = self.trie.get(query);
+        self.assertIsInstance(results,ELBD.ELGet);
+        self.assertEqual(results.path, query)
+        self.assertEqual(len(results.bindings),1)
+
+        
+        self.assertIn({'x':'b', 'y':'d'},results.bindings[0])
         
         
-    
     #test trie dump
     #test trie pickle?
 
