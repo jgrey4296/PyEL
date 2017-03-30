@@ -13,7 +13,7 @@ from fractions import Fraction
 
 #Parser returns a ParseResult, which is an array of actual parse data structures
 
-gen_n = lambda: 1 + int(random()*20)
+gen_n = lambda: 2 + int(random()*20)
 
 class ELParser_Tests(unittest.TestCase):
 
