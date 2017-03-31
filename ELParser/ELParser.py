@@ -252,10 +252,9 @@ def ELPARSE(string):
         logging.warning("ParseException: L:{}_C:{}: {}".format(pe.lineno,pe.col,pe.line))
         raise ELE.ELParseException("ELParseException: L:{}_C:{}: {}".format(pe.lineno,pe.col,pe.line))
     except ELE.ELException as ele:
+        print('ELE Exception: {}'.format(ele))
         logging.warning("ELException: {}".format(ele))
         raise ele
-    except Exception as e:
-        raise e
     return results
 
 
