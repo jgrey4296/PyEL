@@ -79,12 +79,16 @@ def ELOP2STR(elop):
 ##############################
 # Classes
 ####################
-    
+
+
+#----------
+# ACTIONS
+#----------
 class ELAction:
     """ The Base class of actions """
 
     
-class ELComparison:
+class ELComparison(ELAction):
     """ Holds a comparison operation between two bindings """
     def __init__(self,b1,op,b2):
         self.op = op[0]
@@ -116,9 +120,59 @@ class ELComparison:
 
     def copy(self):
         return ELComparison(self.b1,(self.op, self.nearVal), self.b2)
+
+
+class ELARITH_FACT(ELAction):
+    """ An internal representation of an arithmetic operator fact,
+    for use in actions 
+    Essentially a wrapper to house a fact, an operation, and a value to apply
+    """
+    def __init__(self, data=None, op=None, val=None):
+        if not (isinstance(data,ELFACT) or isinstance(data,ELVAR)):
+            raise ELE.ELConsistencyException('All Arith facts need a fact or variable as a base')
+        if not isinstance(op,ELARITH):
+            raise ELE.ELConsistencyException('Arith Fact missing an operator')
+        self.data=data #A fact
+        self.op = op   #an operator
+        self.val = val #a value or binding       
+
+    def __repr__(self):
+        return "|ARITH: {} ({} {}) |".format(self.data,EL_ARITH_2_STR(self.op), self.val)
+
+    def __str__(self):
+        op = EL_ARITH_2_STR(self.op)
+        return "{} {} {}".format(str(self.data),
+                                 op,
+                                 str(self.val))
+
+        
     
-#The main Intermediate Representations to feed to the runtime
-class ELROOT:
+    def copy(self):
+        return ELARITH_FACT(self.data.copy(),self.op,self.val.copy())
+
+class ELBIND(ELAction):
+    """ An IR representation of the runtime 'bind' instruction """
+    def __init__(self,var, root):
+        if not (isinstance(root,ELFACT) or root is None):
+            raise ELE.ELConsistencyException("Global bindings need to use facts")
+        self.var = var
+        self.root = root
+
+    def __repr__(self):
+        return "({} <- {})".format(self.var, self.root)
+    def __str__(self):
+        return "{} <- {}".format(str(self.var), str(self.root))
+    def copy(self):
+        return ELBIND(self.var.copy(),self.root.copy())
+
+#----------
+# Structure
+#----------
+    
+class ELSTRUCTURE:
+    None
+
+class ELROOT(ELSTRUCTURE):
     """ The Representation of the Trie root """
     def __init__(self,elop=EL.DOT):
         self.elop = elop
@@ -138,7 +192,7 @@ class ELROOT:
     def isVar(self):
         return False;
     
-class ELPAIR:
+class ELPAIR(ELSTRUCTURE):
     """ Internal pairs of statements of |test.|blah!|something.|
     Does not represent terminals 
     """
@@ -169,7 +223,7 @@ class ELPAIR:
         except AttributeError as e:
             return ELPAIR(self.value,self.elop)
     
-class ELTERM:
+class ELTERM(ELSTRUCTURE):
     """ Internal representation of the terminal of the EL String
     Houses a value, which may be a rule, or array, or simple value
     """
@@ -198,7 +252,7 @@ class ELTERM:
         except AttributeError as e:
             return ELTERM(self.value)
     
-class ELRULE:
+class ELRULE(ELSTRUCTURE):
     """ Internal representation of a rule """
     def __init__(self,conditions,actions,binding_comparisons=[]):
         self.conditions = conditions
@@ -273,7 +327,7 @@ class ELRULE:
         return len(the_difference) == 0
         
 
-class ELVAR:
+class ELVAR(ELSTRUCTURE):
     """ An internal representation of a binding """
     def __init__(self,bindName):
         self.value = bindName
@@ -286,39 +340,13 @@ class ELVAR:
     def copy(self):
         return ELVAR(self.value)
 
-class ELARITH_FACT:
-    """ An internal representation of an arithmetic operator fact,
-    for use in actions 
-    Essentially a wrapper to house a fact, an operation, and a value to apply
-    """
-    def __init__(self, data=None, op=None, val=None):
-        if not (isinstance(data,ELFACT) or isinstance(data,ELVAR)):
-            raise ELE.ELConsistencyException('All Arith facts need a fact or variable as a base')
-        if not isinstance(op,ELARITH):
-            raise ELE.ELConsistencyException('Arith Fact missing an operator')
-        self.data=data #A fact
-        self.op = op   #an operator
-        self.val = val #a value or binding       
-
-    def __repr__(self):
-        return "|ARITH: {} ({} {}) |".format(self.data,EL_ARITH_2_STR(self.op), self.val)
-
-    def __str__(self):
-        op = EL_ARITH_2_STR(self.op)
-        return "{} {} {}".format(str(self.data),
-                                 op,
-                                 str(self.val))
-
-        
     
-    def copy(self):
-        return ELARITH_FACT(self.data.copy(),self.op,self.val.copy())
-    
-class ELFACT:
+class ELFACT(ELSTRUCTURE):
     """ An internal representation of an EL Fact string """
 
-    def __init__(self,data=None, r=False, bindings=None, negated=False):
+    def __init__(self,data=None, r=False, bindings=None, negated=False, filled_bindings={}):
         self.negated = negated
+        self.filled_bindings = filled_bindings
         if bindings is not None:
             self.bindings = bindings
         else:
@@ -333,7 +361,6 @@ class ELFACT:
     def bind(self,bindings):
         #return a copy of the fact, where the var has been switched out
         assert isinstance(bindings,dict)
-        assert len(bindings) > 0
         new_string = []
         new_pair = None
         for x in self.data:
@@ -343,8 +370,15 @@ class ELFACT:
                 new_pair = ELPAIR(bindings[x.value.value],x.elop)
             elif isinstance(x, ELTERM) and x.value.value in bindings:
                 new_pair = ELTERM(bindings[x.value.value])
+            elif x.isVar() and x.value.value not in bindings:
+                new_pair = x.copy()
             new_string.append(new_pair)
-        new_fact = ELFACT(new_string)
+        updated_bindings = self.filled_bindings.copy()
+        updated_bindings.update(bindings)
+        new_fact = ELFACT(new_string,
+                          bindings=self.bindings,
+                          filled_bindings=updated_bindings,
+                          negated=self.negated)
         return new_fact
         
     def split_into_var_sections(self):
@@ -360,8 +394,12 @@ class ELFACT:
             
     def copy(self):
         dataCopy = [x.copy() for x in self.data]
-        bindingsCopy = [x.copy() for x in self.bindings]
-        return ELFACT(dataCopy,bindings=bindingsCopy, negated=self.negated)
+        bindingsCopy = self.bindings.copy()
+        filled_bindings_copy = self.filled_bindings.copy()
+        return ELFACT(dataCopy,
+                      bindings=bindingsCopy,
+                      negated=self.negated,
+                      filled_bindings=filled_bindings_copy)
 
     def negate(self):
         self.negated = not self.negated
@@ -374,10 +412,16 @@ class ELFACT:
             return False
                 
     def __repr__(self):
-        return "| {} |" .format("".join([repr(x) for x in self]))
+        if self.negated:
+            return "| ~{} |".format("".join([repr(x) for x in self]))
+        else:
+            return "| {} |" .format("".join([repr(x) for x in self]))
 
     def __str__(self):
-        return "".join([str(x) for x in self.data])
+        if self.negated:
+            return "~{}".format("".join([str(x) for x in self.data]))
+        else:
+            return "".join([str(x) for x in self.data])
 
     def short_str(self):
         """ Get the string up to, but not including,
@@ -467,36 +511,41 @@ class ELFACT:
                     raise Exception("Fact is not valid: has Array in non-terminal")
         return True
 
-    
-class ELBIND:
-    """ An IR representation of the runtime 'bind' instruction """
-    def __init__(self,var, root):
-        if not (isinstance(root,ELFACT) or root is None):
-            raise ELE.ELConsistencyException("Global bindings need to use facts")
-        self.var = var
-        self.root = root
+class ELQUERY(ELSTRUCTURE):
+    """ A wrapper around a fact to signify it should be a query """
+    def __init__(self,fact):
+        if not isinstance(fact,ELFACT):
+            raise ELE.ELConsistencyException("Queries need a fact")
+        self.value = fact
 
+    def bind(self,bindings):
+        return ELQUERY(self.value.bind(bindings))
+        
+    def __eq__(self,query):
+        if isinstance(query,ELQUERY):
+            return self.value == query.value
+        elif isinstance(query,ELFACT):
+            return self.value == query
+        else:
+            return False
+        
     def __repr__(self):
-        return "({} <- {})".format(self.var, self.root)
+        return repr(self.value) + "?"
+
     def __str__(self):
-        return "{} <- {}".format(str(self.var), str(self.root))
-    def copy(self):
-        return ELBIND(self.var.copy(),self.root.copy())
+        return str(self.value) + "?"
     
-#results from Trie manipualtion:
+    def copy(self):
+        return ELQUERY(self.value.copy())
+
+    
+#----------
+#  Results
+#----------
+    
 class ELRESULT:
     """ Base Class of Results """
 
-class ELSuccess(ELRESULT):
-    """ Indication of success """
-    def __bool__(self):
-        return True    
-    def __eq__(self,other):
-        return other == True
-    def __repr__(self):
-        return "ELSuccess"
-
-    
 class ELFail(ELRESULT):
     """ Indication of failure """
     def __bool__(self):
@@ -506,9 +555,9 @@ class ELFail(ELRESULT):
     def __repr__(self):
         return "ELFailure"
 
-class ELGet(ELRESULT):
+class ELSuccess(ELRESULT):
     """ A Successful result """
-    def __init__(self,path=None,bindings={}):
+    def __init__(self,path=None,bindings=[(None,{})]):
         self.bindings = bindings
         self.path = path
         
@@ -541,6 +590,8 @@ class ELGet(ELRESULT):
 
     def __eq__(self,other):
         """ Compare a value to the internal value """
+        if isinstance(other,bool):
+            return True == other
         if isinstance(other,ELPAIR):
             return self.value == other.value
         elif isinstance(other,ELTERM):
@@ -548,7 +599,10 @@ class ELGet(ELRESULT):
         else:
             return self.value == other
 
-        
+
+#----------------------------------------
+##  CORE TRIE NODE
+#----------------------------------------
 class ELTrieNode:
     """ The internal node used for the Trie.
     Nominally an EL Operator (DOT or EX), and a value, usually a dict 
@@ -685,27 +739,4 @@ class ELTrieNode:
         return len(self.children) == 0
 
 
-class ELQUERY:
-    """ A wrapper around a fact to signify it should be a query """
-    def __init__(self,fact):
-        if not isinstance(fact,ELFACT):
-            raise ELE.ELConsistencyException("Queries need a fact")
-        self.value = fact
-
-    def __eq__(self,query):
-        if isinstance(query,ELQUERY):
-            return self.value == query.value
-        elif isinstance(query,ELFACT):
-            return self.value == query
-        else:
-            return False
-        
-    def __repr__(self):
-        return repr(self.value) + "?"
-
-    def __str__(self):
-        return str(self.value) + "?"
-    
-    def copy(self):
-        return ELQUERY(self.value.copy())
 
