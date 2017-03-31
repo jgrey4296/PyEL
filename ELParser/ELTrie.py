@@ -156,6 +156,7 @@ class ELTrie:
                 return ELBD.ELFail()
             return ELBD.ELSuccess(path=el_string,bindings=results)        
 
+    #the recursive call of get where most of the work goes on
     def sub_get(self, root, el_string, current_bindings={}, new_binding=None):
         internal_bindings = current_bindings.copy()
         if new_binding is not None:
