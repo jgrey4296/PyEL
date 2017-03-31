@@ -113,7 +113,7 @@ class ELTrie:
                 theTarget = self.allNodes[searchResult.bindings[0][0]]
             else:
                 return ELBD.ELFail()
-        elif isinstance(el_string, ELBD.ELGet):
+        elif isinstance(el_string, ELBD.ELSuccess):
             theTarget = self.allNodes[el_string.bindings[0][0]]
 
         if theTarget is None:
@@ -131,7 +131,7 @@ class ELTrie:
             raise ELE.ELConsistencyException("To query, wrap a fact in an ELBD.ELQUERY")
         result = self.get(query.value)
         #logging.info('Get Result: {}'.format(result))
-        if isinstance(result,ELBD.ELGet) and not query.value.negated:
+        if isinstance(result,ELBD.ELSuccess) and not query.value.negated:
             return result
         elif isinstance(result, ELBD.ELFail) and query.value.negated:
             return ELBD.ELSuccess()
@@ -143,18 +143,18 @@ class ELTrie:
         assert isinstance(el_string, ELBD.ELFACT)
         assert el_string.is_valid_for_searching()
         #todo: deal with non-root starts
-        results = self.sub_get(self.root, el_string.data[1:])
+        results = self.sub_get(self.root, el_string.data[1:], el_string.filled_bindings)
         if len(results) == 1 and isinstance(results[0], ELBD.ELFail):
             return ELBD.ELFail()
         if len(results) == 1 and len(results[0]) == 0:
-            return ELBD.ELGet(path=el_string,bindings=results)
+            return ELBD.ELSuccess(path=el_string,bindings=results)
         else:
             #verify all bindings are the same:
             first = results[0][1].keys()
             allSame = all([first == bindings.keys() for node,bindings in results])
             if not allSame:
                 return ELBD.ELFail()
-            return ELBD.ELGet(path=el_string,bindings=results)        
+            return ELBD.ELSuccess(path=el_string,bindings=results)        
 
     def sub_get(self, root, el_string, current_bindings={}, new_binding=None):
         internal_bindings = current_bindings.copy()
