@@ -196,33 +196,6 @@ class ELRuntime:
             raise ELE.ELConsistencyException('{} : Getting a rule, but its not in the dict'.format(name))
         return self.rules[name]
             
-    #Bindings
-    def push_frame(self,frame={}):
-        self.bindings.append(frame)
-
-    def pop_frame(self):
-        if len(self.bindings) > 1:
-            self.bindings.pop()
-
-    def set_binding(self,var,val):
-        """ Stores the fact string location of a value
-        Bindings are essentially pointers into the trie
-        """
-        if not isinstance(val, ELBD.ELFACT):
-            raise Exception('Bindings are the path to the value')
-        self.bindings[-1][var.value] = val
-
-    def get_binding(self,var):
-        #from top to bottom, find the first var that fits
-        local_copy = self.bindings.copy()
-        local_copy.reverse()
-        returnVal = None
-        for frame in local_copy:
-            if var.value in frame:
-                returnVal = frame[var.value]
-                break
-        return returnVal
-
     #history:
     def add_change(self,changes):
         None
