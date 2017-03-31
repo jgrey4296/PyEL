@@ -135,7 +135,7 @@ class ELROOT:
     def copy(self):
         return ELROOT(self.elop)
 
-    def isVar():
+    def isVar(self):
         return False;
     
 class ELPAIR:
@@ -183,7 +183,11 @@ class ELTERM:
         return "{} ||".format(repr(self.value))
 
     def __str__(self):
-        return str(self.value)
+        value = str(self.value)
+        if value[-1] == '.' or value[-1] == '!':
+            return value[0:-1]
+        else:
+            return value
     
     def __eq__(self,other):
         return self.value == other.value
@@ -220,6 +224,7 @@ class ELRULE:
         self.action_bindings = non_arith_vars.union(arith_fact_vars).union(arith_fact_vars, \
                                                                            arith_raw_vars, \
                                                                            arith_values)
+        
     def __hash__(self):
         return hash(repr(self))
 
@@ -330,17 +335,18 @@ class ELFACT:
         assert isinstance(bindings,dict)
         assert len(bindings) > 0
         new_string = []
+        new_pair = None
         for x in self.data:
             if not x.isVar():
-                new_string.append(x)
+                new_pair = x
             elif isinstance(x, ELPAIR) and x.value.value in bindings:
-                newPair = ELPAIR(bindings[x.value.value],x.elop)
-                new_string.append(newPair)
+                new_pair = ELPAIR(bindings[x.value.value],x.elop)
             elif isinstance(x, ELTERM) and x.value.value in bindings:
-                newPair = ELTERM(bindings[x.value.value])
-                new_string.append(newPair)
-        return ELFACT(new_string)
-
+                new_pair = ELTERM(bindings[x.value.value])
+            new_string.append(new_pair)
+        new_fact = ELFACT(new_string)
+        return new_fact
+        
     def split_into_var_sections(self):
         sections = [[]]
         for d in self.data:
@@ -376,7 +382,11 @@ class ELFACT:
     def short_str(self):
         """ Get the string up to, but not including,
         the last entry in the fact """
-        return "".join([str(x) for x in self.data[0:-1]])
+        value =  "".join([str(x) for x in self.data[0:-1]])
+        if value[-1] == '.' or value[-1] == '!':
+            return value[0:-1]
+        else:
+            return value
     
     def __len__(self):
         return len(self.data[1:])
@@ -395,23 +405,36 @@ class ELFACT:
         self.data.append(statement)
         return self
 
+    def var(self,*args):
+        """ Utility for easy construction of a variable """
+        var = ELPAIR(ELVAR(*args))
+        return self.push(var)
+    
     def pair(self,*args):
         """ Utility for easy construction of a fact:
         Internally create a new ELPAIR
         """
         return self.push(ELPAIR(*args))
 
+    def evar(self,*args):
+        """ Utility for easy construction of an exclusive variable """
+        var = ELPAIR(ELVAR(*args),EL.EX)
+            
     def epair(self,arg):
         """ Utility for easy construction of a fact:
         Internally create a new Exclusive ELPair
         """
         return self.push(ELPAIR(arg,EL.EX))
 
+    def vterm(self,*args):
+              return self.push(ELTERM(ELVAR(*args)))
+    
     def term(self,*args):
         """ Utility for construction of a new fact:
         Internally create a new terminal
         """
         return self.push(ELTERM(*args))
+
     
     def pop(self):
         """ Get the last element of the fact """
