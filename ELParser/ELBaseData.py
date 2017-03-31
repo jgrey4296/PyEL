@@ -170,7 +170,9 @@ class ELBIND(ELAction):
 #----------
     
 class ELSTRUCTURE:
-    None
+
+    def isVar(self):
+        return False
 
 class ELROOT(ELSTRUCTURE):
     """ The Representation of the Trie root """
@@ -189,8 +191,6 @@ class ELROOT(ELSTRUCTURE):
     def copy(self):
         return ELROOT(self.elop)
 
-    def isVar(self):
-        return False;
     
 class ELPAIR(ELSTRUCTURE):
     """ Internal pairs of statements of |test.|blah!|something.|
@@ -380,18 +380,7 @@ class ELFACT(ELSTRUCTURE):
                           filled_bindings=updated_bindings,
                           negated=self.negated)
         return new_fact
-        
-    def split_into_var_sections(self):
-        sections = [[]]
-        for d in self.data:
-            if isinstance(d,ELTERM):
-                sections[-1].append(d.value)
-            elif not isinstance(d,ELVAR):
-                sections[-1].append(d)
-            else:
-                sections[-1].append(d)
-                sections.append([])
-            
+             
     def copy(self):
         dataCopy = [x.copy() for x in self.data]
         bindingsCopy = self.bindings.copy()
@@ -440,7 +429,8 @@ class ELFACT(ELSTRUCTURE):
 
     def __getitem__(self,i):
         return self.data[i]
-    
+
+    # Construction Utilities:
     def root(self):
         return self.data[0]
     
@@ -545,11 +535,15 @@ class ELQUERY(ELSTRUCTURE):
     
 class ELRESULT:
     """ Base Class of Results """
+    def __bool__(self):
+        return False
+    def __eq__(self,other):
+        return False
+    def __repr__(self):
+        raise Exception('This should exist')
 
 class ELFail(ELRESULT):
     """ Indication of failure """
-    def __bool__(self):
-        return False
     def __eq__(self,other):
         return other == False
     def __repr__(self):
