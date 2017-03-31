@@ -717,7 +717,7 @@ class ELTrieNode:
             elif isinstance(key.value,ELRULE):
                 return key.value in self.keys()
             elif isinstance(key.value,ELVAR):
-                raise Exception('checking a trie for a var doesnt make sense')
+                raise Exception('checking a trie for a var doesnt make sense: {}'.format(key.value))
             else:
                 return key.value in self.children 
         else:
