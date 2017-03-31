@@ -12,6 +12,8 @@ import IPython
 import ELParser
 from ELParser import ELParser, ELTrie
 from ELParser import ELBaseData as ELBD
+from ELParser import ELExceptions as ELE
+
 
 
 class ELRuntime:
@@ -153,12 +155,19 @@ class ELRuntime:
 
     #Rule store:
     def add_rule(self,name,rule):
+        if name in self.rules:
+            raise ELE.ELConsistencyException('{} already stored as a rule already'.format(name))
         self.rules[name] = rule        
 
     def remove_rule(self,name):
         if name in self.rules:
             del self.rules[name]
 
+    def get_rule(self,name):
+        if name not in self.rules:
+            raise ELE.ELConsistencyException('{} : Getting a rule, but its not in the dict'.format(name))
+        return self.rules[name]
+            
     #Bindings
     def push_frame(self,frame={}):
         self.bindings.append(frame)
