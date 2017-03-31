@@ -163,7 +163,7 @@ class ELRuntime:
         #todo: make the parser check for unbound variables before adding to runtime
         for action in rule.actions:
             bound_action = action.bind(selection)
-            self.act(action)
+            self.act(bound_action)
         #then pop the frame off
         self.pop_stack()
 
