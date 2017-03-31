@@ -162,11 +162,19 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertFalse(self.runtime('.this.is.a.second.fact?'))
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.this.is.a.second.fact?'))
-        
-        
+        self.assertFalse(self.runtime('.this.is.a.different.fact?'))
+        self.assertTrue(self.runtime('~.this.is.a.different.fact?'))
 
     def test_rule_binding(self):
-        None
+        self.runtime('.this.is.a.first.fact')
+        self.runtime('.this.is.a.rule.{ .this.is.a.first.$x? -> .this.is.a.second.$x }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.this.is.a.second.fact?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.this.is.a.second.fact?'))
+        
 
     def test_rule_arith_action(self):
         None
