@@ -46,26 +46,26 @@ class ELRuntime_Tests(unittest.TestCase):
         """ check an asserted fact can be tested for """
         test_fact = ".this.is.a.test"
         self.runtime(test_fact)
-        self.assertTrue(self.runtime.query_b(test_fact + "?"))
+        self.assertTrue(self.runtime(test_fact + "?"))
 
     def test_simple_fact_query_fail(self):
         """ Check a non asserted fact fails a query """
         test_fact = ".this.hasnt.been.added"
-        self.assertFalse(self.runtime.query_b(test_fact + "?"))
+        self.assertFalse(self.runtime(test_fact + "?"))
         
     def test_multi_fact_assertion(self):
         """ Check multiple assertions in are all added """
         facts = [".this.is.a.test", ".this.is.another.test", ".and.a.third"]
         self.runtime("\n".join(facts))
         for fact in facts:
-            self.assertTrue(self.runtime.query_b(fact + "?"))
+            self.assertTrue(self.runtime(fact + "?")[0])
 
     def test_multi_query(self):
         """ Check multiple queries at the same time work """
         facts = [".this.is.a.test", ".this.is.another.test", ".and.a.third"]
         self.runtime("\n".join(facts))
         as_queries = [x + "?" for x in facts]
-        self.assertTrue(self.runtime.query_b("\n".join(as_queries)))
+        self.assertTrue(self.runtime("\n".join(as_queries)))
 
     def test_multi_query_fail(self):
         """ check that a multi query fails if one of the conditions fails """
@@ -73,14 +73,14 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime("\n".join(facts))
         as_queries = [x+"?" for x in facts]
         as_queries.append(".and.a.third?")
-        self.assertFalse(self.runtime.query_b("\n".join(as_queries)))
+        self.assertFalse(all(self.runtime("\n".join(as_queries))))
         
     def test_query_call(self):
         """ Check queries can be triggered by calling the runtime """
         base_fact = ".this.is.a.test"
         query = ".this.is?"
         self.runtime(base_fact)
-        self.assertTrue(self.runtime(query)[0])
+        self.assertTrue(self.runtime(query))
         
         
     def test_simple_fact_retraction(self):
@@ -89,37 +89,42 @@ class ELRuntime_Tests(unittest.TestCase):
         retract_fact = "~.retraction.test.this.is"
         query = ".retraction.test.this.is.a.test?"
         self.runtime(assert_fact)
-        self.assertTrue(self.runtime.query_b(query))
+        self.assertTrue(self.runtime(query))
         self.runtime(retract_fact)
-        self.assertFalse(self.runtime(query)[0])
+        self.assertFalse(self.runtime(query))
         
     def test_negated_query(self):
         """ Check queries can test for negatives """  
         base_fact = ".this.is.a.test"
         query = "~.this.is.a.test?"
-        self.assertTrue(self.runtime(query)[0])
+        self.assertTrue(self.runtime(query))
         self.runtime(base_fact)
-        self.assertFalse(self.runtime(query)[0])
+        self.assertFalse(self.runtime(query))
         
     def test_exclusion_semantics(self):
         """ Check the exclusion will override """
         self.runtime(".this.is.a.test")
         self.runtime(".this.is.a.blah")
-        self.assertTrue(all(self.runtime(".this.is.a.test?\n.this.is.a.blah?")))
+        self.assertTrue(self.runtime(".this.is.a.test?\n.this.is.a.blah?"))
         self.runtime(".this.is.a!bloo")
-        self.assertTrue(all(self.runtime("~.this.is.a.test?\n~.this.is.a.blah?\n.this.is.a!bloo?")))
+        result = self.runtime("~.this.is.a.test?\n~.this.is.a.blah?\n.this.is.a!bloo?")
+        print('Exclusion semantic result: {}'.format(result))
+        self.assertTrue(result)
 
     def test_exclusion_query_resolution(self):
         """ Test that an queries respect exclusion operators """
         self.runtime(".this.is.a!test")
-        self.assertFalse(self.runtime(".this.is.a.test?")[0])
-        self.assertTrue(self.runtime(".this.is.a!test?")[0])
+        self.assertFalse(self.runtime(".this.is.a.test?"))
+        result = self.runtime(".this.is.a!test?")
+        print('Exclusion query result: {}'.format(result))
+        self.assertTrue(result)
+              
 
 
     def test_rule_definition(self):
         """ Check that rules can be asserted """
         self.runtime(".this.is.a.test.rule.{ [] -> [] }")
-        self.assertTrue(self.runtime(".this.is.a.test.rule?")[0])
+        self.assertTrue(self.runtime(".this.is.a.test.rule?"))
         self.assertTrue(".this.is.a.test.rule" in self.runtime.rules)
 
     def test_getting_variables(self):
@@ -127,10 +132,11 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime(".this.is.a.test\n.this.is.a.second")
         parsed = ELPARSE(".this.is.a.$x?")[0]
         results = self.runtime.fact_query(parsed)
-        self.assertTrue(results)
-        self.assertIsInstance(results,ELBD.ELGet)
-        self.assertEqual(len(results),2)
-        bindings = [x[1] for x in results.bindings]
+        self.assertEqual(len(results),1)
+        self.assertTrue(results[0])
+        self.assertIsInstance(results[0],ELBD.ELSuccess)
+        self.assertEqual(len(results[0]),2)
+        bindings = [x[1] for x in results[0].bindings]
         self.assertIn({'x': 'test'}, bindings)
         self.assertIn({'x': 'second'}, bindings)
 
@@ -141,8 +147,8 @@ class ELRuntime_Tests(unittest.TestCase):
         parsed = ELPARSE(".this.is.a.$x.$y?")[0]
         results = self.runtime.fact_query(parsed)
         self.assertTrue(results)
-        self.assertEqual(len(results),2)
-        bindings = [x[1] for x in results.bindings]
+        self.assertEqual(len(results[0]),2)
+        bindings = [x[1] for x in results[0].bindings]
         self.assertIn({'x':'first','y':'test'}, bindings)
         self.assertIn({'x':'second','y':'blahh'}, bindings)
                     
@@ -153,9 +159,9 @@ class ELRuntime_Tests(unittest.TestCase):
         parsed = ELPARSE(".this.is.a.rule")[0]
         parse_hash = str(parsed)
         the_rule = self.runtime.get_rule(parse_hash)
-        self.assertFalse(all(self.runtime('.this.is.a.second.fact?')))
+        self.assertFalse(self.runtime('.this.is.a.second.fact?'))
         self.runtime.run_rule(the_rule)
-        self.assertTrue(all(self.runtime('.this.is.a.second.fact?')))
+        self.assertTrue(self.runtime('.this.is.a.second.fact?'))
         
         
 
