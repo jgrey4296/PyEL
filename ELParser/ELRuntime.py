@@ -8,6 +8,7 @@ logging = root_logger.getLogger(__name__)
 from enum import Enum
 from collections import namedtuple
 from fractions import Fraction
+from random import choice
 import IPython
 import ELParser
 from ELParser import ELParser, ELTrie
@@ -28,24 +29,39 @@ class ELRuntime:
         self.rules = {}
         #list of tuples (asserted, retracted) for each action?
         self.history = []
-        #Stack of dictionaries of bindings and their values
-        self.bindings = [{}]
+        #2d stack of binding possibilities
+        #ie: bindings[0] = set({}) where each {} is a set of bindings
+        self.bindings = [[{}]]
 
     def __call__(self,string):
         """ Parse a string, act accordingly with the results """
         parsed_representations = self.parser(string)
+        #todo: return a {status: bool, data: [] } obj
         actResults = []
         for r in parsed_representations:
             actResults.append(self.act(r))
-        return actResults
 
-            
-    def query_b(self,string):
-        """ Utility for querying to get a boolean result """
-        parsed = self.parser(string)
-        results = [self.fact_query(x) for x in parsed]
-        return all(results)
-            
+        if len(actResults) == 0:
+            return None
+        if len(actResults) == 1:
+            return actResults[0]
+        else:
+            return actResults
+
+    def add_stack(self):
+        current = self.bindings[-1]
+        copied = [x.copy() for x in current]
+        self.bindings.append(copied)
+
+    def replace_stack(self,frame):
+        self.bindings[-1] = frame
+
+    def top_stack(self):
+        return self.bindings[-1]
+        
+    def pop_stack(self):
+        self.bindings.pop()
+    
     def run(self):
         """ run the simulation """
         None
@@ -65,20 +81,19 @@ class ELRuntime:
                 logging.debug("Hit an assertion")
                 result = self.fact_assert(action)
         elif isinstance(action,ELBD.ELRULE):
-            self.push_frame()
             result = self.run_rule(action)
-            self.pop_frame()
         elif isinstance(action,ELBD.ELBIND):
             #Binding, update current stack
             self.set_binding(action.var,action.root)
         elif isinstance(action,ELBD.ELARITH_FACT):
             #todo: enact arithmetic on the fact /binding
-                        
             None
         elif isinstance(action,ELBD.ELQUERY):
             #Don't replace vars with bindings, populate them
             logging.info("Querying")
+            self.add_stack()
             result = self.fact_query(action)
+            self.pop_stack()
             logging.info('Query Result: {}'.format(result))
 
         return result
@@ -91,7 +106,7 @@ class ELRuntime:
 
     def fact_assert(self,fact):
         """ Add a fact """
-        #todo: fill out bindings
+        #todo: bind?
         #bindings are ELVAR -> ELPAIR in f(fact)->fact
         
         self.trie.push(fact)
@@ -100,44 +115,57 @@ class ELRuntime:
 
     def fact_retract(self,fact):
         """ Remove a fact """
-        #todo: fill out bindings
+        #todo: fill out bindings?
         self.trie.pop(fact)
         if isinstance(fact[-1].value, ELBD.ELRULE):
             self.remove_rule(fact.short_str())
         
-    def fact_query(self,fact):
+    def fact_query(self,query):
         """ Test a fact,  """
-        if not isinstance(fact,ELBD.ELQUERY):
+        if not isinstance(query,ELBD.ELQUERY):
             raise ELE.ELConsistencyException('Querying requires the use of a query')
-        #todo: split into sections [root - var_n, var_n+1 - var_n',var_'+1..]
-        
-        
-        #For each section, test then aggregate
 
-        #test first section, get results
-        #make new fact strings, replacing VAR with ELPAIRs
-        #combine with next section, repeat
+        current_frame = self.top_stack()
+        if len(current_frame) == 0:
+            return ELBD.ELFail()
+        #fill in any variables from the current bindings
+        bound = [query.bind(x) for x in current_frame]
+        #then query
+        results = [self.trie.query(x) for x in bound]
+        #then integrate into bindings:
+        successes = [x for x in results if x == True]
+        updated_frame = [bindPair[1] for x in successes for bindPair in x.bindings]
+        self.replace_stack(updated_frame)
 
-        #then return only the total passing tree of bindings
-        return self.trie.query(fact)
+        
+        if len(updated_frame) > 0:        
+            return successes
+        else:
+            return ELBD.ELFail()
 
     def run_rule(self,rule):
         """ Given a rule, check its conditions then queue its results """
+        self.add_stack()
         truthiness = False
         condition_truths_and_bindings = [self.fact_query(x) for x in rule.conditions]
-        #filter for consistency between conditions
+        if len(condition_truths_and_bindings) == 0 or isinstance(condition_truths_and_bindings[-1], ELBD.ELFail):
+            self.pop_stack()
+            return
         
+        final_bindings = self.top_stack()
         #add retrieved values from conditions as bindings
 
         #perform comparisons
 
+        #select a still viable rule
+        selection = choice(final_bindings)
         
-        if truthiness:
-            for action in rule.actions:
-                #binding occurs as part of assertion/retraction,
-                #BUT make sure the right frame is on
-                self.act(action)
-                #then pop the frame off
+        #todo: make the parser check for unbound variables before adding to runtime
+        for action in rule.actions:
+            bound_action = action.bind(selection)
+            self.act(action)
+        #then pop the frame off
+        self.pop_stack()
 
     def format_string(self,format_string):
         """ Given a format_string, use defined variables in the runtime
