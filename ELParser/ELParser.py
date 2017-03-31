@@ -183,10 +183,10 @@ ARITH_FACT = (FACT | VAR) + pp.Group(ARITH + (VAR | NUM)).setResultsName(str(PAR
 ARITH_FACT_ARRAY = array_template(ARITH_FACT | FACT,brackets_optional=True)
 
 #a Rule of conditions -> actions
-EL_RULE = s(O_BRACE) - opLn - \
+EL_RULE = s(O_BRACE) + opLn + \
           EL_CONDITIONS.setResultsName(str(PARSENAMES.CONDITIONS)) - \
-          op(s(VBAR) - pp.Group(EL_COMPARISON_ARRAY).setResultsName(str(PARSENAMES.BINDCOMPS))) - \
-          opLn - ARROW - opLn - \
+          op(s(VBAR) - pp.Group(EL_COMPARISON_ARRAY).setResultsName(str(PARSENAMES.BINDCOMPS))) + \
+          opLn + ARROW + opLn + \
           ARITH_FACT_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) - \
           opLn - s(C_BRACE)
 
