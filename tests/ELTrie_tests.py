@@ -59,7 +59,7 @@ class ELParser_Tests(unittest.TestCase):
         add_response = self.trie.push(base_fact)
         result = self.trie.get(ELBD.ELFACT([base_root]))
         self.assertTrue(add_response)
-        self.assertIsInstance(result,ELBD.ELGet)
+        self.assertIsInstance(result,ELBD.ELSuccess)
         retrieved_node = self.trie[result.bindings[0][0]]
         self.assertEqual(retrieved_node,"ROOT")
         #One child only
@@ -150,7 +150,7 @@ class ELParser_Tests(unittest.TestCase):
         #Check the test node:
         test_node_result = self.trie.get(ELBD.ELFACT(r=True).pair('test'))
         self.assertTrue(test_node_result)
-        self.assertIsInstance(test_node_result, ELBD.ELGet)
+        self.assertIsInstance(test_node_result, ELBD.ELSuccess)
         test_node_uuid = test_node_result.bindings[0][0]
         test_node_actual = self.trie[test_node_uuid]
         self.assertEqual(len(test_node_actual),1)
@@ -162,7 +162,7 @@ class ELParser_Tests(unittest.TestCase):
         self.assertTrue(successOrFail)
         result = self.trie.get(ELBD.ELFACT(r=True).epair("test"))
         self.assertTrue(result)
-        self.assertIsInstance(result,ELBD.ELGet)
+        self.assertIsInstance(result,ELBD.ELSuccess)
 
     def test_non_exclusion_lift_to_exclusion(self):
         """ Check lifting a trie node to exclusive works
@@ -254,10 +254,10 @@ class ELParser_Tests(unittest.TestCase):
         self.assertTrue(s)
         gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b").term(1.5))
         self.assertTrue(gotten)
-        self.assertIsInstance(gotten, ELBD.ELGet)
+        self.assertIsInstance(gotten, ELBD.ELSuccess)
         gotten2 = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b"))
         self.assertTrue(gotten2)
-        self.assertIsInstance(gotten2, ELBD.ELGet)
+        self.assertIsInstance(gotten2, ELBD.ELSuccess)
 
     def test_fraction(self):
         """ Check .a.b.1/5 works """
@@ -387,7 +387,7 @@ class ELParser_Tests(unittest.TestCase):
         query_fact = ELBD.ELFACT(r=True).pair('a').term(ELBD.ELVAR('x'))
         results = self.trie.get(query_fact)
         self.assertTrue(results)
-        self.assertIsInstance(results,ELBD.ELGet)
+        self.assertIsInstance(results,ELBD.ELSuccess)
         self.assertEqual(results.path, query_fact)
         self.assertEqual(len(results),2)
         bindings = [x[1] for x in results.bindings]
@@ -406,7 +406,7 @@ class ELParser_Tests(unittest.TestCase):
         query_fact = ELBD.ELFACT(r=True).pair('a').term(ELBD.ELVAR('x'))
         results = self.trie.get(query_fact)
         self.assertTrue(results)
-        self.assertIsInstance(results,ELBD.ELGet)
+        self.assertIsInstance(results,ELBD.ELSuccess)
         self.assertEqual(results.path, query_fact)
         bindings = [x[1] for x in results.bindings]
         self.assertEqual(len(results.bindings),1)        
@@ -425,7 +425,7 @@ class ELParser_Tests(unittest.TestCase):
         self.trie.push(base_fact2)
         query = ELBD.ELFACT(r=True).pair('a').pair(ELBD.ELVAR('x')).pair('c').term(ELBD.ELVAR('y'))
         results = self.trie.get(query)
-        self.assertIsInstance(results,ELBD.ELGet);
+        self.assertIsInstance(results,ELBD.ELSuccess);
         self.assertEqual(results.path, query)
         self.assertEqual(len(results.bindings),2)
 
@@ -444,7 +444,7 @@ class ELParser_Tests(unittest.TestCase):
         self.trie.push(base_fact2)
         query = ELBD.ELFACT(r=True).pair('a').pair(ELBD.ELVAR('x')).pair('c').term(ELBD.ELVAR('y'))
         results = self.trie.get(query);
-        self.assertIsInstance(results,ELBD.ELGet);
+        self.assertIsInstance(results,ELBD.ELSuccess);
         self.assertEqual(results.path, query)
         self.assertEqual(len(results.bindings),2)
         bindings = [x[1] for x in results.bindings]
@@ -461,7 +461,7 @@ class ELParser_Tests(unittest.TestCase):
         self.trie.push(base_fact2)        
         query = ELBD.ELFACT(r=True).pair('a').pair(ELBD.ELVAR('x')).pair('c').term(ELBD.ELVAR('y'))
         results = self.trie.get(query);
-        self.assertIsInstance(results,ELBD.ELGet);
+        self.assertIsInstance(results,ELBD.ELSuccess);
         self.assertEqual(results.path, query)
         self.assertEqual(len(results.bindings),1)
 
