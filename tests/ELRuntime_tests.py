@@ -120,7 +120,7 @@ class ELRuntime_Tests(unittest.TestCase):
         """ Check that rules can be asserted """
         self.runtime(".this.is.a.test.rule.{ [] -> [] }")
         self.assertTrue(self.runtime(".this.is.a.test.rule?")[0])
-        self.assertTrue(".this.is.a.test.rule." in self.runtime.rules)
+        self.assertTrue(".this.is.a.test.rule" in self.runtime.rules)
 
     def test_getting_variables(self):
         """ Check that querying can retrieve potential bindings """
@@ -146,10 +146,18 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertIn({'x':'first','y':'test'}, bindings)
         self.assertIn({'x':'second','y':'blahh'}, bindings)
                     
-        
 
     def test_rule_firing(self):
-        None
+        self.runtime(".this.is.a.first.fact")
+        self.runtime(".this.is.a.rule.{ .this.is.a.first? -> .this.is.a.second.fact }")
+        parsed = ELPARSE(".this.is.a.rule")[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(all(self.runtime('.this.is.a.second.fact?')))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(all(self.runtime('.this.is.a.second.fact?')))
+        
+        
 
     def test_rule_binding(self):
         None
