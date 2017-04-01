@@ -22,6 +22,8 @@ class ELConsistencyException(ELException):
     """ The Exception raised when a static analysis exception occurs """
     None
 
-
+class ELRuleException(ELException):
+    """ A Failure occured in the course of running a rule """
+    None
     
     
