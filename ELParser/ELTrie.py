@@ -129,6 +129,7 @@ class ELTrie:
         """ Given an EL String, test the Trie to see if it is true """
         if not isinstance(query,ELBD.ELQUERY):
             raise ELE.ELConsistencyException("To query, wrap a fact in an ELBD.ELQUERY")
+        #result :: ELFail | ELSuccess
         result = self.get(query.value)
         #logging.info('Get Result: {}'.format(result))
         if isinstance(result,ELBD.ELSuccess) and not query.value.negated:
@@ -144,18 +145,15 @@ class ELTrie:
         assert el_string.is_valid_for_searching()
         #todo: deal with non-root starts
         results = self.sub_get(self.root, el_string.data[1:], el_string.filled_bindings)
-        if len(results) == 1 and isinstance(results[0], ELBD.ELFail):
-            return ELBD.ELFail()
-        if len(results) == 1 and len(results[0]) == 0:
-            return ELBD.ELSuccess(path=el_string,bindings=results)
-        else:
+        returnVal = ELBD.ELFail()
+        if isinstance(results,list) and not isinstance(results[0], ELBD.ELFail):
             #verify all bindings are the same:
-            first = results[0][1].keys()
-            allSame = all([first == bindings.keys() for node,bindings in results])
-            if not allSame:
-                return ELBD.ELFail()
-            return ELBD.ELSuccess(path=el_string,bindings=results)        
-
+            firstKeys = results[0][1].keys()
+            allSame = all([firstKeys == bindings.keys() for node,bindings in results])
+            if allSame:
+                returnVal = ELBD.ELSuccess(path=el_string,bindings=results)        
+        return returnVal
+                
     #the recursive call of get where most of the work goes on
     def sub_get(self, root, el_string, current_bindings={}, new_binding=None):
         internal_bindings = current_bindings.copy()
@@ -196,8 +194,9 @@ class ELTrie:
         results = [x for x in results if not isinstance(x, ELBD.ELFail)]
         #if nothing remains, return just an ELFail
         if len(results) == 0 and containsAFail:
-            results = [ ELBD.ELFail()]
+            results = [ ELBD.ELFail() ]
         elif len(results) == 0:
             results = [ (current.uuid,internal_bindings) ]
+        #results are: [ ELFail | (uuid, bindings) ]
         return results
         
