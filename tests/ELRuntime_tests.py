@@ -131,7 +131,7 @@ class ELRuntime_Tests(unittest.TestCase):
         """ Check that querying can retrieve potential bindings """
         self.runtime(".this.is.a.test\n.this.is.a.second")
         parsed = ELPARSE(".this.is.a.$x?")[0]
-        results = self.runtime.fact_query(parsed)
+        results = self.runtime.fact_query(parsed)[0]
         self.assertEqual(len(results),1)
         self.assertTrue(results[0])
         self.assertIsInstance(results[0],ELBD.ELSuccess)
@@ -145,7 +145,7 @@ class ELRuntime_Tests(unittest.TestCase):
         """ Check that multiple variables in a string are retrieved correctly """
         self.runtime(".this.is.a.first.test\n.this.is.a.second.blahh")
         parsed = ELPARSE(".this.is.a.$x.$y?")[0]
-        results = self.runtime.fact_query(parsed)
+        results = self.runtime.fact_query(parsed, self.runtime.top_stack())[0]
         self.assertTrue(results)
         self.assertEqual(len(results[0]),2)
         bindings = [x[1] for x in results[0].bindings]
@@ -174,8 +174,97 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertFalse(self.runtime('.this.is.a.second.fact?'))
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.this.is.a.second.fact?'))
-        
 
+    def test_rule_multi_binding(self):
+        self.runtime('.this.is.a.first.fact')
+        self.runtime('.this.rule.{ .this.is.a.$x.$y? -> .this.is.a.$y.$x }')
+        parsed = ELPARSE('.this.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.this.is.a.fact.first?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.this.is.a.fact.first?'))
+
+    def test_rule_multi_binding_across_conditions(self):
+        self.runtime('.this.is.an.afact.a')
+        self.runtime('.this.is.a.bfact.b')
+        self.runtime('.this.is.a.rule.{ .this.is.an.afact.$x?, .this.is.a.bfact.$y? -> .the.combination.is.$x.$y }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.the.combination.is.a.b?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.the.combination.is.a.b?'))
+        
+    def test_rule_multi_action(self):
+        self.runtime('.this.is.an.afact.a')
+        self.runtime('.this.is.a.rule.{ .this.is.an.afact? -> .response.first, .response.second }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.response.first?'))
+        self.assertFalse(self.runtime('.response.second?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.response.first?'))
+        self.assertTrue(self.runtime('.response.second?'))
+        
+    def test_rule_multi_action_binding(self):
+        self.runtime('.this.is.an.afact.a')
+        self.runtime('.this.is.a.rule.{ .this.is.an.afact.$x? -> .response.first.$x, .response.second.$x }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.response.first.a?'))
+        self.assertFalse(self.runtime('.response.second.a?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.response.first.a?'))
+        self.assertTrue(self.runtime('.response.second.a?'))
+        
+    def test_rule_mutli_binding_multi_action(self):
+        self.runtime('.this.is.an.afact.a')
+        self.runtime('.this.is.a.bfact.b')
+        self.runtime('.this.is.a.rule.{ .this.is.an.afact.$x?, .this.is.a.bfact.$y? -> .response.first.$x, .response.second.$y }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.response.first.a?'))
+        self.assertFalse(self.runtime('.response.second.b?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.response.first.a?'))
+        self.assertTrue(self.runtime('.response.second.b?'))
+        
+    def test_rule_binding_union(self):
+        """  Ensure that .$x matches across all conditions """
+        self.runtime('.first.x.blah')
+        self.runtime('.second.x.bloo')
+        self.runtime('.second.y.awef')
+        self.runtime('.this.is.a.rule.{ .first.$x.$y?, .second.$x.$z? -> .third.$x.$y.$z }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.third.x.blah.bloo?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.third.x.blah.bloo?'))
+
+    def test_rule_exclusion(self):
+        self.runtime('.first!x')
+        self.runtime('.this.is.a.rule.{ .first!$x? -> .first!y, .second!$x }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(all(self.runtime('.first!y?\n.second!x?')))
+        result = self.runtime('~.first!y?\n~.second!x?')
+        print('result: {}'.format(result))
+        self.assertTrue(all(result))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(all(self.runtime('.first!y?\n.second!x?')))
+                        
+
+
+
+
+        
+        
     def test_rule_arith_action(self):
         None
 
