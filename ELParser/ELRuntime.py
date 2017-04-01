@@ -203,7 +203,7 @@ class ELRuntime:
         #get values from bindings:
         if comparison.b1.value not in binding or comparison.b2.value not in binding :
             raise ELE.ELConsistencyException('Comparison being run without the necessary bindings')
-        
+        #todo: have a 'get variable from binding' function to take into account array access?
         val1 = binding[comparison.b1.value]
         val2 = binding[comparison.b2.value]
         if comparison.op == ELBD.ELCOMP.NEAR:
