@@ -339,7 +339,7 @@ class ELParser_Tests(unittest.TestCase):
 
     def test_arith_action_using_var_not_fact(self):
         """ .this.is.a.rule.{ .a.b.$c? -> $c + 2 } """
-        test_fact = ".this.is.a.rule.{ .a.b.$c? -> $c + 2 } "
+        test_fact = ".this.is.a.rule.{ .a.b.$c? -> $c + 2 }"
         result = self.parser(test_fact)
         self.assertIn('c',result[0][-1].value.condition_bindings)
         self.assertIn('c',result[0][-1].value.action_bindings)
@@ -365,7 +365,7 @@ class ELParser_Tests(unittest.TestCase):
 
     def test_rule_binding_comparisons(self):
         """ test .this.is.a.rule.{[.a.b.c.$1?,.a.b.d.$2?] | [$1 < $2] -> []} """
-        test_fact = """.this.is.a.rule.{.a.b.c.$1?,.a.b.d.$2? | 
+        test_fact = """.this.is.a.rule.{ .a.b.c.$1?, .a.b.d.$2? | 
         $1 > $2, $1 < $2, $1 >= $2, $1 <= $2, $1 == $2, $1 != $2, $1 @ $2, $1 !@ $2 -> []}"""
         result = self.parser(test_fact)
         comparisons = result[0][-1].value.binding_comparisons
