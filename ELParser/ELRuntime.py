@@ -14,7 +14,7 @@ import ELParser
 from ELParser import ELParser, ELTrie
 from ELParser import ELBaseData as ELBD
 from ELParser import ELExceptions as ELE
-
+from ELParser.ELCompFunctions import get_COMP_FUNC, get_ARITH_FUNC
 
 
 class ELRuntime:
@@ -155,14 +155,20 @@ class ELRuntime:
                 successes, current_frame = self.fact_query(condition, current_frame)
                 if isinstance(successes, ELBD.ELFail):
                     raise ELE.ELRuleException()
-                
-            final_bindings = current_frame
-            #perform comparisons
+
+            # passing_bindings :: [ {} ]
+            passing_bindings = current_frame
+            #get the comparison functions, as a tuple 
+            comp_tuple = self.format_comparisons(rule)
+            compared_bindings = self.filter_by_comparisons(comp_tuple, passing_bindings)
+            if len(compared_bindings) == 0:
+                raise ELE.ELRuleException()
+
             
             #select a still viable rule
             #todo: add variability here. utility, curves, distributions,
             #round_robins? state?
-            selection = choice(final_bindings)
+            selection = choice(compared_bindings)
 
             #perform modifications to bindings
             
@@ -178,8 +184,39 @@ class ELRuntime:
             #then pop the frame off
             self.pop_stack()
         return returnVal
-            
 
+    def format_comparisons(self, rule):
+        #get the bindings from the rule
+        retrieved = [(comp, get_COMP_FUNC(comp.op)) for comp in rule.binding_comparisons]
+        return retrieved
+    
+
+    def filter_by_comparisons(self, comparison_tuples, potential_bindings):
+        #potential_bindings :: [ {} ]
+        #for each binding
+        compared_bindings = potential_bindings
+        for comp, func in comparison_tuples:
+            compared_bindings = [x for x in compared_bindings if self.run_function(x, func, comp)]
+        return compared_bindings
+        
+    def run_function(self, binding, func, comparison):
+        #get values from bindings:
+        if comparison.b1.value not in binding or comparison.b2.value not in binding :
+            raise ELE.ELConsistencyException('Comparison being run without the necessary bindings')
+        
+        val1 = binding[comparison.b1.value]
+        val2 = binding[comparison.b2.value]
+        if comparison.op == ELBD.ELCOMP.NEAR:
+            if isinstance(comparison.nearVal, ELBD.ELVAR):
+                nearVal = binding[comparison.nearVal.value]
+            else:
+                nearVal = comparison.nearVal
+
+            return func(val1, nearVal, val2)
+        else:
+            return func(val1, val2)
+
+    
     def format_string(self,format_string):
         """ Given a format_string, use defined variables in the runtime
         to fill it in """
