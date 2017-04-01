@@ -25,7 +25,7 @@ import uuid
 EL = Enum('EL','DOT EX')
 ELV = Enum('ELV','ARR RULE')
 ELCOMP = Enum('ELCOMP','GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL NOTEQUAL CONTAINS NOTCONTAINS NEAR')
-ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW MOD')
+ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW MOD RAND LOG')
 
 ##############################
 # Enum Utilities
@@ -48,7 +48,9 @@ ELARITH_lookup = {
     '*' : ELARITH.MUL,
     '/' : ELARITH.DIV,
     '^' : ELARITH.POW,
-    '%' : ELARITH.MOD
+    '%' : ELARITH.MOD,
+    'rnd' : ELARITH.RAND,
+    'lg': ELARITH.LOG
 }
 
 #from stackoverflow question 483666
@@ -94,6 +96,7 @@ class ELComparison(ELAction):
         self.op = op[0]
         #only used for ~= operator
         self.nearVal = op[1]
+        #VARS:
         self.b1 = b1
         self.b2 = b2
 
@@ -278,6 +281,8 @@ class ELRULE(ELSTRUCTURE):
         self.action_bindings = non_arith_vars.union(arith_fact_vars).union(arith_fact_vars, \
                                                                            arith_raw_vars, \
                                                                            arith_values)
+
+
         
     def __hash__(self):
         return hash(repr(self))
