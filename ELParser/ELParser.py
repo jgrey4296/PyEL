@@ -159,9 +159,11 @@ NUM       = pp.Word(pp.nums + '-_d/') #negation, formatting, decimal, and fracti
 STRING    = pp.dblQuotedString
 ELEMENT   = (VAR | NAME | STRING | NUM)
 
-NEAR      = s(pp.Word('~=',exact=2)) + s(O_PAREN) + NUM + s(C_PAREN)
+NEAR      = s(pp.Word('~=',exact=2)) + s(O_PAREN) + (NUM | VAR) + s(C_PAREN)
 COMP      = pp.Group(pp.Word('=><@!',max=2)).setResultsName(str(PARSENAMES.STANDARDCOMP_OP)) | \
             pp.Group(NEAR).setResultsName(str(PARSENAMES.NEARCOMP_OP))
+
+
 
 #Comparison: $v1 < $V2
 EL_COMPARISON = VAR - COMP - VAR
