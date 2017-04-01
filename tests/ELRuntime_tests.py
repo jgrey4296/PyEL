@@ -259,10 +259,150 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(all(self.runtime('.first!y?\n.second!x?')))
                         
+    def test_rule_exclusion_2(self):
+        self.runtime('.first!x\n.second!x')
+        self.runtime('.this.is.a.rule.{ .first!$x?, .second!$x? -> .third!$x } ')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertTrue(all(self.runtime('~.third!x?')))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.third!x?'))
 
+    def test_rule_value(self):
+        self.runtime('.this.is.a.value.1d5')
+        self.runtime('.this.is.a.rule.{ .this.is.a.value.$x? -> .result.$x }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.result.1d5?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.result.1d5?'))
+        
+    def test_rule_less_comparison(self):
+        self.runtime('.first.20')
+        self.runtime('.second.40')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $x < $y -> .third }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.third?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.third?'))
 
+    def test_rule_greater_comparison(self):
+        self.runtime('.first.20')
+        self.runtime('.second.40')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $y > $x -> .third }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.third?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.third?'))
 
+    def test_rule_lessequal_comparison(self):
+        self.runtime('.first.40')
+        self.runtime('.second.40')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $x <= $y -> .third }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.third?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.third?'))
 
+    def test_rule_greaterequal_comparison(self):
+        self.runtime('.first.40')
+        self.runtime('.second.40')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $y >= $x -> .third }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.third?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.third?'))
+
+    def test_rule_equal_comparison(self):
+        self.runtime('.first.40')
+        self.runtime('.second.40')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $x == $y -> .third }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.third?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.third?'))
+
+    def test_rule_less_comparison(self):
+        self.runtime('.first.20')
+        self.runtime('.second.40')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $x != $y -> .third }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.third?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.third?'))
+
+    def test_rule_contains_comparison(self):
+        self.runtime('.first.[1,2,3,4]')
+        self.runtime('.second.2')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $y @ $x -> .third }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.third?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.third?'))
+
+    def test_rule_not_contains_comparison(self):
+        self.runtime('.first.[1,2,3,4]')
+        self.runtime('.second.5')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $y !@ $x -> .third }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.third?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.third?'))
+        
+    def test_rule_contains_letter_comparison(self):
+        self.runtime('.first.[a, b, c, d]')
+        self.runtime('.second.a')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $y !@ $x -> .third }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.third?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('~.third?'))
+
+    def test_rule_near_comparison(self):
+        self.runtime('.first.30')
+        self.runtime('.second.35')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $x ~=(10) $y -> .third }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.third?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.third?'))
+        
+    def test_rule_less_comparison_using_var(self):
+        self.runtime('.first.20')
+        self.runtime('.second.30')
+        self.runtime('.nearVal.10')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y?, .nearVal.$z? | $x ~=($z) $y -> .third }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.third?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.third?'))
+
+        
+        
         
         
     def test_rule_arith_action(self):
