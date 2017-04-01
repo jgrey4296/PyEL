@@ -40,7 +40,7 @@ class ELRuntime:
         actResults = []
         for r in parsed_representations:
             actResults.append(self.act(r))
-
+            
         if len(actResults) == 0:
             return None
         if len(actResults) == 1:
@@ -92,7 +92,7 @@ class ELRuntime:
             #Don't replace vars with bindings, populate them
             logging.info("Querying")
             self.add_stack()
-            result = self.fact_query(action)
+            result = self.fact_query(action, self.top_stack())[0]
             self.pop_stack()
             logging.info('Query Result: {}'.format(result))
 
@@ -120,12 +120,14 @@ class ELRuntime:
         if isinstance(fact[-1].value, ELBD.ELRULE):
             self.remove_rule(fact.short_str())
         
-    def fact_query(self,query):
-        """ Test a fact,  """
+    def fact_query(self,query, bindingFrame=None):
+        if bindingFrame is None:
+            bindingFrame = self.top_stack()
+        """ Test a fact, BE CAREFUL IT MODIFES THE TOP OF THE VAR STACK  """
         if not isinstance(query,ELBD.ELQUERY):
             raise ELE.ELConsistencyException('Querying requires the use of a query')
 
-        current_frame = self.top_stack()
+        current_frame = bindingFrame
         if len(current_frame) == 0:
             return ELBD.ELFail()
         #fill in any variables from the current bindings
@@ -135,37 +137,48 @@ class ELRuntime:
         #then integrate into bindings:
         successes = [x for x in results if x == True]
         updated_frame = [bindPair[1] for x in successes for bindPair in x.bindings]
-        self.replace_stack(updated_frame)
 
-        
+        #a frame is valid if it has at least ELSuccess(none,{}) in it
         if len(updated_frame) > 0:        
-            return successes
+            return (successes, updated_frame)
         else:
-            return ELBD.ELFail()
+            return (ELBD.ELFail(), current_frame)
 
     def run_rule(self,rule):
         """ Given a rule, check its conditions then queue its results """
-        self.add_stack()
-        truthiness = False
-        condition_truths_and_bindings = [self.fact_query(x) for x in rule.conditions]
-        if len(condition_truths_and_bindings) == 0 or isinstance(condition_truths_and_bindings[-1], ELBD.ELFail):
+        returnVal = ELBD.ELFail()
+        try:
+            self.add_stack()
+            current_frame = self.top_stack()
+            successes = []
+            for condition in rule.conditions:
+                successes, current_frame = self.fact_query(condition, current_frame)
+                if isinstance(successes, ELBD.ELFail):
+                    raise ELE.ELRuleException()
+                
+            final_bindings = current_frame
+            #perform comparisons
+            
+            #select a still viable rule
+            #todo: add variability here. utility, curves, distributions,
+            #round_robins? state?
+            selection = choice(final_bindings)
+
+            #perform modifications to bindings
+            
+            #todo: make the parser check for unbound variables before adding to runtime
+            for action in rule.actions:
+                bound_action = action.bind(selection)
+                self.act(bound_action)
+
+            returnVal = ELBD.ELSuccess()
+        except ELE.ELRuleException:
+            None
+        finally:
+            #then pop the frame off
             self.pop_stack()
-            return
-        
-        final_bindings = self.top_stack()
-        #add retrieved values from conditions as bindings
-
-        #perform comparisons
-
-        #select a still viable rule
-        selection = choice(final_bindings)
-        
-        #todo: make the parser check for unbound variables before adding to runtime
-        for action in rule.actions:
-            bound_action = action.bind(selection)
-            self.act(bound_action)
-        #then pop the frame off
-        self.pop_stack()
+        return returnVal
+            
 
     def format_string(self,format_string):
         """ Given a format_string, use defined variables in the runtime
