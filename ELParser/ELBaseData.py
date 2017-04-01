@@ -547,19 +547,21 @@ class ELFail(ELRESULT):
     def __eq__(self,other):
         return other == False
     def __repr__(self):
-        return "ELFailure"
+        return "(ELFailure)"
 
 class ELSuccess(ELRESULT):
     """ A Successful result """
     def __init__(self,path=None,bindings=[(None,{})]):
+        # bindings :: [ ( uuid, {} ) ]
         self.bindings = bindings
+        #path :: el_string with open variables applicable
         self.path = path
         
     def __bool__(self):
         return True
         
     def __repr__(self):
-        return "({} , {})".format(repr(self.path),repr(self.bindings))
+        return "(ELSuccess: {} , {})".format(repr(self.path),repr(self.bindings))
 
     def __len__(self):
         """ Get the number of children of this result """
