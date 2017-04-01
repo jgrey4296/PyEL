@@ -152,11 +152,15 @@ S_TEST    = pp.Keyword('::?')
 
 ARITH     = pp.Word('-+*/^%',exact=1)
 
-VAR       = pp.Word('$', pp.alphas + pp.nums)
 NAME      = pp.Word(pp.alphas)
 IG_NAME   = pp.Word('_',pp.alphas)
 NUM       = pp.Word(pp.nums + '-_d/') #negation, formatting, decimal, and fraction
 STRING    = pp.dblQuotedString
+
+VAR       = pp.Forward()
+VAR      << pp.Word('$', pp.alphas + pp.nums) - op(s(O_PAREN) + (NUM | VAR) + s(C_PAREN))
+
+
 ELEMENT   = (VAR | NAME | STRING | NUM)
 
 NEAR      = s(pp.Word('~=',exact=2)) + s(O_PAREN) + (NUM | VAR) + s(C_PAREN)
@@ -186,11 +190,11 @@ ARITH_FACT_ARRAY = array_template(ARITH_FACT | FACT,brackets_optional=True)
 
 #a Rule of conditions -> actions
 EL_RULE = s(O_BRACE) + opLn + \
-          EL_CONDITIONS.setResultsName(str(PARSENAMES.CONDITIONS)) - \
-          op(s(VBAR) - pp.Group(EL_COMPARISON_ARRAY).setResultsName(str(PARSENAMES.BINDCOMPS))) + \
+          EL_CONDITIONS.setResultsName(str(PARSENAMES.CONDITIONS)) + \
+          op(s(VBAR) + pp.Group(EL_COMPARISON_ARRAY).setResultsName(str(PARSENAMES.BINDCOMPS))) + \
           opLn + ARROW + opLn + \
-          ARITH_FACT_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) - \
-          opLn - s(C_BRACE)
+          ARITH_FACT_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) + \
+          opLn + s(C_BRACE)
 
 #Fact Components, [Root ... pairs ... terminal]
 #Core part of a fact: a.b!c => (a,DOT),(b.EX)
@@ -222,7 +226,7 @@ NUM.setParseAction(lambda toks: construct_num(toks[0]))
 STRING.setParseAction(pp.removeQuotes)
 
 #Get the binding, and lop off the $:
-VAR.setParseAction(lambda tok: ELBD.ELVAR(tok[0][1:]))
+VAR.setParseAction(lambda tok: ELBD.ELVAR(tok[0][1:], tok[1:]))
 
 CONDITION.setParseAction(lambda toks: ELBD.ELQUERY(toks[0]))
 
