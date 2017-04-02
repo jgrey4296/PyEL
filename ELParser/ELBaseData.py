@@ -334,10 +334,11 @@ class ELRULE(ELSTRUCTURE):
 
 class ELVAR(ELSTRUCTURE):
     """ An internal representation of a binding """
-    def __init__(self,bindName, access_point=None):
+    def __init__(self,bindName, access_point=None, path_var=False):
+        self.is_path_var = path_var
         self.value = bindName
-        if access_point is not None and len(access_point) > 0:
-            self.access_point = access_point[0]
+        if access_point is not None:
+            self.access_point = access_point
         else:
             self.access_point = None
     def __repr__(self):

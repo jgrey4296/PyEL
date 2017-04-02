@@ -36,6 +36,12 @@ The Trie is in ELParser/ELTrie.py
     .this.is.a.comparison.rule.{ .a.condition.$a?, .a.other.condition.$b? | $a < $b -> .an.action }
     .this.is.an.arithmetic.rule.{ .a.condition? -> .a.value + 20 }  
 
+    //add to the value there
+    .this.is.a.different.arithmetic.rule.{ .a.condition.$x? -> $..x + 20 }  
+    .this.is.a.third.rule.{ .a.condition.$x?, .b.condition.$y? -> $..x + $y }  
+    .this.is.a.fourth.rule.{ .a.condition.$x ? -> .a.result.$x }  
+    
+
     .a.value.20  
     .a.large.value.10_000  
     .a.fraction.1/5  

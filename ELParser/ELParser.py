@@ -106,6 +106,17 @@ def construct_arith_op(tok):
     else:
         raise ELE.ELParseException('Unrecognised arithmetic operator')
 
+def construct_el_var(toks):
+    is_a_path_var = 'PATH_ACCESS' in toks
+    varName = toks['VARNAME']
+    hasArrayAccess = 'ARR_ACCESS' in toks
+    if hasArrayAccess:
+        arr_access_value = toks['ARR_ACCESS'][0]
+    else:
+        arr_access_value = None
+    return ELBD.ELVAR(varName, arr_access_value, is_a_path_var)
+
+
     
 def construct_rule(toks):
     conditions = toks[str(PARSENAMES.CONDITIONS)][:]
@@ -158,8 +169,9 @@ NUM       = pp.Word(pp.nums + '-_d/') #negation, formatting, decimal, and fracti
 STRING    = pp.dblQuotedString
 
 VAR       = pp.Forward()
-VAR      << pp.Word('$', pp.alphas + pp.nums) - op(s(O_PAREN) + (NUM | VAR) + s(C_PAREN))
-
+VAR      << s(pp.Word('$')) + op(pp.Keyword('..','. ')).setResultsName('PATH_ACCESS') + \
+    pp.Word(pp.alphas + pp.nums).setResultsName('VARNAME') - \
+    op(s(O_PAREN) + (NUM | VAR) + s(C_PAREN)).setResultsName('ARR_ACCESS')
 
 ELEMENT   = (VAR | NAME | STRING | NUM)
 
@@ -242,8 +254,7 @@ ARITH.setParseAction(lambda toks: construct_arith_op(toks[0]))
 NUM.setParseAction(lambda toks: construct_num(toks[0]))
 STRING.setParseAction(pp.removeQuotes)
 
-#Get the binding, and lop off the $:
-VAR.setParseAction(lambda tok: ELBD.ELVAR(tok[0][1:], tok[1:]))
+VAR.setParseAction(lambda toks: construct_el_var(toks))
 
 CONDITION.setParseAction(lambda toks: ELBD.ELQUERY(toks[0]))
 

@@ -180,8 +180,8 @@ class ELParser_Tests(unittest.TestCase):
                 
     
     def test_rule_definition(self):
-        """ Test .this.is.a.rule.{[.blah?,.bloo?,.blee?] -> [.wee.bloo.blah]} """
-        test_fact = ".this.is.a.rule.{[.a?,.b?,.c?] -> [.d,.e,.f]}"
+        """ Test .this.is.a.rule.{[.blah?, .bloo?, .blee?] -> [.wee.bloo.blah]} """
+        test_fact = ".this.is.a.rule.{[.a?, .b?, .c?] -> [.d, .e, .f]}"
         conditions = ".a\n.b\n.c"
         actions = ".d\n.e\n.f"
         results = self.parser(test_fact)
@@ -197,9 +197,9 @@ class ELParser_Tests(unittest.TestCase):
     def test_rule_multiline(self):
         """ As above, but across multiple lines """
         test_fact = """ .this.is.a.rule.{
-        [.a?,.b?,.c?]
+        [.a?, .b?, .c?]
         ->
-        [.d,.e,.f]
+        [.d, .e, .f]
         }
         """
         results = self.parser(test_fact)
@@ -211,8 +211,8 @@ class ELParser_Tests(unittest.TestCase):
             
         
     def test_rule_multiconditions(self):
-        """ Test .this.is.a.rule{[.blah.bloo?,.blee.blah?] -> [.wee.bloo, .wee.blah]} """
-        test_fact = ".this.is.a.rule.{[.blah.bloo?,.blee.blah?] -> [.wee.bloo, .wee.blah]}"
+        """ Test .this.is.a.rule{[.blah.bloo?, .blee.blah?] -> [.wee.bloo, .wee.blah]} """
+        test_fact = ".this.is.a.rule.{[.blah.bloo?, .blee.blah?] -> [.wee.bloo, .wee.blah]}"
         results = self.parser(test_fact)
         self.assertIsInstance(results[0][-1].value,ELBD.ELRULE)
         for x in results[0][-1].value.conditions:
@@ -224,7 +224,7 @@ class ELParser_Tests(unittest.TestCase):
     def test_rule_multiconditions_multiline(self):
         """ As above, but across multiple lines """
         test_fact = """.this.is.a.rule.{
-    		[.blah.bloo?,.blee.blah?] 
+    		[.blah.bloo?, .blee.blah?] 
         	-> 
 		[.wee.bloo, .wee.blah]}"""
         results = self.parser(test_fact)
@@ -418,7 +418,7 @@ class ELParser_Tests(unittest.TestCase):
 
     def test_statement_array(self):
         """ test a sequence of facts """
-        test_fact = ".a.b.list.[.a.b.c,.a.b.c,.a.b.d]"
+        test_fact = ".a.b.list.[.a.b.c, .a.b.c, .a.b.d]"
         result = self.parser(test_fact)
         self.assertEqual(len(result[0][-1].value),3)
         for entry in result[0][-1].value:
