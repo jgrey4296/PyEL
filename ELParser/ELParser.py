@@ -69,7 +69,7 @@ def construct_el_fact(toks):
     term = [toks[str(PARSENAMES.TERMINAL)][0]]
     #values in basefact are wrapped in elpairs, need to unwrap:
     #TODO: should i check the terminal deeply (ie: for rules) for bindings?
-    bindings = [x.value for x in toks[str(PARSENAMES.BASEFACT)] if isinstance(x.value,ELBD.ELVAR)]
+    bindings = [x.value for x in base if isinstance(x.value,ELBD.ELVAR)]
     if isinstance(toks[str(PARSENAMES.TERMINAL)][0].value,ELBD.ELVAR):
         bindings.append(toks[str(PARSENAMES.TERMINAL)][0].value)
     return ELBD.ELFACT(root + base + term,bindings=bindings, negated=negated)
@@ -212,8 +212,25 @@ BIND_STATEMENT = VAR + s(BIND) + op(FACT)
 #The entire grammar:
 ROOT = pp.OneOrMore((BIND_STATEMENT | CONDITION | FACT) + s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
 
+##############################
+# PARSE NAMES
+##############################
 
-
+DOT.setName('DOT')
+EX.setName('EX')
+NOT.setName('NOT')
+NAME.setName('Name')
+IG_NAME.setName('IG_NAME')
+NUM.setName('Nums')
+STRING.setName('String')
+VAR.setName('Var')
+COMP.setName('Comp')
+EL_COMPARISON.setName('Comparison')
+FACT.setName('Fact')
+CONDITION.setName('Condition')
+ARITH_FACT.setName('Arith Fact')
+EL_RULE.setName('Rule')
+BIND_STATEMENT.setName('Binding')
 
 ##############################
 # PARSE ACTIONS
