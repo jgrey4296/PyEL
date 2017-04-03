@@ -60,7 +60,7 @@ class ELParser_Tests(unittest.TestCase):
         result = self.trie.get(ELBD.ELFACT([base_root]))
         self.assertTrue(add_response)
         self.assertIsInstance(result,ELBD.ELSuccess)
-        retrieved_node = self.trie[result.bindings[0][0]]
+        retrieved_node = self.trie[result.bindings[0].uuid]
         self.assertEqual(retrieved_node,"ROOT")
         #One child only
         self.assertEqual(len(retrieved_node),1)
@@ -130,7 +130,7 @@ class ELParser_Tests(unittest.TestCase):
         #Get the first node:
         query = ELBD.ELFACT(r=True).term("test")
         result_depth1 = self.trie.get(query)
-        result_depth1_node_uuid = result_depth1.bindings[0][0]
+        result_depth1_node_uuid = result_depth1.bindings[0].uuid
         result_depth1_node = self.trie[result_depth1_node_uuid]
         self.assertEqual(len(result_depth1_node),1)
         
@@ -151,7 +151,7 @@ class ELParser_Tests(unittest.TestCase):
         test_node_result = self.trie.get(ELBD.ELFACT(r=True).pair('test'))
         self.assertTrue(test_node_result)
         self.assertIsInstance(test_node_result, ELBD.ELSuccess)
-        test_node_uuid = test_node_result.bindings[0][0]
+        test_node_uuid = test_node_result.bindings[0].uuid
         test_node_actual = self.trie[test_node_uuid]
         self.assertEqual(len(test_node_actual),1)
 
@@ -265,7 +265,7 @@ class ELParser_Tests(unittest.TestCase):
         self.trie.push(fraction)
         gotten = self.trie.get(ELBD.ELFACT(r=True).pair("a").pair("b").term(Fraction(1,5)))
         self.assertTrue(gotten)
-        fraction_node_uuid = gotten.bindings[0][0]
+        fraction_node_uuid = gotten.bindings[0].uuid
         fraction_node = self.trie[fraction_node_uuid]
         self.assertEqual(fraction_node,Fraction(1,5))
                 
@@ -390,10 +390,16 @@ class ELParser_Tests(unittest.TestCase):
         self.assertIsInstance(results,ELBD.ELSuccess)
         self.assertEqual(results.path, query_fact)
         self.assertEqual(len(results),2)
-        bindings = [x[1] for x in results.bindings]
+        bindings = [x for x in results.bindings]
 
-        self.assertIn({'x':'b'},  bindings)
-        self.assertIn({'x':'d'}, bindings)
+        x_b_in_bindings = bindings[0]['x'].value == 'b' or \
+                          bindings[1]['x'].value == 'b'
+
+        x_d_in_bindings = bindings[0]['x'].value == 'd' or \
+                          bindings[1]['x'].value == 'd'
+
+        self.assertTrue(x_b_in_bindings)
+        self.assertTrue(x_d_in_bindings)
 
         
 
@@ -408,9 +414,9 @@ class ELParser_Tests(unittest.TestCase):
         self.assertTrue(results)
         self.assertIsInstance(results,ELBD.ELSuccess)
         self.assertEqual(results.path, query_fact)
-        bindings = [x[1] for x in results.bindings]
-        self.assertEqual(len(results.bindings),1)        
-        self.assertIn({'x':'b'},bindings)
+        bindings = [x for x in results.bindings]
+        self.assertEqual(len(results.bindings),1)
+        self.assertTrue(bindings[0]['x'].value == 'b')
 
 
 
@@ -428,10 +434,20 @@ class ELParser_Tests(unittest.TestCase):
         self.assertIsInstance(results,ELBD.ELSuccess);
         self.assertEqual(results.path, query)
         self.assertEqual(len(results.bindings),2)
+        bindings = [x for x in results.bindings]
+        xb_yd_in_one_binding = (bindings[0]['x'].value == 'b' and \
+                               bindings[0]['y'].value == 'd') or \
+                               (bindings[1]['x'].value == 'b' and
+                                bindings[1]['y'].value == 'd')
+        
+        xf_ye_in_one_binding = (bindings[0]['x'].value == 'f' and \
+                                bindings[0]['y'].value == 'e') or \
+                                (bindings[1]['x'].value == 'f' and \
+                                 bindings[1]['y'].value == 'e')
+        self.assertTrue(xb_yd_in_one_binding)
+        self.assertTrue(xf_ye_in_one_binding)
 
-        bindings = [x[1] for x in results.bindings]
-        self.assertIn({'x':'b', 'y':'d'}, bindings)
-        self.assertIn({'x':'f', 'y':'e'}, bindings)
+    
 
 
     def test_trie_get_dfs_of_query_expanded_base(self):
@@ -447,10 +463,20 @@ class ELParser_Tests(unittest.TestCase):
         self.assertIsInstance(results,ELBD.ELSuccess);
         self.assertEqual(results.path, query)
         self.assertEqual(len(results.bindings),2)
-        bindings = [x[1] for x in results.bindings]
-        
-        self.assertIn({'x':'b', 'y':'d'}, bindings)
-        self.assertIn({'x':'b', 'y':'e'}, bindings)
+        bindings = [x for x in results.bindings]
+
+        xb_yd_in_one_binding = (bindings[0]['x'].value == 'b' and \
+                                bindings[0]['y'].value == 'd') or \
+                                (bindings[1]['x'].value == 'b' and \
+                                 bindings[1]['y'].value == 'd')
+
+        xb_ye_in_one_binding = (bindings[0]['x'].value == 'b' and \
+                                bindings[0]['y'].value == 'e') or \
+                                (bindings[1]['x'].value == 'b' and \
+                                 bindings[1]['y'].value == 'e')
+
+        self.assertTrue(xb_yd_in_one_binding)
+        self.assertTrue(xb_ye_in_one_binding)
 
     def test_trie_get_dfs_of_query_excluding_non_matches(self):
         """ Similar to getting dfs of query, but rejecting only partial matches """
@@ -464,9 +490,10 @@ class ELParser_Tests(unittest.TestCase):
         self.assertIsInstance(results,ELBD.ELSuccess);
         self.assertEqual(results.path, query)
         self.assertEqual(len(results.bindings),1)
+        xb_yd_in_binding = results.bindings[0]['x'].value == 'b' and \
+                           results.bindings[0]['y'].value == 'd'
 
-        
-        self.assertIn({'x':'b', 'y':'d'},results.bindings[0])
+        self.assertTrue(xb_yd_in_binding)
         
         
     #test trie dump

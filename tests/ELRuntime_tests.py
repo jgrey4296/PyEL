@@ -58,7 +58,7 @@ class ELRuntime_Tests(unittest.TestCase):
         facts = [".this.is.a.test", ".this.is.another.test", ".and.a.third"]
         self.runtime("\n".join(facts))
         for fact in facts:
-            self.assertTrue(self.runtime(fact + "?")[0])
+            self.assertTrue(self.runtime(fact + "?"))
 
     def test_multi_query(self):
         """ Check multiple queries at the same time work """
@@ -113,12 +113,12 @@ class ELRuntime_Tests(unittest.TestCase):
 
     def test_exclusion_query_resolution(self):
         """ Test that an queries respect exclusion operators """
+
         self.runtime(".this.is.a!test")
         self.assertFalse(self.runtime(".this.is.a.test?"))
         result = self.runtime(".this.is.a!test?")
         print('Exclusion query result: {}'.format(result))
         self.assertTrue(result)
-              
 
 
     def test_rule_definition(self):
@@ -132,13 +132,14 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime(".this.is.a.test\n.this.is.a.second")
         parsed = ELPARSE(".this.is.a.$x?")[0]
         results = self.runtime.fact_query(parsed)[0]
-        self.assertEqual(len(results),1)
-        self.assertTrue(results[0])
-        self.assertIsInstance(results[0],ELBD.ELSuccess)
-        self.assertEqual(len(results[0]),2)
-        bindings = [x[1] for x in results[0].bindings]
-        self.assertIn({'x': 'test'}, bindings)
-        self.assertIn({'x': 'second'}, bindings)
+        self.assertEqual(len(results),2)
+        self.assertTrue(results)
+        self.assertIsInstance(results,ELBD.ELSuccess)
+        bindings = [x for x in results.bindings]
+        test_in_bindings = bindings[0]['x'].value == 'test' or bindings[1]['x'].value == 'test'
+        second_in_bindings = bindings[0]['x'].value == 'second' or bindings[1]['x'].value == 'second'
+        self.assertTrue(test_in_bindings)
+        self.assertTrue(second_in_bindings)
 
         
     def test_getting_chained_variables(self):
@@ -148,9 +149,23 @@ class ELRuntime_Tests(unittest.TestCase):
         results = self.runtime.fact_query(parsed, self.runtime.top_stack())[0]
         self.assertTrue(results)
         self.assertEqual(len(results[0]),2)
-        bindings = [x[1] for x in results[0].bindings]
-        self.assertIn({'x':'first','y':'test'}, bindings)
-        self.assertIn({'x':'second','y':'blahh'}, bindings)
+        bindings = results.bindings
+        self.assertIn('x',bindings[0])
+        self.assertIn('y',bindings[0])
+        self.assertIn('x',bindings[1])
+        self.assertIn('y',bindings[1])
+
+        one_binding_x_is_first = bindings[0]['x'].value == 'first' or bindings[1]['x'].value == 'first'
+        one_binding_y_is_test = bindings[0]['y'].value == 'test' or bindings[1]['y'].value == 'test'
+        one_binding_x_is_second = bindings[0]['x'].value == 'second' or bindings[1]['x'].value == 'second'
+        one_binding_y_is_blah = bindings[0]['y'].value == 'blahh' or bindings[1]['y'].value == 'blahh'
+        self.assertTrue(one_binding_x_is_first)
+        self.assertTrue(one_binding_y_is_test)
+        self.assertTrue(one_binding_x_is_second)
+        self.assertTrue(one_binding_y_is_blah)
+
+        
+        
                     
 
     def test_rule_firing(self):
@@ -165,7 +180,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertFalse(self.runtime('.this.is.a.different.fact?'))
         self.assertTrue(self.runtime('~.this.is.a.different.fact?'))
 
-    def test_rule_binding(self):
+    def test_rule_value_binding(self):
         self.runtime('.this.is.a.first.fact')
         self.runtime('.this.is.a.rule.{ .this.is.a.first.$x? -> .this.is.a.second.$x }')
         parsed = ELPARSE('.this.is.a.rule')[0]
@@ -175,7 +190,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.this.is.a.second.fact?'))
 
-    def test_rule_multi_binding(self):
+    def test_rule_multi_value_binding(self):
         self.runtime('.this.is.a.first.fact')
         self.runtime('.this.rule.{ .this.is.a.$x.$y? -> .this.is.a.$y.$x }')
         parsed = ELPARSE('.this.rule')[0]
@@ -185,7 +200,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.this.is.a.fact.first?'))
 
-    def test_rule_multi_binding_across_conditions(self):
+    def test_rule_multi_value_binding_across_conditions(self):
         self.runtime('.this.is.an.afact.a')
         self.runtime('.this.is.a.bfact.b')
         self.runtime('.this.is.a.rule.{ .this.is.an.afact.$x?, .this.is.a.bfact.$y? -> .the.combination.is.$x.$y }')
@@ -208,7 +223,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(self.runtime('.response.first?'))
         self.assertTrue(self.runtime('.response.second?'))
         
-    def test_rule_multi_action_binding(self):
+    def test_rule_multi_value_action_binding(self):
         self.runtime('.this.is.an.afact.a')
         self.runtime('.this.is.a.rule.{ .this.is.an.afact.$x? -> .response.first.$x, .response.second.$x }')
         parsed = ELPARSE('.this.is.a.rule')[0]
@@ -220,7 +235,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(self.runtime('.response.first.a?'))
         self.assertTrue(self.runtime('.response.second.a?'))
         
-    def test_rule_mutli_binding_multi_action(self):
+    def test_rule_mutli_value_binding_multi_action(self):
         self.runtime('.this.is.an.afact.a')
         self.runtime('.this.is.a.bfact.b')
         self.runtime('.this.is.a.rule.{ .this.is.an.afact.$x?, .this.is.a.bfact.$y? -> .response.first.$x, .response.second.$y }')
@@ -233,7 +248,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(self.runtime('.response.first.a?'))
         self.assertTrue(self.runtime('.response.second.b?'))
         
-    def test_rule_binding_union(self):
+    def test_rule_binding_value_union(self):
         """  Ensure that .$x matches across all conditions """
         self.runtime('.first.x.blah')
         self.runtime('.second.x.bloo')
@@ -246,7 +261,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.third.x.blah.bloo?'))
 
-    def test_rule_exclusion(self):
+    def test_rule_value_exclusion(self):
         self.runtime('.first!x')
         self.runtime('.this.is.a.rule.{ .first!$x? -> .first!y, .second!$x }')
         parsed = ELPARSE('.this.is.a.rule')[0]
@@ -259,17 +274,17 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(all(self.runtime('.first!y?\n.second!x?')))
                         
-    def test_rule_exclusion_2(self):
-        self.runtime('.first!x\n.second!x')
+    def test_rule_value_exclusion_2(self):
+        self.runtime('.first!blah\n.second!blah')
         self.runtime('.this.is.a.rule.{ .first!$x?, .second!$x? -> .third!$x } ')
         parsed = ELPARSE('.this.is.a.rule')[0]
         parse_hash = str(parsed)
         the_rule = self.runtime.get_rule(parse_hash)
-        self.assertTrue(all(self.runtime('~.third!x?')))
+        self.assertTrue(self.runtime('~.third!blah?'))
         self.runtime.run_rule(the_rule)
-        self.assertTrue(self.runtime('.third!x?'))
+        self.assertTrue(self.runtime('.third!blah?'))
 
-    def test_rule_value(self):
+    def test_rule_decimal_value(self):
         self.runtime('.this.is.a.value.1d5')
         self.runtime('.this.is.a.rule.{ .this.is.a.value.$x? -> .result.$x }')
         parsed = ELPARSE('.this.is.a.rule')[0]
@@ -279,7 +294,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.result.1d5?'))
         
-    def test_rule_less_comparison(self):
+    def test_rule_value_less_comparison(self):
         self.runtime('.first.20')
         self.runtime('.second.40')
         self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $x < $y -> .third }')
@@ -290,7 +305,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.third?'))
 
-    def test_rule_greater_comparison(self):
+    def test_rule_value_greater_comparison(self):
         self.runtime('.first.20')
         self.runtime('.second.40')
         self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $y > $x -> .third }')
@@ -301,7 +316,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.third?'))
 
-    def test_rule_lessequal_comparison(self):
+    def test_rule_value_lessequal_comparison(self):
         self.runtime('.first.40')
         self.runtime('.second.40')
         self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $x <= $y -> .third }')
@@ -312,7 +327,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.third?'))
 
-    def test_rule_greaterequal_comparison(self):
+    def test_rule_value_greaterequal_comparison(self):
         self.runtime('.first.40')
         self.runtime('.second.40')
         self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $y >= $x -> .third }')
@@ -323,7 +338,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.third?'))
 
-    def test_rule_equal_comparison(self):
+    def test_rule_value_equal_comparison(self):
         self.runtime('.first.40')
         self.runtime('.second.40')
         self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $x == $y -> .third }')
@@ -334,7 +349,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.third?'))
 
-    def test_rule_less_comparison(self):
+    def test_rule_value_less_comparison(self):
         self.runtime('.first.20')
         self.runtime('.second.40')
         self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $x != $y -> .third }')
@@ -345,7 +360,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.third?'))
 
-    def test_rule_contains_comparison(self):
+    def test_rule_value_contains_comparison(self):
         self.runtime('.first.[1,2,3,4]')
         self.runtime('.second.2')
         self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $y @ $x -> .third }')
@@ -356,7 +371,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.third?'))
 
-    def test_rule_not_contains_comparison(self):
+    def test_rule_not_value_contains_comparison(self):
         self.runtime('.first.[1,2,3,4]')
         self.runtime('.second.5')
         self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $y !@ $x -> .third }')
@@ -367,7 +382,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.third?'))
         
-    def test_rule_contains_letter_comparison(self):
+    def test_rule_value_contains_letter_comparison(self):
         self.runtime('.first.[a, b, c, d]')
         self.runtime('.second.a')
         self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $y !@ $x -> .third }')
@@ -378,7 +393,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('~.third?'))
 
-    def test_rule_near_comparison(self):
+    def test_rule_value_near_comparison(self):
         self.runtime('.first.30')
         self.runtime('.second.35')
         self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $x ~=(10) $y -> .third }')
@@ -389,7 +404,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.third?'))
         
-    def test_rule_less_comparison_using_var(self):
+    def test_rule_value_less_comparison_using_var(self):
         self.runtime('.first.20')
         self.runtime('.second.30')
         self.runtime('.nearVal.10')
@@ -401,14 +416,30 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.third?'))
 
-        
-        
-        
+    def test_rule_path_var_assignment(self):
+        self.runtime('.first.20')
+        self.runtime('.this.is.a.rule.{ .first.$x? -> $..x.40 }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.first.40?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.first.40?'))
         
         
     def test_rule_arith_action(self):
-        None
+        self.runtime('.a.fact!20')
+        self.runtime('.this.is.a.rule.{ .a.fact!$x? -> $x + 20 }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.a.fact!40?'))
+        self.runtime.run_rule(the_rule)
+        #TODO: self.assertTrue(self.runtime('.a.fact!40?'))
 
+    def test_regex_action(self):
+        None
+        
     def test_fact_arrays(self):
         None
 
@@ -462,13 +493,13 @@ class ELRuntime_Tests(unittest.TestCase):
         
         
 if __name__ == "__main__":
-    LOGLEVEL = root_logger.DEBUG
+    LOGLEVEL = root_logger.INFO
     LOG_FILE_NAME = "ELRuntime_tests.log"
     root_logger.basicConfig(filename=LOG_FILE_NAME, level=LOGLEVEL, filemode='w')
     console = root_logger.StreamHandler()
     console.setLevel(root_logger.INFO)
     root_logger.getLogger('').addHandler(console)
     logging = root_logger.getLogger(__name__)
-    root_logger.disable(root_logger.CRITICAL)
+    #root_logger.disable(root_logger.CRITICAL)
     ##############################
     unittest.main()

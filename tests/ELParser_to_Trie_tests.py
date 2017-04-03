@@ -93,7 +93,7 @@ class ELParser_to_Trie_tests(unittest.TestCase):
         result2 = self.trie.get(self.parser('.this.is.a.test.[.a.b.c, .d.e.f]')[0])
         self.assertTrue(result1)
         self.assertTrue(result2)
-        self.assertEqual(result1.bindings[0][0],result2.bindings[0][0])
+        self.assertEqual(result1.bindings,result2.bindings)
         
 
         
@@ -139,14 +139,13 @@ class ELParser_to_Trie_tests(unittest.TestCase):
 
     def test_exclsuion_semantics_3(self):
         """ test exclusion down-casting """
+        root_logger.disable(root_logger.DEBUG)
         base_fact = ".this.is.an!exclusion"
         update_string = ".this.is.an.other\n.this.is.an.else"
         self.trie.push(self.parser(base_fact)[0])
         self.assertTrue(self.trie.query(self.parser('.this.is.an!exclusion?')[0]))
-
         for f in self.parser(update_string):
             self.trie.push(f)
-
         self.assertFalse(self.trie.query(self.parser('.this.is.an!exclusion?')[0]))
         self.assertTrue(self.trie.query(self.parser('.this.is.an.other?')[0]))
         self.assertTrue(self.trie.query(self.parser('.this.is.an.else?')[0]))
@@ -160,8 +159,8 @@ class ELParser_to_Trie_tests(unittest.TestCase):
             self.trie.push(f)
         retrieved_1 = self.trie.get(self.parser(retrieval_string_1)[0])
         retrieved_2 = self.trie.get(self.parser(retrieval_string_2)[0])
-        val1 = retrieved_1.bindings[0][1]['x']
-        val2 = retrieved_2.bindings[0][1]['y']
+        val1 = retrieved_1.bindings[0]['x'].value
+        val2 = retrieved_2.bindings[0]['y'].value
         added = val1 + val2
         self.assertEqual(added,15)
         subbed = val2 - val1

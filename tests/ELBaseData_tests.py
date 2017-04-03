@@ -19,7 +19,10 @@ class ELBaseData_Tests(unittest.TestCase):
 
     def test_Fact_binding(self):
         testFact = ELBD.ELFACT(r=True).var('b').var('c').vterm('d')
-        bindingDict = {'b': 'blah', 'c':'crickey' , 'd':'dimwit' }
+        bindingDict = ELBD.ELBindingSlice(
+            {'b': ELBD.ELBindingEntry('b',None,'blah'),
+             'c': ELBD.ELBindingEntry('c', None, 'crickey'),
+             'd': ELBD.ELBindingEntry('d', None, 'dimwit') })
         bound = testFact.bind(bindingDict)
         self.assertEqual(str(testFact), '.$b.$c.$d')
         self.assertEqual(repr(testFact), '| ROOT.VAR(b).VAR(c).VAR(d) || |')
