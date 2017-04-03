@@ -736,7 +736,7 @@ class ELTrieNode:
         return "EL_Trie_Node({},{} > {})".format(repr(self.value),repr(self.elop), repr(self.keys()))
 
     def __str__(self):
-        raise Exception("Unimplemented")
+        return repr(self)
 
     
     def __len__(self):
