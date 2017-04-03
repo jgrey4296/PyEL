@@ -476,7 +476,7 @@ class ELFACT(ELSTRUCTURE):
         return new_fact
              
     def copy(self):
-        dataCopy = [x.copy() for x in self.data]
+        dataCopy = [x.copy() for x in self.data if x is not None]
         bindingsCopy = self.bindings.copy()
         filled_bindings_copy = self.filled_bindings.copy()
         return ELFACT(dataCopy,
