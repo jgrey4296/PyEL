@@ -29,9 +29,8 @@ class ELRuntime:
         self.rules = {}
         #list of tuples (asserted, retracted) for each action?
         self.history = []
-        #2d stack of binding possibilities
-        #ie: bindings[0] = set({}) where each {} is a set of bindings
-        self.bindings = [[{}]]
+        #bindings :: stack<ELBindingFrame>
+        self.bindings = ELBD.ELBindingStack()
 
     def __call__(self,string):
         """ Parse a string, act accordingly with the results """
@@ -48,16 +47,14 @@ class ELRuntime:
         else:
             return actResults
 
-    def add_stack(self):
-        current = self.bindings[-1]
-        copied = [x.copy() for x in current]
-        self.bindings.append(copied)
+    def add_level(self):
+        self.bindings.add_level()
 
     def replace_stack(self,frame):
         self.bindings[-1] = frame
 
     def top_stack(self):
-        return self.bindings[-1]
+        return self.bindings.top()
         
     def pop_stack(self):
         self.bindings.pop()
@@ -87,16 +84,20 @@ class ELRuntime:
             self.set_binding(action.var,action.root)
         elif isinstance(action,ELBD.ELARITH_FACT):
             #todo: enact arithmetic on the fact /binding
-            None
+            raise ELE.RuleException('Arith Facts not implemented')
         elif isinstance(action,ELBD.ELQUERY):
             #Don't replace vars with bindings, populate them
             logging.info("Querying")
-            self.add_stack()
-            result = self.fact_query(action, self.top_stack())[0]
+            self.add_level()
+            success, frame = self.fact_query(action, self.top_stack())
+            result = success
             self.pop_stack()
             logging.info('Query Result: {}'.format(result))
 
-        return result
+        if result == True:
+            return True
+        else:
+            return False
 
     def act_on_array(self, actions): #todo
         """ Given a collection of actions, perform each """
@@ -121,26 +122,36 @@ class ELRuntime:
             self.remove_rule(fact.short_str())
         
     def fact_query(self,query, bindingFrame=None):
+        logging.info('Recieved Query: {}'.format(query))
         if bindingFrame is None:
             bindingFrame = self.top_stack()
+        if not isinstance(bindingFrame, ELBD.ELBindingFrame):
+            IPython.embed(simple_prompt=True)
+        assert isinstance(bindingFrame, ELBD.ELBindingFrame)
         """ Test a fact, BE CAREFUL IT MODIFES THE TOP OF THE VAR STACK  """
         if not isinstance(query,ELBD.ELQUERY):
             raise ELE.ELConsistencyException('Querying requires the use of a query')
-
+        
         current_frame = bindingFrame
         if len(current_frame) == 0:
-            return ELBD.ELFail()
+            logging.info("Nothing in the current frame")
+            return (ELBD.ELFail(), None)
         #fill in any variables from the current bindings
-        bound = [query.bind(x) for x in current_frame]
+        bound_queries = [query.bind(slice) for slice in current_frame]
+        logging.info('Bound: {}'.format(bound_queries))
         #then query
-        results = [self.trie.query(x) for x in bound]
+        results = [self.trie.query(query) for query in bound_queries]
+        logging.info("Trie Query results: {}".format(results))
         #then integrate into bindings:
-        successes = [x for x in results if x == True]
-        updated_frame = [bindPair[1] for x in successes for bindPair in x.bindings]
+        successes = [success for success in results if success == True]
+        logging.info("Trie Query Successes: {}".format(successes))
+        #Flatten the frame
+        updated_frame = ELBD.ELBindingFrame([bind_slice for success in successes for bind_slice in success.bindings])
 
         #a frame is valid if it has at least ELSuccess(none,{}) in it
-        if len(updated_frame) > 0:        
-            return (successes, updated_frame)
+        if len(updated_frame) > 0:
+            #successes[1] has no real meaning, its just a success
+            return (successes[0], updated_frame)
         else:
             return (ELBD.ELFail(), current_frame)
 
@@ -148,19 +159,19 @@ class ELRuntime:
         """ Given a rule, check its conditions then queue its results """
         returnVal = ELBD.ELFail()
         try:
-            self.add_stack()
+            self.add_level()
             current_frame = self.top_stack()
-            successes = []
             for condition in rule.conditions:
-                successes, current_frame = self.fact_query(condition, current_frame)
-                if isinstance(successes, ELBD.ELFail):
+                is_successful, current_frame = self.fact_query(condition, current_frame)
+                if not is_successful:
                     raise ELE.ELRuleException()
 
-            # passing_bindings :: [ {} ]
+            # passing_bindings :: ELBindingFrame
             passing_bindings = current_frame
             #get the comparison functions, as a tuple 
             comp_tuple = self.format_comparisons(rule)
             compared_bindings = self.filter_by_comparisons(comp_tuple, passing_bindings)
+            #if filtered the rule down to nothing
             if len(compared_bindings) == 0:
                 raise ELE.ELRuleException()
 
@@ -194,11 +205,11 @@ class ELRuntime:
     
 
     def filter_by_comparisons(self, comparison_tuples, potential_bindings):
-        #potential_bindings :: [ {} ]
-        #for each binding
+        assert isinstance(potential_bindings, ELBD.ELBindingFrame)
         compared_bindings = potential_bindings
         for comp, func in comparison_tuples:
-            compared_bindings = [x for x in compared_bindings if self.run_function(x, func, comp)]
+            compared_bindings = ELBD.ELBindingFrame([slice for slice in compared_bindings if self.run_function(slice, func, comp)])
+        ## compared_bindings :: ELBD.ELBindingFrame
         return compared_bindings
         
     def run_function(self, binding, func, comparison):
@@ -206,11 +217,11 @@ class ELRuntime:
         if comparison.b1.value not in binding or comparison.b2.value not in binding :
             raise ELE.ELConsistencyException('Comparison being run without the necessary bindings')
         #todo: have a 'get variable from binding' function to take into account array access?
-        val1 = binding[comparison.b1.value]
-        val2 = binding[comparison.b2.value]
+        val1 = comparison.b1.get_val(binding)
+        val2 = comparison.b2.get_val(binding)
         if comparison.op == ELBD.ELCOMP.NEAR:
             if isinstance(comparison.nearVal, ELBD.ELVAR):
-                nearVal = binding[comparison.nearVal.value]
+                nearVal = comparison.nearVal.get_val(binding)
             else:
                 nearVal = comparison.nearVal
 
