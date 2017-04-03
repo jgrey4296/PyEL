@@ -193,6 +193,9 @@ class ELARITH_FACT(ELAction):
         
     def bind(self,bindings):
         #returns a EL_FACT that has been bound
+        IPython.embed(simple_prompt=True)
+        raise Exception('not implemented yet')
+        
         None
     def __repr__(self):
         return "|ARITH: {} ({} {}) |".format(self.data,EL_ARITH_2_STR(self.op), self.val)
