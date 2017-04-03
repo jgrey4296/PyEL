@@ -82,14 +82,63 @@ def ELOP2STR(elop):
 # Classes
 ####################
 
+#Binding: Stack<Frame>, Frame, Slice, Entry
+class ELBindingStack(list):
+    """ The stack of assignments to keep between rules
+    [ ELBindingFrame, ELBindingFrame... ]
+    """    
+    def __init__(self):
+        super().__init__([ELBindingFrame()])
+    def top(self):
+        return ELBindingFrame(self[-1])
+    def add_level(self):
+        self.append(self.top())
+        
 
+class ELBindingFrame(list):
+    """ All possibilites across current slices 
+    [ ELBindingSlice(x=2..), ELBindingSlice(x=4...) ]
+    """
+    def __init__(self,data=None):
+        if data is None:
+            super().__init__([ELBindingSlice()])
+        else:
+            super().__init__(data)
+        
+class ELBindingSlice(dict):
+    """ The dictionaries of a rule possibility,
+    { x : (ELBindingEntry), y: (ELBinding Entry ... }
+    """
+    def __init__(self,data=[],uuid=None):
+        if isinstance(data, ELBindingSlice):
+            super().__init__(data)
+            self.uuid = data.uuid
+            if uuid is not None:
+                self.uuid = uuid
+        else:
+            super().__init__(data)
+            self.uuid = uuid
+
+    def copy(self):
+        return ELBindingSlice(self)
+
+            
+class ELBindingEntry:
+    """ Contains a single data point, $x = 5.
+    Stores both the node uuid and the value itself
+    """    
+    def __init__(self, key,  uuid, value):
+        self.key = key
+        self.node = uuid;
+        self.value = value;
+            
+                 
 #----------
 # ACTIONS
 #----------
 class ELAction:
     """ The Base class of actions """
 
-    
 class ELComparison(ELAction):
     """ Holds a comparison operation between two bindings """
     def __init__(self,b1,op,b2):
