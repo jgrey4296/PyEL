@@ -48,10 +48,10 @@ def array_template(element,brackets_optional=False):
         o_bracket = op(o_bracket)
         c_bracket = op(c_bracket)
     parser = o_bracket + \
-             op( opLn \
-                 + element
-                 + pp.ZeroOrMore(s(pp.Literal(',')) + opLn \
-                                 + element)) \
+             op(opLn \
+                + element
+                + pp.ZeroOrMore(s(COMMA) + opLn \
+                                + element)) \
                 + c_bracket
     return parser
 
@@ -147,6 +147,7 @@ EX        = pp.Keyword('!', identChars='.')
 NOT       = pp.Keyword('~')
 ARROW     = pp.Keyword('->')
 BIND      = pp.Keyword('<-')
+COMMA     = pp.Keyword(',', '.')
 QUERYOP   = pp.Literal('?')
 VBAR      = pp.Literal('|')
 O_BRACKET = pp.Literal('[')
