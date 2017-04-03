@@ -202,8 +202,6 @@ class ELARITH_FACT(ELAction):
         return "{} {} {}".format(str(self.data),
                                  op,
                                  str(self.val))
-
-        
     
     def copy(self):
         return ELARITH_FACT(self.data.copy(),self.op,self.val.copy())
@@ -409,6 +407,7 @@ class ELVAR(ELSTRUCTURE):
             self.access_point = access_point
         else:
             self.access_point = None
+            
     def __repr__(self):
         if self.access_point is None:
             return "VAR({})".format(self.value)

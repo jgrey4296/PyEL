@@ -172,6 +172,8 @@ class ELRuntime:
 
             #perform modifications to bindings
             
+
+            
             #todo: make the parser check for unbound variables before adding to runtime
             for action in rule.actions:
                 bound_action = action.bind(selection)
