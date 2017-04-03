@@ -117,7 +117,6 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime(".this.is.a!test")
         self.assertFalse(self.runtime(".this.is.a.test?"))
         result = self.runtime(".this.is.a!test?")
-        print('Exclusion query result: {}'.format(result))
         self.assertTrue(result)
 
 
@@ -269,7 +268,6 @@ class ELRuntime_Tests(unittest.TestCase):
         the_rule = self.runtime.get_rule(parse_hash)
         self.assertFalse(all(self.runtime('.first!y?\n.second!x?')))
         result = self.runtime('~.first!y?\n~.second!x?')
-        print('result: {}'.format(result))
         self.assertTrue(all(result))
         self.runtime.run_rule(the_rule)
         self.assertTrue(all(self.runtime('.first!y?\n.second!x?')))

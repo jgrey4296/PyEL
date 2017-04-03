@@ -135,7 +135,7 @@ class ELTrie:
         assert isinstance(query,ELBD.ELQUERY)
         #result :: ELFail | ELSuccess
         result = self.get(query.value)
-        #logging.info('Get Result: {}'.format(result))
+        logging.debug('Get Result: {}'.format(result))
         if isinstance(result,ELBD.ELSuccess) and not query.value.negated:
             return result
         elif isinstance(result, ELBD.ELFail) and query.value.negated:
@@ -158,7 +158,7 @@ class ELTrie:
             raise ELE.ELRuleException('Root Value not found in allnodes')
         #results :: ELBindingFrame
         results = self.sub_get(root, el_string.data[1:], el_string.filled_bindings)
-        logging.info("Sub Get Results: {}".format(results))
+        logging.debug("Sub Get Results: {}".format(results))
         returnVal = ELBD.ELFail()
         if isinstance(results,list) and not isinstance(results[0], ELBD.ELFail):
             #verify all bindings are the same:

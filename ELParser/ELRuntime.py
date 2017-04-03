@@ -87,12 +87,12 @@ class ELRuntime:
             raise ELE.RuleException('Arith Facts not implemented')
         elif isinstance(action,ELBD.ELQUERY):
             #Don't replace vars with bindings, populate them
-            logging.info("Querying")
+            logging.debug("Querying")
             self.add_level()
             success, frame = self.fact_query(action, self.top_stack())
             result = success
             self.pop_stack()
-            logging.info('Query Result: {}'.format(result))
+            logging.debug('Query Result: {}'.format(result))
 
         if result == True:
             return True
@@ -122,7 +122,7 @@ class ELRuntime:
             self.remove_rule(fact.short_str())
         
     def fact_query(self,query, bindingFrame=None):
-        logging.info('Recieved Query: {}'.format(query))
+        logging.debug('Recieved Query: {}'.format(query))
         if bindingFrame is None:
             bindingFrame = self.top_stack()
         if not isinstance(bindingFrame, ELBD.ELBindingFrame):
@@ -134,17 +134,17 @@ class ELRuntime:
         
         current_frame = bindingFrame
         if len(current_frame) == 0:
-            logging.info("Nothing in the current frame")
+            logging.debug("Nothing in the current frame")
             return (ELBD.ELFail(), None)
         #fill in any variables from the current bindings
         bound_queries = [query.bind(slice) for slice in current_frame]
-        logging.info('Bound: {}'.format(bound_queries))
+        logging.debug('Bound: {}'.format(bound_queries))
         #then query
         results = [self.trie.query(query) for query in bound_queries]
-        logging.info("Trie Query results: {}".format(results))
+        logging.debug("Trie Query results: {}".format(results))
         #then integrate into bindings:
         successes = [success for success in results if success == True]
-        logging.info("Trie Query Successes: {}".format(successes))
+        logging.debug("Trie Query Successes: {}".format(successes))
         #Flatten the frame
         updated_frame = ELBD.ELBindingFrame([bind_slice for success in successes for bind_slice in success.bindings])
 
