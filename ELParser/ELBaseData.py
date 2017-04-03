@@ -433,37 +433,42 @@ class ELVAR(ELSTRUCTURE):
 class ELFACT(ELSTRUCTURE):
     """ An internal representation of an EL Fact string """
 
-    def __init__(self,data=None, r=False, bindings=None, negated=False, filled_bindings={}):
+    def __init__(self,data=[], r=False, bindings=[], negated=False, filled_bindings=None):
         self.negated = negated
-        self.filled_bindings = filled_bindings
-        if bindings is not None:
-            self.bindings = bindings
+        #filled_bindings :: ELBindingSlice
+        if filled_bindings is None:
+            self.filled_bindings = ELBindingSlice()
         else:
-            self.bindings = []
-        if data is None:
-            self.data = []
-            if r is True:
-                self.data.append(ELROOT())
-        else:
-            self.data = data
+            self.filled_bindings = ELBindingSlice(filled_bindings)
+        #variables of the fact. [x,y,z...]
+        self.bindings = bindings.copy()
+        self.data = data.copy()
+        if r is True:
+            self.data.append(ELROOT())
 
-    def bind(self,bindings):
+    def bind(self,binding_slice):
         #return a copy of the fact, where the var has been switched out
-        assert isinstance(bindings,dict)
+        #TODO: CONVERT PATH_VARS TO NODE IDS TO RETRIEVE AND MOD LATER
+        assert isinstance(binding_slice,ELBindingSlice)
         new_string = []
         new_pair = None
         for x in self.data:
             if not x.isVar():
                 new_pair = x
-            elif isinstance(x, ELPAIR) and x.value.value in bindings:
-                new_pair = ELPAIR(bindings[x.value.value],x.elop)
-            elif isinstance(x, ELTERM) and x.value.value in bindings:
-                new_pair = ELTERM(bindings[x.value.value])
-            elif x.isVar() and x.value.value not in bindings:
+            elif isinstance(x, ELPAIR) and x.value.value in binding_slice:
+                #ELPair.value :: ELVar
+                new_pair = ELPAIR(x.value.get_val(binding_slice),x.elop)
+            elif isinstance(x, ELTERM) and x.value.value in binding_slice:
+                #ELTerm.value :: ELVar
+                new_pair = ELTERM(x.value.get_val(binding_slice))
+            elif isinstance(x, ELROOT) and x.isVar() and x.value.value in binding_slice:
+                #ELRoot.value :: ELVAR
+                new_pair = ELROOT(elop=x.elop, var=x.value.get_val(binding_slice))
+            elif x.isVar() and x.value.value not in binding_slice:
                 new_pair = x.copy()
             new_string.append(new_pair)
         updated_bindings = self.filled_bindings.copy()
-        updated_bindings.update(bindings)
+        updated_bindings.update(binding_slice)
         new_fact = ELFACT(new_string,
                           bindings=self.bindings,
                           filled_bindings=updated_bindings,
