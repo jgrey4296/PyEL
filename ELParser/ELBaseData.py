@@ -184,10 +184,16 @@ class ELARITH_FACT(ELAction):
             raise ELE.ELConsistencyException('All Arith facts need a fact or variable as a base')
         if not isinstance(op,ELARITH):
             raise ELE.ELConsistencyException('Arith Fact missing an operator')
-        self.data=data #A fact
+        self.data=data #A fact or Var
         self.op = op   #an operator
         self.val = val #a value or binding       
-
+        self.bindings = []
+        #todo: populate bindings from data, and val
+    
+        
+    def bind(self,bindings):
+        #returns a EL_FACT that has been bound
+        None
     def __repr__(self):
         return "|ARITH: {} ({} {}) |".format(self.data,EL_ARITH_2_STR(self.op), self.val)
 
