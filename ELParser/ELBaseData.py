@@ -415,6 +415,20 @@ class ELVAR(ELSTRUCTURE):
     def copy(self):
         return ELVAR(self.value)
 
+    def get_val(self,binding_slice):
+        assert isinstance(binding_slice, ELBindingSlice)
+        returnVal = None
+        if self.is_path_var:
+            returnVal =  binding_slice[self.value].node
+        elif self.access_point:
+            if isinstance(self.access_point, ELVAR):
+                returnVal = binding_slice[self.value].value[self.access_point.get_val]
+            else:
+                returnVal = binding_slice[self.value].value[self.access_point]
+        else:
+            returnVal = binding_slice[self.value].value
+
+        return returnVal
     
 class ELFACT(ELSTRUCTURE):
     """ An internal representation of an EL Fact string """
