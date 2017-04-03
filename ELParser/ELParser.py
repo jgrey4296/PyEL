@@ -209,7 +209,7 @@ CONDITION = FACT + s(QUERYOP)
 EL_CONDITIONS = array_template(CONDITION, brackets_optional=True)
 
 #An arithmetic action fact: .a.b.c + 20
-ARITH_FACT = (FACT | NON_PATH_VAR) + \
+ARITH_FACT = (FACT | NON_PATH_VAR | PATH_VAR) + \
              pp.Group(ARITH + (NON_PATH_VAR | NUM)).setResultsName(str(PARSENAMES.ARITH_OP))
 
 #Regex Action?
