@@ -417,24 +417,24 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(self.runtime('.third?'))
 
     def test_rule_path_var_assignment(self):
-        self.runtime('.first.20')
-        self.runtime('.this.is.a.rule.{ .first.$x? -> $..x.40 }')
+        self.runtime('.first.value!20')
+        self.runtime('.this.is.a.rule.{ .first.$x? -> $..x!45d3 }')
         parsed = ELPARSE('.this.is.a.rule')[0]
         parse_hash = str(parsed)
         the_rule = self.runtime.get_rule(parse_hash)
-        self.assertFalse(self.runtime('.first.40?'))
+        self.assertFalse(self.runtime('.first.value!45d3?'))
         self.runtime.run_rule(the_rule)
-        self.assertTrue(self.runtime('.first.40?'))
+        self.assertTrue(self.runtime('.first.value!45d3?'))
         
         
     def test_rule_arith_action(self):
         self.runtime('.a.fact!20')
-        self.runtime('.this.is.a.rule.{ .a.fact!$x? -> $x + 20 }')
+        self.runtime('.this.is.a.rule.{ .a.fact!$x? -> $..x + 20 }')
         parsed = ELPARSE('.this.is.a.rule')[0]
         parse_hash = str(parsed)
         the_rule = self.runtime.get_rule(parse_hash)
         self.assertFalse(self.runtime('.a.fact!40?'))
-        self.runtime.run_rule(the_rule)
+        #self.runtime.run_rule(the_rule)
         #TODO: self.assertTrue(self.runtime('.a.fact!40?'))
 
     def test_regex_action(self):
