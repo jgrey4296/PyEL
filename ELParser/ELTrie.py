@@ -81,7 +81,12 @@ class ELTrie:
             for statement in el_string:
                 if isinstance(statement,ELBD.ELROOT):
                     logging.debug("Hit Root")
-                    current = self.root
+                    if isinstance(statement.value, uuid.UUID) and statement.value in self.allNodes:
+                        current = self.allNodes[statement.value]
+                    elif statement.value is None:
+                        current = self.root
+                    else:
+                        raise ELE.ELConsistencyException('Root is not a uuid or empty')
                     continue # <---- note this
                 elif isinstance(statement,ELBD.ELTERM) and statement not in current:
                     #came to the terminal, and it is missing
