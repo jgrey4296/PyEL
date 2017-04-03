@@ -228,20 +228,33 @@ class ELSTRUCTURE:
 
 class ELROOT(ELSTRUCTURE):
     """ The Representation of the Trie root """
-    def __init__(self,elop=EL.DOT):
+    def __init__(self,elop=EL.DOT, var=None):
         self.elop = elop
-        
+        self.value = var
+
+    def isVar(self):
+        return self.value is not None
+
     def __repr__(self):
-        return "ROOT{}".format(ELOP2STR(self.elop))
+        if not self.isVar():
+            return "ROOT{}".format(ELOP2STR(self.elop))
+        else:
+            return "ROOT({}){}".format(repr(self.value), ELOP2STR(self.elop))
 
     def __str__(self):
-        return ELOP2STR(self.elop)
+        if not self.isVar():
+            return ELOP2STR(self.elop)
+        else:
+            return "{}{}".format(str(self.value), ELOP2STR(self.elop))
 
     def __eq__(self,other):
-        return self.elop == other.elop
+        return self.elop == other.elop and self.value == other.value
 
     def copy(self):
-        return ELROOT(self.elop)
+        if self.value is not None:
+            return ELROOT(elop=self.elop, var=self.value.copy())
+        else:
+            return ELROOT(elop=self.elop)
 
     
 class ELPAIR(ELSTRUCTURE):
