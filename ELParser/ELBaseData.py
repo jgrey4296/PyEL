@@ -645,8 +645,10 @@ class ELFail(ELRESULT):
 
 class ELSuccess(ELRESULT):
     """ A Successful result """
-    def __init__(self,path=None,bindings=[(None,{})]):
-        # bindings :: [ ( uuid, {} ) ]
+    def __init__(self,path=None,bindings=None):
+        # bindings :: ELBindingFrame
+        if bindings is None:
+            bindings = ELBindingFrame()
         self.bindings = bindings
         #path :: el_string with open variables applicable
         self.path = path
