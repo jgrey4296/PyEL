@@ -468,7 +468,7 @@ class ELRuntime_Tests(unittest.TestCase):
         """
         None
 
-    def test_run_rule_on_all_variation(self):
+    def test_run_rule_on_all_variations(self):
         """
         { .a.b.$c -> $@..c + 20 }
         Apply to every c
@@ -476,48 +476,122 @@ class ELRuntime_Tests(unittest.TestCase):
         None
         
     def test_regex_action(self):
+        """
+        { .a.b.$c -> $..c ~= /a/A/ }
+        """
+        None
+
+    def test_rule_collections(self):
+        """
+        .a.b.{ .a.b -> .a.b.c }
+        .a.b.{ .a.b -> .a.b.d }
+        Run both
+        """
         None
         
+        
     def test_fact_arrays(self):
+        """
+        .a.b.[ .a.b.c, .a.b.d, .a.b.e ]
+        """
         None
 
     def test_string_interpolation(self):
-        None
-
-    def test_fact_arithmetic(self):
+        """
+        .a.b."this is my {}"
+        .a.val.test
+        .this.is.a.rule.{ .a.b.$x?, .a.val.$y? -> .output.$x($y) }
+        """
         None
 
     def test_comments_are_ignored(self):
+        """
+        //.this.is.a.bad.fact
+        .a.b.c
+        ~.this.is.a.bad.fact?
+        """
         None
 
     def test_rule_binding_balances(self):
+        """
+        .this.is.a.rule.{ .a.b.$x.$y? -> .q.w.$x } // should error on missing $y
+        """
         None
 
     def test_rule_comparisons(self):
+        """
+        .a.b.20
+        .a.c.40
+        .this.is.a.rule.{ .a.b.$x?, .a.c.$y? | $x < $y -> .a.b.d }
+        """        
         None
 
     def test_rule_binding_arith(self):
+        """
+        .a.b.20
+        .this.is.a.rule.{ .a.b.$x? -> $..x + $x }
+        .a.b.40?
+        """
         None
 
     def test_rule_implicit_binding_comparison(self):
+        """ 
+        .a.b.c
+        .q.b.e
+        .this.is.a.rule.{ .a.$x.c?, .q.$x.e? -> .r.t.y }
+        .r.t.y?
+        """
         None
 
     def test_rule_binding_non_equality(self):
+        """
+        .a.b.c
+        .q.c.e
+        .this.is.a.rule.{ .a.$x.c?, .q.$x.e? -> .r.t.y }
+        ~.r.t.y?
+        """
         None
 
     def test_rule_near_operator(self):
+        """
+        .a.b.50
+        .this.is.a.rule.{ .a.b.$x? | $x ~=(10) 40 -> .q.e.d }
+        .q.e.d?
+        """
         None
 
     def test_rule_near_operator_with_binding(self):
+        """
+        .a.b.50
+        .a.c.30
+        .a.d.20
+        .this.is.a.rule.{ .a.b.$x?, .a.c.$y?, .a.d.$z | $x ~=($z) $y -> .q.e.d }
+        .q.e.d?
+        """
         None
 
     def test_global_binding(self):
+        """
+        $x <- .a.b.c
+        $..x.d
+        .a.b.c.d?
+        """
         None
 
     def test_global_rebinding(self):
+        """
+        $x <- .a.b.c
+        $x <- .q.e
+        $..x.d
+        ~.a.b.c.d?
+        .q.e.d?
+        """
         None
 
     def test_subtree_testing(self):
+        """
+        
+        """
         None
 
     def test_subtree_application(self):
