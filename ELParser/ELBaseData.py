@@ -787,7 +787,9 @@ class ELTrieNode:
         
         
     def __getitem__(self,key):
-        if isinstance(key,ELPAIR):
+        if isinstance(key, ELTrieNode):
+            return self.children[key.value]
+        elif isinstance(key,ELPAIR):
             return self.children[key.value]
         elif isinstance(key,ELTERM):
             if isinstance(key.value,list):
@@ -802,9 +804,13 @@ class ELTrieNode:
 
     def __setitem__(self,key,value):
         assert isinstance(value,ELTrieNode)
+        #an exclusion removes all else
         if self.elop == EL.EX:
             self.children.clear()
-        if isinstance(key,ELPAIR):
+        #now process the key val pair:
+        if isinstance(key, ELTrieNode):
+            self.children[key.value] = value
+        elif isinstance(key,ELPAIR):
             self.children[key.value] = value
         elif isinstance(key,ELTERM):
             #Only terminals can have arrays, but they are unhashable so use the ELV.ARR enum
