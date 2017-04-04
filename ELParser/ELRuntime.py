@@ -67,6 +67,9 @@ class ELRuntime:
         """ Given an action (one of ELBDs action types),
         perform it
         """
+        #Store in the history
+        self.history.append(action)
+        
         result = None
         #Perform based on parsed type
         if isinstance(action,ELBD.ELFACT):

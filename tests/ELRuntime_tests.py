@@ -424,7 +424,6 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.first.value!45d3?'))
         
-        
     def test_rule_arith_action(self):
         self.runtime('.a.fact!20')
         self.runtime('.this.is.a.rule.{ .a.fact!$x? -> $..x + 20 }')

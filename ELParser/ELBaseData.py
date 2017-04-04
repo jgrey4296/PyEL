@@ -858,6 +858,3 @@ class ELTrieNode:
     
     def is_empty(self):
         return len(self.children) == 0
-
-
-
