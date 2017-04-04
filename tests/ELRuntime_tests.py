@@ -444,17 +444,20 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.a.fact!10?'))
         
-
-
-
-        
     def test_rule_comparison_subvalues(self):
         """
         .a.b.d.50
         .{ .a.$x -> $..x.d.20 }
         """
+        self.runtime('.a.b.d.50')
+        self.runtime('.this.is.a.rule.{ .a.$x? -> $..x.d.20 }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.a.b.d.20?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.a.b.d.20?'))
         
-        None
 
     def test_aggregate_across_condition_possibilities(self):
         """
