@@ -85,7 +85,7 @@ def ELOP2STR(elop):
 class ELBindingStack(list):
     """ The stack of assignments to keep between rules
     [ ELBindingFrame, ELBindingFrame... ]
-    """    
+    """
     def __init__(self):
         super().__init__([ELBindingFrame()])
     def top(self):
@@ -99,6 +99,7 @@ class ELBindingFrame(list):
     [ ELBindingSlice(x=2..), ELBindingSlice(x=4...) ]
     """
     def __init__(self,data=None):
+        #todo: add a inter_frame ELBinding, make sure its copied
         if data is None:
             super().__init__([ELBindingSlice()])
         else:
@@ -723,6 +724,8 @@ class ELTrieNode:
     def __init__(self,val,parent=None):
         self.uuid = uuid.uuid1()
         #Default to Dot, update later if necessary
+        #Add an int time step stack, and then index elop, value, child edges by it
+        #so self.change_time_steps: [0, 4, 6, 7, 8]
         self.elop = EL.DOT
         self.value = None
         self.parent = parent
@@ -773,7 +776,7 @@ class ELTrieNode:
         elif isinstance(key,ELPAIR):
             del self.children[key.value]
         elif isinstance(key,ELTERM):
-            if isisntance(key.value,list):
+            if isinstance(key.value,list):
                 del self.children[ELV.ARR]
             elif isinstance(key.value,ELRULE):
                 del self.children[ELV.RULE]
