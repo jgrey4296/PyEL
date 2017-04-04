@@ -354,25 +354,10 @@ class ELRULE(ELSTRUCTURE):
         self.binding_comparisons = binding_comparisons
 
         #get the vars in each binding fact in conditions
-        self.condition_bindings = set([x.value for c in self.conditions for x in c.value.bindings])
-        non_arith_facts = [x for x in self.actions if isinstance(x,ELFACT)]
-        arith_actions = [x for x in self.actions if isinstance(x,ELARITH_FACT)]
-        arith_facts = [x.data for x in arith_actions if isinstance(x.data,ELFACT)]
+        self.condition_bindings = set([var.value for c in self.conditions for var in c.value.bindings])
         
-        #get the vars in from normal action: .a.b.$c
-        non_arith_vars = set([x.value for a in non_arith_facts for x in a.bindings])
-        #vars of .a.b.$c + 20
-        arith_fact_vars = set([x.value for a in arith_facts for x in a.bindings])
-        #vars of $c + 20
-        arith_raw_vars = set([x.data.value for x in arith_actions if isinstance(x.data,ELVAR)])
-        #vars of .a.b.c + $d
-        arith_values = set([x.val.value for x in arith_actions if isinstance(x.val,ELVAR)])
-
         #combine them all together:
-        self.action_bindings = non_arith_vars.union(arith_fact_vars).union(arith_fact_vars, \
-                                                                           arith_raw_vars, \
-                                                                           arith_values)
-
+        self.action_bindings = set([var.value for clause in self.actions for var in clause.bindings])
 
         
     def __hash__(self):
@@ -565,8 +550,10 @@ class ELFACT(ELSTRUCTURE):
 
     def var(self,*args):
         """ Utility for easy construction of a variable """
-        var = ELPAIR(ELVAR(*args))
-        return self.push(var)
+        var = ELVAR(*args)
+        pair = ELPAIR(var)
+        self.bindings.append(var)
+        return self.push(pair)
     
     def pair(self,*args):
         """ Utility for easy construction of a fact:
@@ -576,7 +563,10 @@ class ELFACT(ELSTRUCTURE):
 
     def evar(self,*args):
         """ Utility for easy construction of an exclusive variable """
-        var = ELPAIR(ELVAR(*args),EL.EX)
+        var = ELVAR(*args)
+        pair = ELPAIR(var, EL.EX)
+        self.bindings.append(var)
+        self.push(pair)
             
     def epair(self,arg):
         """ Utility for easy construction of a fact:
