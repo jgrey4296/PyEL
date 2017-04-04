@@ -179,23 +179,46 @@ class ELARITH_FACT(ELAction):
     Essentially a wrapper to house a fact, an operation, and a value to apply
     """
     def __init__(self, data=None, op=None, val=None):
-        if not (isinstance(data,ELFACT) or isinstance(data,ELVAR)):
+        if not (isinstance(data,ELFACT) or isinstance(data,ELVAR) or isinstance(data,uuid.UUID)):
             raise ELE.ELConsistencyException('All Arith facts need a fact or variable as a base')
         if not isinstance(op,ELARITH):
             raise ELE.ELConsistencyException('Arith Fact missing an operator')
+        if val is None:
+            raise ELE.ELConsistencyException('Arith fact must have a value')
         self.data=data #A fact or Var
         self.op = op   #an operator
         self.val = val #a value or binding       
         self.bindings = []
         #todo: populate bindings from data, and val
-    
+        if isinstance(data,ELVAR):
+            self.bindings.append(data)
+        elif isinstance(data,ELPAIR):
+            self.bindings.extend(data.bindings)
+        if isinstance(val, ELVAR):
+            self.bindings.append(val)
+
+    def apply(self,node):
+        func = get_ARITH_FUNC(self.op)
+        new_value = func(node.value, self.val)
+        #update the parent:
+        del(node.parent[node])
+        node.value = new_value
+        node.parent[node] = node
         
+            
     def bind(self,bindings):
-        #returns a EL_FACT that has been bound
-        IPython.embed(simple_prompt=True)
-        raise Exception('not implemented yet')
-        
-        None
+        #returns a new bound ELARITH_FACT that has been bound
+        assert isinstance(bindings, ELBindingSlice)
+        if isinstance(self.data, ELVAR):
+            new_data = self.data.get_val(bindings)
+        else:
+            new_data = self.data
+        if isinstance(self.val, ELVAR):
+            new_val = self.val.get_val(bindings)
+        else:
+            new_val = self.val
+        return ELARITH_FACT(data=new_data, op=self.op, val=new_val)
+
     def __repr__(self):
         return "|ARITH: {} ({} {}) |".format(self.data,EL_ARITH_2_STR(self.op), self.val)
 

@@ -84,7 +84,10 @@ class ELRuntime:
             self.set_binding(action.var,action.root)
         elif isinstance(action,ELBD.ELARITH_FACT):
             #todo: enact arithmetic on the fact /binding
-            raise ELE.RuleException('Arith Facts not implemented')
+            #Get the designated leaf.
+            node = self.trie[action.data]
+            action.apply(node)
+            #done            
         elif isinstance(action,ELBD.ELQUERY):
             #Don't replace vars with bindings, populate them
             logging.debug("Querying")
