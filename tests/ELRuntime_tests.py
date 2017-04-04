@@ -432,9 +432,47 @@ class ELRuntime_Tests(unittest.TestCase):
         parse_hash = str(parsed)
         the_rule = self.runtime.get_rule(parse_hash)
         self.assertFalse(self.runtime('.a.fact!40?'))
-        #self.runtime.run_rule(the_rule)
-        #TODO: self.assertTrue(self.runtime('.a.fact!40?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.a.fact!40?'))
 
+    def test_rule_subtraction_action(self):
+        self.runtime('.a.fact!20')
+        self.runtime('.this.is.a.rule.{ .a.fact!$x? -> $..x - 10 }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(self.runtime('.a.fact!10?'))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.a.fact!10?'))
+        
+
+
+
+        
+    def test_rule_comparison_subvalues(self):
+        """
+        .a.b.d.50
+        .{ .a.$x -> $..x.d.20 }
+        """
+        
+        None
+
+    def test_aggregate_across_condition_possibilities(self):
+        """
+        test with a set of values that are carried between 
+        BindingSlices in a BindingFrame...
+        So Data able to be carried across... stack comparisons,
+        rule comparisons,
+        """
+        None
+
+    def test_run_rule_on_all_variation(self):
+        """
+        { .a.b.$c -> $@..c + 20 }
+        Apply to every c
+        """
+        None
+        
     def test_regex_action(self):
         None
         
