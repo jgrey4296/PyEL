@@ -1,8 +1,12 @@
 import logging as root_logger
 logging = root_logger.getLogger(__name__)
+from enum import Enum
 from math import log, exp
 from random import random
-from ELParser.ELBaseData import ELCOMP, ELARITH
+
+#Enums, moved here from base data to stop circular dependence
+ELCOMP = Enum('ELCOMP','GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL NOTEQUAL CONTAINS NOTCONTAINS NEAR')
+ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW MOD RAND LOG')
 
 
 #Comparison Functions:

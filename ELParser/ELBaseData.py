@@ -17,6 +17,7 @@ from enum import Enum
 from collections import namedtuple
 import logging as root_logger
 logging = root_logger.getLogger(__name__)
+from ELParser.ELCompFunctions import get_ARITH_FUNC, ELCOMP, ELARITH
 import ELParser.ELExceptions as ELE
 import uuid
 ##############################
@@ -24,8 +25,6 @@ import uuid
 ####################
 EL = Enum('EL','DOT EX')
 ELV = Enum('ELV','ARR RULE')
-ELCOMP = Enum('ELCOMP','GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL NOTEQUAL CONTAINS NOTCONTAINS NEAR')
-ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW MOD RAND LOG')
 
 ##############################
 # Enum Utilities
