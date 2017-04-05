@@ -252,7 +252,7 @@ BIND_STATEMENT = NON_PATH_VAR + s(BIND) + op(FACT)
 
 #The entire grammar:
 ROOT = pp.OneOrMore((BIND_STATEMENT | CONDITION | FACT) + \
-                    s(pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
+                    s(COMMA | pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
 
 ##############################
 # PARSE NAMES

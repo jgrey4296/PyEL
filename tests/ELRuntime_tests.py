@@ -458,19 +458,23 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_rule(the_rule)
         self.assertTrue(self.runtime('.a.b.d.20?'))
         
-
-    def test_aggregate_across_condition_possibilities(self):
+    def test_comma_separated_facts(self):
         """
-        test with a set of values that are carried between 
-        BindingSlices in a BindingFrame...
-        So Data able to be carried across... stack comparisons,
-        rule comparisons,
+        .a.b.c, .a.b.d, .a.b.e
+        .a.b.c?
+        .a.b.d?
+        .a.b.e?
         """
-        None
+        self.runtime('.a.b.c, .a.b.d, .a.b.e')
+        self.assertTrue(self.runtime('.a.b.c?'))
+        self.assertTrue(self.runtime('.a.b.d?'))
+        self.assertTrue(self.runtime('.a.b.e?'))
+        self.assertTrue(all(self.runtime('.a.b.c?, .a.b.d?, .a.b.e?')))
+        self.assertFalse(all(self.runtime('.a.b.c?, .a.b.d?, .a.b.f?')))
 
     def test_run_rule_on_all_variation(self):
         """
-        { .a.b.$c -> $@..c + 20 }
+        { .a.b.$c -> @..c + 20 }
         Apply to every c
         """
         None
@@ -518,8 +522,11 @@ class ELRuntime_Tests(unittest.TestCase):
         None
 
     def test_subtree_testing(self):
+        """
+        .a.b.c, .a.b.d
+        """
         None
-
+        
     def test_subtree_application(self):
         None
 
@@ -528,6 +535,16 @@ class ELRuntime_Tests(unittest.TestCase):
 
     def test_subtree_variable_application(self):
         None
+
+    def test_aggregate_across_condition_possibilities(self):
+        """
+        test with a set of values that are carried between 
+        BindingSlices in a BindingFrame...
+        So Data able to be carried across... stack comparisons,
+        rule comparisons,
+        """
+        None
+
         
         
 if __name__ == "__main__":
