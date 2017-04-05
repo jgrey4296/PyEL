@@ -68,8 +68,14 @@ def construct_el_fact(toks):
     #values in basefact are wrapped in elpairs, need to unwrap:
     #TODO: should i check the terminal deeply (ie: for rules) for bindings?
     bindings = [x.value for x in base if isinstance(x.value, ELBD.ELVAR)]
-    if isinstance(toks[str(PARSENAMES.TERMINAL)][0].value, ELBD.ELVAR):
-        bindings.append(toks[str(PARSENAMES.TERMINAL)][0].value)
+    if isinstance(term[0].value, ELBD.ELVAR):
+        bindings.append(term[0].value)
+    if isinstance(root[0].value, ELBD.ELVAR):
+        bindings.append(root[0].value)
+
+    #retrieve sub vars
+    bindings.extend([x.access_point for x in bindings if isinstance(x.access_point, ELBD.ELVAR)])
+        
     return ELBD.ELFACT(root + base + term, bindings=bindings, negated=negated)
 
 def construct_arith_fact(toks):
@@ -225,6 +231,8 @@ REGEX = pp.Word('/') + pp.Regex(r'[a-zA-Z0-9*+?()[]\'"<>,.]+') + pp.Word('/')
 REGEX_ACTION = (FACT | NON_PATH_VAR) + pp.Group(REGEX_OP + (NON_PATH_VAR | REGEX))
 
 #TODO:Other Actions? Stack/Queue/sample_from?
+#TODO: add a negated path var fact special case.
+# (ie: {.a.b.$x? -> ~@..x }
 ACTION_ARRAY = array_template(ARITH_FACT | REGEX_ACTION | FACT, brackets_optional=True)
 
 

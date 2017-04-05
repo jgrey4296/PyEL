@@ -207,6 +207,14 @@ class ELARITH_FACT(ELAction):
         if isinstance(val, ELVAR):
             self.bindings.append(val)
 
+        #retrieve sub vars
+        self.bindings.extend([x.access_point for x in self.bindings if isinstance(x.access_point, ELVAR)])
+
+    def hasForAllBinding(self):
+        """ If one of the bindings is scoped to forall, return true """
+        forallbindings = [x.scope is ELVARSCOPE.FORALL for x in self.bindings]
+        return any(forallbindings)
+            
     def apply(self, node):
         func = get_ARITH_FUNC(self.op)
         new_value = func(node.value, self.val)
@@ -215,15 +223,18 @@ class ELARITH_FACT(ELAction):
         node.value = new_value
         node.parent[node] = node
 
-    def bind(self, bindings):
+    def bind(self, binding_slice, all_sub_slice=None):
         #returns a new bound ELARITH_FACT that has been bound
-        assert isinstance(bindings, ELBindingSlice)
+        assert isinstance(binding_slice, ELBindingSlice)
+        if all_sub_slice is not None:
+            assert isinstance(all_sub_slice, ELBindingSlice)
+            
         if isinstance(self.data, ELVAR):
-            new_data = self.data.get_val(bindings)
+            new_data = self.data.get_val(binding_slice, all_sub_slice)
         else:
             new_data = self.data
         if isinstance(self.val, ELVAR):
-            new_val = self.val.get_val(bindings)
+            new_val = self.val.get_val(binding_slice, all_sub_slice)
         else:
             new_val = self.val
         return ELARITH_FACT(data=new_data, op=self.op, val=new_val)
@@ -443,20 +454,29 @@ class ELVAR(ELSTRUCTURE):
     def copy(self):
         return ELVAR(self.value)
 
-    def get_val(self, binding_slice):
+    def get_val(self, binding_slice, all_sub_slice=None):
         assert isinstance(binding_slice, ELBindingSlice)
-        returnVal = None
+        if all_sub_slice is not None:
+            assert isinstance(binding_slice, ELBindingSlice)
+        return_val = None
+        #Get the right scope:
+        if self.scope is ELVARSCOPE.FORALL:
+            assert all_sub_slice is not None
+            focus_slice = all_sub_slice
+        else:
+            focus_slice = binding_slice
+        #now get the right value:
         if self.is_path_var:
-            returnVal = binding_slice[self.value].node
+            return_val = focus_slice[self.value].node
         elif self.access_point:
             if isinstance(self.access_point, ELVAR):
-                returnVal = binding_slice[self.value].value[self.access_point.get_val]
+                return_val = focus_slice[self.value].value[self.access_point.get_val(binding_slice, all_sub_slice)]
             else:
-                returnVal = binding_slice[self.value].value[self.access_point]
+                return_val = focus_slice[self.value].value[self.access_point]
         else:
-            returnVal = binding_slice[self.value].value
+            return_val = focus_slice[self.value].value
 
-        return returnVal
+        return return_val
 
 class ELFACT(ELSTRUCTURE):
     """ An internal representation of an EL Fact string """
@@ -478,10 +498,20 @@ class ELFACT(ELSTRUCTURE):
         if r is True:
             self.data.append(ELROOT())
 
-    def bind(self, binding_slice):
+    def hasForAllBinding(self):
+        """ Return true if any binding is a forall binding """
+        #todo: this doesn't account for forall variables that are array accessors
+        allforalls = [x.scope is ELVARSCOPE.FORALL for x in self.bindings]
+        return any(allforalls)
+
+            
+    def bind(self, binding_slice, all_sub_slice=None):
         #return a copy of the fact, where the var has been switched out
         #TODO: CONVERT PATH_VARS TO NODE IDS TO RETRIEVE AND MOD LATER
         assert isinstance(binding_slice, ELBindingSlice)
+        if all_sub_slice is not None:
+            assert isinstance(all_sub_slice, ELBindingSlice)
+            
         new_string = []
         new_pair = None
         for x in self.data:
@@ -489,17 +519,23 @@ class ELFACT(ELSTRUCTURE):
                 new_pair = x
             elif isinstance(x, ELPAIR) and x.value.value in binding_slice:
                 #ELPair.value :: ELVar
-                new_pair = ELPAIR(x.value.get_val(binding_slice), x.elop)
+                new_pair = ELPAIR(x.value.get_val(binding_slice, all_sub_slice), \
+                                  x.elop)
             elif isinstance(x, ELTERM) and x.value.value in binding_slice:
                 #ELTerm.value :: ELVar
-                new_pair = ELTERM(x.value.get_val(binding_slice))
+                new_pair = ELTERM(x.value.get_val(binding_slice, all_sub_slice))
             elif isinstance(x, ELROOT) and x.isVar() and x.value.value in binding_slice:
                 #ELRoot.value :: ELVAR
-                new_pair = ELROOT(elop=x.elop, var=x.value.get_val(binding_slice))
+                new_pair = ELROOT(elop=x.elop, \
+                                  var=x.value.get_val(binding_slice, all_sub_slice))
             elif x.isVar() and x.value.value not in binding_slice:
                 new_pair = x.copy()
             new_string.append(new_pair)
         updated_bindings = self.filled_bindings.copy()
+
+        #todo: this has the ability to clobber bindings
+        if self.hasForAllBinding():
+            updated_bindings.update(all_sub_slice)
         updated_bindings.update(binding_slice)
         new_fact = ELFACT(new_string,
                           bindings=self.bindings,
@@ -570,6 +606,8 @@ class ELFACT(ELSTRUCTURE):
         var = ELVAR(*args)
         pair = ELPAIR(var)
         self.bindings.append(var)
+        if isinstance(var.access_point, ELVAR):
+            self.bindings.append(var.access_point)
         return self.push(pair)
 
     def pair(self, *args):
@@ -583,6 +621,8 @@ class ELFACT(ELSTRUCTURE):
         var = ELVAR(*args)
         pair = ELPAIR(var, EL.EX)
         self.bindings.append(var)
+        if isinstance(var.access_point, ELVAR):
+            self.bindings.append(var.access_point)
         self.push(pair)
 
     def epair(self, arg):
@@ -592,7 +632,12 @@ class ELFACT(ELSTRUCTURE):
         return self.push(ELPAIR(arg, EL.EX))
 
     def vterm(self, *args):
-        return self.push(ELTERM(ELVAR(*args)))
+        var = ELVAR(*args)
+        term = ELTERM(var)
+        self.bindings.append(var)
+        if isinstance(var.access_point, ELVAR):
+            self.bindings.append(var.access_point)
+        return self.push(term)
 
     def term(self, *args):
         """ Utility for construction of a new fact:

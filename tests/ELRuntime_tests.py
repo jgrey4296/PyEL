@@ -108,7 +108,6 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(self.runtime(".this.is.a.test?\n.this.is.a.blah?"))
         self.runtime(".this.is.a!bloo")
         result = self.runtime("~.this.is.a.test?\n~.this.is.a.blah?\n.this.is.a!bloo?")
-        print('Exclusion semantic result: {}'.format(result))
         self.assertTrue(result)
 
     def test_exclusion_query_resolution(self):
@@ -435,6 +434,11 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(self.runtime('.a.fact!40?'))
 
     def test_rule_subtraction_action(self):
+        """
+        .a.fact!20
+        .{ .a.fact!$x -> $..x - 10 }
+        .a.fact!10?
+        """
         self.runtime('.a.fact!20')
         self.runtime('.this.is.a.rule.{ .a.fact!$x? -> $..x - 10 }')
         parsed = ELPARSE('.this.is.a.rule')[0]
@@ -448,6 +452,7 @@ class ELRuntime_Tests(unittest.TestCase):
         """
         .a.b.d.50
         .{ .a.$x -> $..x.d.20 }
+        .a.b.d.20?
         """
         self.runtime('.a.b.d.50')
         self.runtime('.this.is.a.rule.{ .a.$x? -> $..x.d.20 }')
@@ -461,23 +466,76 @@ class ELRuntime_Tests(unittest.TestCase):
     def test_comma_separated_facts(self):
         """
         .a.b.c, .a.b.d, .a.b.e
-        .a.b.c?
-        .a.b.d?
-        .a.b.e?
+        .a.b.c?, .a.b.d?, .a.b.e?
         """
         self.runtime('.a.b.c, .a.b.d, .a.b.e')
         self.assertTrue(self.runtime('.a.b.c?'))
         self.assertTrue(self.runtime('.a.b.d?'))
         self.assertTrue(self.runtime('.a.b.e?'))
         self.assertTrue(all(self.runtime('.a.b.c?, .a.b.d?, .a.b.e?')))
+        #Just checking the call is passing automatically, make sure it *can* fail: 
         self.assertFalse(all(self.runtime('.a.b.c?, .a.b.d?, .a.b.f?')))
 
     def test_run_rule_on_all_variation(self):
         """
-        { .a.b.$c -> @..c + 20 }
-        Apply to every c
+        .a.b.d.20, .a.b.e.30
+        { .a.b.$c.$d? -> @..d + 20 }
+        .a.b.d.40?, .a.b.e.50?
         """
-        None
+        self.runtime('.a.b.d.20, .a.b.e.30')
+        self.runtime('.this.is.a.rule.{ .a.b.$x.$y? -> @..y + 20 }')
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.assertFalse(any(self.runtime('.a.b.d.40?, .a.b.e.50?')))
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(all(self.runtime('.a.b.d.40?, .a.b.e.50?')))
+
+    def test_run_rule_forall_variations_sub_assert(self):
+        """
+        .a.b.d, .a.b.e
+        { .a.b.$x? -> @..x.blah }
+        .a.b.d.blah?, .a.b.e.blah?
+        """
+        self.runtime('.a.b.d, .a.b.e')
+        self.runtime('.this.is.a.rule.{ .a.b.$x? -> @..x.blah }')
+        self.assertFalse(any(self.runtime('.a.b.d.blah?, .a.b.e.blah?')))
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(all(self.runtime('.a.b.d.blah?, .a.b.e.blah?')))
+
+    def test_run_rule_on_all_variations_sub_retract(self):
+        """
+        .a.b.d, .a.b.e
+        { .a.b.$x? -> ~@..x }
+        ~.a.b.d?, ~.a.b.e?
+        """
+        self.runtime('.a.b.d, .a.b.e')
+        self.runtime('.this.is.a.rule.{ .a.$x.$y? -> ~@..x.@y }')
+        self.assertTrue(all(self.runtime('.a.b.d?, .a.b.e?')))
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(all(self.runtime('~.a.b.d?, ~.a.b.e?')))
+
+    def test_run_rule_on_all_variations_with_selected_slice(self):
+        """
+        .first.blah, .second.x, .second.y
+        { .first.$x?, .second.$y? | $x == blah -> @..y.$x }
+        .second.x.blah?, .second.y.blah?
+        """
+        self.runtime('.first.blah, .second.x, .second.y')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? -> @..y.$x }')
+        self.assertFalse(any(self.runtime('.second.x.blah?, .second.y.blah?')))
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(all(self.runtime('.second.x.blah?, .second.y.blah?')))
+                
         
     def test_regex_action(self):
         None
