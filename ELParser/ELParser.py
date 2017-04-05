@@ -106,13 +106,14 @@ def construct_arith_op(tok):
 
 def construct_el_var(toks):
     is_a_path_var = 'PATH_ACCESS' in toks
+    scope_type = toks['VAR_SCOPE'][0]
     var_name = toks['VARNAME']
     has_array_access = 'ARR_ACCESS' in toks
     if has_array_access:
         arr_access_value = toks['ARR_ACCESS'][0]
     else:
         arr_access_value = None
-    return ELBD.ELVAR(var_name, arr_access_value, is_a_path_var)
+    return ELBD.ELVAR(var_name, arr_access_value, is_a_path_var, scope_type)
 
 def construct_el_root_fact(toks):
     if toks[0][0] == ELBD.EL.DOT:
@@ -161,6 +162,8 @@ O_BRACE   = pp.Literal('{')
 C_BRACE   = pp.Literal('}')
 O_PAREN   = pp.Literal('(')
 C_PAREN   = pp.Literal(')')
+DOLLAR    = pp.Literal('$')
+AT        = pp.Literal('@')
 
 #Subtree application and testing
 S_APP     = pp.Keyword('::', identChars='?!')
@@ -178,11 +181,15 @@ STRING    = pp.dblQuotedString
 NON_PATH_VAR = pp.Forward()
 PATH_VAR   = pp.Forward()
 
-PATH_VAR << s(pp.Word('$')) + pp.Group(pp.Keyword('..', ' .')).setResultsName('PATH_ACCESS') + \
-           pp.Word(pp.alphas + pp.nums).setResultsName('VARNAME') - \
-           op(s(O_PAREN) + (NUM | NON_PATH_VAR) + s(C_PAREN)).setResultsName('ARR_ACCESS')
+VAR_HEADER = pp.Group(DOLLAR | AT)
 
-NON_PATH_VAR << s(pp.Word('$')) + \
+
+PATH_VAR << VAR_HEADER.setResultsName('VAR_SCOPE') + \
+    pp.Group(pp.Keyword('..', ' .')).setResultsName('PATH_ACCESS') + \
+    pp.Word(pp.alphas + pp.nums).setResultsName('VARNAME') - \
+    op(s(O_PAREN) + (NUM | NON_PATH_VAR) + s(C_PAREN)).setResultsName('ARR_ACCESS')
+
+NON_PATH_VAR << VAR_HEADER.setResultsName('VAR_SCOPE') + \
            pp.Word(pp.alphas + pp.nums).setResultsName('VARNAME') - \
            op(s(O_PAREN) + (NUM | NON_PATH_VAR) + s(C_PAREN)).setResultsName('ARR_ACCESS')
 
@@ -276,6 +283,9 @@ COMP.setParseAction(construct_comp_op)
 ARITH.setParseAction(lambda toks: construct_arith_op(toks[0]))
 NUM.setParseAction(lambda toks: construct_num(toks[0]))
 STRING.setParseAction(pp.removeQuotes)
+
+DOLLAR.setParseAction(lambda toks: ELBD.ELVARSCOPE.EXIS)
+AT.setParseAction(lambda toks: ELBD.ELVARSCOPE.FORALL)
 
 PATH_VAR.setParseAction(construct_el_var)
 NON_PATH_VAR.setParseAction(construct_el_var)

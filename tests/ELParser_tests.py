@@ -436,7 +436,53 @@ class ELParser_Tests(unittest.TestCase):
         result = self.parser(test_query)[0]
         self.assertIsInstance(result,ELBD.ELQUERY)
 
-            
+    def test_path_var_scoping_exis(self):
+        test_var = "$..x"
+        result = ELParser.PATH_VAR.parseString(test_var)[0]
+        self.assertIsInstance(result, ELBD.ELVAR)
+        self.assertEqual(result.value, 'x')
+        self.assertEqual(result.scope, ELBD.ELVARSCOPE.EXIS)
+        self.assertIsNone(result.access_point)
+        self.assertTrue(result.is_path_var)
+
+    def test_path_var_scoping_forall(self):
+        test_var = "@..x"
+        result = ELParser.PATH_VAR.parseString(test_var)[0]
+        self.assertIsInstance(result, ELBD.ELVAR)
+        self.assertEqual(result.value, 'x')
+        self.assertEqual(result.scope, ELBD.ELVARSCOPE.FORALL)
+        self.assertIsNone(result.access_point)
+        self.assertTrue(result.is_path_var)
+
+    def test_non_path_var_scoping_exis(self):
+        test_var = "$x"
+        result = ELParser.NON_PATH_VAR.parseString(test_var)[0]
+        self.assertIsInstance(result, ELBD.ELVAR)
+        self.assertEqual(result.value, 'x')
+        self.assertEqual(result.scope, ELBD.ELVARSCOPE.EXIS)
+        self.assertIsNone(result.access_point)
+        self.assertFalse(result.is_path_var)
+        
+    def test_non_path_var_scoping_forall(self):
+        test_var = "@x"
+        result = ELParser.NON_PATH_VAR.parseString(test_var)[0]
+        self.assertIsInstance(result, ELBD.ELVAR)
+        self.assertEqual(result.value, 'x')
+        self.assertEqual(result.scope, ELBD.ELVARSCOPE.FORALL)
+        self.assertIsNone(result.access_point)
+        self.assertFalse(result.is_path_var)
+    
+    def test_non_path_array_access(self):
+        test_var = "$x(4)"
+        result = ELParser.NON_PATH_VAR.parseString(test_var)[0]
+        self.assertIsInstance(result, ELBD.ELVAR)
+        self.assertEqual(result.value, 'x')
+        self.assertEqual(result.scope, ELBD.ELVARSCOPE.EXIS)
+        self.assertEqual(result.access_point,4)
+        self.assertFalse(result.is_path_var)
+        
+
+        
             
     def test_condition_variables(self):
         """ test:

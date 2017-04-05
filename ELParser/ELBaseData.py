@@ -16,15 +16,21 @@ import IPython
 from enum import Enum
 from collections import namedtuple
 import logging as root_logger
-logging = root_logger.getLogger(__name__)
+import uuid
 from ELParser.ELCompFunctions import get_ARITH_FUNC, ELCOMP, ELARITH
 import ELParser.ELExceptions as ELE
-import uuid
+
+logging = root_logger.getLogger(__name__)
 ##############################
 # ENUMS
 ####################
-EL = Enum('EL','DOT EX')
-ELV = Enum('ELV','ARR RULE')
+#Exclusion Type of a fact component
+EL = Enum('EL', 'DOT EX')
+#Subtypes of leaves
+ELV = Enum('ELV', 'ARR RULE')
+#Scope Applicability of a Variable:
+ELVARSCOPE = Enum('ELVARSCOPE', 'EXIS FORALL')
+
 
 ##############################
 # Enum Utilities
@@ -407,18 +413,19 @@ class ELRULE(ELSTRUCTURE):
         #then get the ones that aren't in the condition_bindings
         the_difference = combined_bindings.difference(self.condition_bindings)
         return len(the_difference) == 0
-        
+
 
 class ELVAR(ELSTRUCTURE):
     """ An internal representation of a binding """
-    def __init__(self,bindName, access_point=None, path_var=False):
+    def __init__(self, bindName, access_point=None, path_var=False, scope=ELVARSCOPE.EXIS):
         self.is_path_var = path_var
+        self.scope = scope
         self.value = bindName
         if access_point is not None:
             self.access_point = access_point
         else:
             self.access_point = None
-            
+
     def __repr__(self):
         if self.access_point is None:
             return "VAR({})".format(self.value)
