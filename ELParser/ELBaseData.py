@@ -423,7 +423,7 @@ class ELRULE(ELSTRUCTURE):
 
     def balanced_bindings(self):
         #get the set of all bindings used in comparisons
-        comparison_set = set([x.b1.value for x in self.binding_comparisons]).union(set([x.b2.value for x in self.binding_comparisons]))
+        comparison_set = set([x.b1.value for x in self.binding_comparisons]).union(set([x.b2.value for x in self.binding_comparisons if isinstance(x.b2, ELVAR)]))
         #get all bindings used in comparisons and actions:
         combined_bindings = self.action_bindings.union(comparison_set)
         #then get the ones that aren't in the condition_bindings

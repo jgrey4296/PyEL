@@ -227,11 +227,15 @@ class ELRuntime:
         
     def run_function(self, binding, func, comparison):
         #get values from bindings:
-        if comparison.b1.value not in binding or comparison.b2.value not in binding :
+        if comparison.b1.value not in binding or \
+           (isinstance(comparison.b2, ELBD.ELVAR) and comparison.b2.value not in binding):
             raise ELE.ELConsistencyException('Comparison being run without the necessary bindings')
         #todo: have a 'get variable from binding' function to take into account array access?
         val1 = comparison.b1.get_val(binding)
-        val2 = comparison.b2.get_val(binding)
+        if isinstance(comparison.b2, ELBD.ELVAR):
+            val2 = comparison.b2.get_val(binding)
+        else:
+            val2 = comparison.b2
         if comparison.op == ELBD.ELCOMP.NEAR:
             if isinstance(comparison.nearVal, ELBD.ELVAR):
                 nearVal = comparison.nearVal.get_val(binding)

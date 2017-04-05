@@ -207,7 +207,7 @@ COMP      = pp.Group(pp.Word('=><@!', max=2)).setResultsName(str(PARSENAMES.STAN
 
 
 #Comparison: $v1 < $V2
-EL_COMPARISON = NON_PATH_VAR - COMP - NON_PATH_VAR
+EL_COMPARISON = NON_PATH_VAR - COMP - ELEMENT
 EL_COMPARISON_ARRAY = array_template(EL_COMPARISON, brackets_optional=True)
 
 #Forward declaraction of fact:

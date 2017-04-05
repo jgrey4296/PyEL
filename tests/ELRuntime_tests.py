@@ -528,14 +528,29 @@ class ELRuntime_Tests(unittest.TestCase):
         .second.x.blah?, .second.y.blah?
         """
         self.runtime('.first.blah, .second.x, .second.y')
-        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? -> @..y.$x }')
+        self.runtime('.this.is.a.rule.{ .first.$x?, .second.$y? | $x == "blah" -> @..y.$x }')
         self.assertFalse(any(self.runtime('.second.x.blah?, .second.y.blah?')))
         parsed = ELPARSE('.this.is.a.rule')[0]
         parse_hash = str(parsed)
         the_rule = self.runtime.get_rule(parse_hash)
         self.runtime.run_rule(the_rule)
         self.assertTrue(all(self.runtime('.second.x.blah?, .second.y.blah?')))
-                
+
+    def test_comparison_with_value(self):
+        """
+        .a.20
+        { .a.$x? | $x > 15 -> .success }
+        .success?
+        """
+        self.runtime('.a.20')
+        self.runtime('.this.is.a.rule.{ .a.$x? | $x > 15 -> .success }')
+        self.assertFalse(self.runtime('.success?'))
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.success?'))
+        
         
     def test_regex_action(self):
         """
