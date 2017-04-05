@@ -163,7 +163,8 @@ class ELRuntime:
 
     def run_rule(self,rule):
         """ Given a rule, check its conditions then queue its results """
-        returnVal = ELBD.ELFail()
+        logging.info("Running Rule: {}".format(rule))
+        return_val = ELBD.ELFail()
         try:
             self.add_level()
             current_frame = self.top_stack()
@@ -189,20 +190,26 @@ class ELRuntime:
 
             #perform modifications to bindings
             
-
-            
             #todo: make the parser check for unbound variables before adding to runtime
             for action in rule.actions:
-                bound_action = action.bind(selection)
-                self.act(bound_action)
 
-            returnVal = ELBD.ELSuccess()
+                if action.hasForAllBinding():
+                    bound_actions = [action.bind(selection, x) \
+                                     for x in compared_bindings]
+                    logging.debug("Bound actions: {}".format(bound_actions))
+                else:
+                    bound_actions = [action.bind(selection)]
+
+                for act in bound_actions:
+                    self.act(act)
+
+            return_val = ELBD.ELSuccess()
         except ELE.ELRuleException:
             None
         finally:
             #then pop the frame off
             self.pop_stack()
-        return returnVal
+        return return_val
 
     def format_comparisons(self, rule):
         #get the bindings from the rule

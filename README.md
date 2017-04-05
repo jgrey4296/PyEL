@@ -84,3 +84,18 @@ The Trie is in ELParser/ELTrie.py
 ```
 
 
+# Forall binding...
+.a.b.c, .a.b.d
+.a.b.$x -> .q.e.@x
+.q.e.c?, .q.e.d?
+
+.a.b.c.e, .a.b.d.f
+.a.b.$x.$y -> .q.e.@x.@$y
+.q.e.c.e?, .q.e.d.f?
+
+.a.b.$x.$y | $y == 'f' -> .q.e.@x.$y
+.q.e.c.f?, .q.e.d.f?
+
+.a.b.$x.$y | $x == c -> .q.e.$x.@y
+.q.e.c.e?, .q.e.c.f?
+
