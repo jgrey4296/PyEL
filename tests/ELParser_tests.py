@@ -480,6 +480,17 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(result.scope, ELBD.ELVARSCOPE.EXIS)
         self.assertEqual(result.access_point,4)
         self.assertFalse(result.is_path_var)
+
+    def test_non_path_array_access_from_var(self):
+        test_var = "$x($y)"
+        result = ELParser.NON_PATH_VAR.parseString(test_var)[0]
+        self.assertIsInstance(result, ELBD.ELVAR)
+        self.assertEqual(result.value, 'x')
+        self.assertEqual(result.scope, ELBD.ELVARSCOPE.EXIS)
+        self.assertIsInstance(result.access_point, ELBD.ELVAR)
+        self.assertEqual(result.access_point.value, 'y')
+        self.assertFalse(result.is_path_var)
+
         
 
         
