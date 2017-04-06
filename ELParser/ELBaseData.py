@@ -244,9 +244,13 @@ class ELARITH_FACT(ELAction):
 
     def __str__(self):
         op = EL_ARITH_2_STR(self.op)
+        val = str(self.val)
+        if isinstance(self.val,float):
+            val = str(self.val).replace(".","d")
+        
         return "{} {} {}".format(str(self.data),
                                  op,
-                                 str(self.val))
+                                 val)
 
     def copy(self):
         return ELARITH_FACT(self.data.copy(), self.op, self.val.copy())
@@ -448,7 +452,19 @@ class ELVAR(ELSTRUCTURE):
         else:
             return "VAR({}@{})".format(self.value, self.access_point)
     def __str__(self):
-        return "${}".format(self.value)
+        output = ""
+        if self.scope is ELVARSCOPE.EXIS:
+            output += "$"
+        else:
+            output += "@"
+        if self.is_path_var:
+            output += ".."
+        output += self.value
+        if self.access_point is not None:
+            output += "({})".format(str(self.access_point))
+        
+        return output
+    
     def __eq__(self, other):
         return self.value == other.value and self.access_point == other.access_point
     def copy(self):
@@ -802,7 +818,18 @@ class ELTrieNode:
     def contains_rule(self):
         return isinstance(self.value, ELRULE)
 
-
+    def simple_string(self):
+        val = str(self.value)
+        if isinstance(self.value,float):
+            val = val.replace('.','d')
+        
+        if self.parent is None:
+            return "{}".format(ELOP2STR(self.elop))
+        elif len(self.children) > 0:
+            return "{}{}".format(val, ELOP2STR(self.elop))
+        else:
+            return "{}".format(val)
+    
     def __hash__(self):
         """ Not a true hashing of the object, but good enough to enable
         usage in sets.
@@ -816,8 +843,16 @@ class ELTrieNode:
                                                  repr(self.keys()))
 
     def __str__(self):
-        return repr(self)
-
+        """ Get the Str representation, treating this
+        node as a leaf. """
+        chain = []
+        current = self
+        while current is not None:
+            chain.append(current)
+            current = current.parent
+        chain.reverse()
+        as_strings = [x.simple_string() for x in chain]
+        return "".join(as_strings)
 
     def __len__(self):
         return len(self.children)
