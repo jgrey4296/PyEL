@@ -115,18 +115,18 @@ class ELBindingSlice(dict):
     """ The dictionaries of a rule possibility,
     { x : (ELBindingEntry), y: (ELBinding Entry ... }
     """
-    def __init__(self, data=None, id=None):
+    def __init__(self, data=None, node_uuid=None):
         if data is None:
             data = []
-            
+
         if isinstance(data, ELBindingSlice):
             super().__init__(data)
             self.uuid = data.uuid
-            if id is not None:
-                self.uuid = id
+            if node_uuid is not None:
+                self.uuid = node_uuid
         else:
             super().__init__(data)
-            self.uuid = uuid
+            self.uuid = node_uuid
 
     def copy(self):
         return ELBindingSlice(self)
@@ -136,9 +136,9 @@ class ELBindingEntry:
     """ Contains a single data point, $x = 5.
     Stores both the node uuid and the value itself
     """
-    def __init__(self, key, id, value):
+    def __init__(self, key, node_uuid, value):
         self.key = key
-        self.node = id
+        self.node = node_uuid
         self.value = value
 
 
@@ -214,7 +214,7 @@ class ELARITH_FACT(ELAction):
         """ If one of the bindings is scoped to forall, return true """
         forallbindings = [x.scope is ELVARSCOPE.FORALL for x in self.bindings]
         return any(forallbindings)
-            
+
     def apply(self, node):
         func = get_ARITH_FUNC(self.op)
         new_value = func(node.value, self.val)
@@ -228,7 +228,7 @@ class ELARITH_FACT(ELAction):
         assert isinstance(binding_slice, ELBindingSlice)
         if all_sub_slice is not None:
             assert isinstance(all_sub_slice, ELBindingSlice)
-            
+
         if isinstance(self.data, ELVAR):
             new_data = self.data.get_val(binding_slice, all_sub_slice)
         else:
@@ -245,9 +245,9 @@ class ELARITH_FACT(ELAction):
     def __str__(self):
         op = EL_ARITH_2_STR(self.op)
         val = str(self.val)
-        if isinstance(self.val,float):
-            val = str(self.val).replace(".","d")
-        
+        if isinstance(self.val, float):
+            val = str(self.val).replace(".", "d")
+
         return "{} {} {}".format(str(self.data),
                                  op,
                                  val)
@@ -417,12 +417,10 @@ class ELRULE(ELSTRUCTURE):
 
     def __eq__(self, other):
         #no need to compare condition/action_bindings as they are generated from these:
-        if all([x == y for x, y in zip(self.conditions, other.conditions)]) \
-           and all([x == y for x, y in zip(self.actions, other.actions)]) \
-           and all([x == y for x, y in zip(self.binding_comparisons, other.binding_comparisons)]):
-            return True
-        else:
-            return False
+        return all([x == y for x, y in zip(self.conditions, other.conditions)]) \
+            and all([x == y for x, y in zip(self.actions, other.actions)]) \
+            and all([x == y for x, y in zip(self.binding_comparisons, other.binding_comparisons)])
+
 
 
     def balanced_bindings(self):
@@ -462,9 +460,9 @@ class ELVAR(ELSTRUCTURE):
         output += self.value
         if self.access_point is not None:
             output += "({})".format(str(self.access_point))
-        
+
         return output
-    
+
     def __eq__(self, other):
         return self.value == other.value and self.access_point == other.access_point
     def copy(self):
@@ -520,14 +518,14 @@ class ELFACT(ELSTRUCTURE):
         allforalls = [x.scope is ELVARSCOPE.FORALL for x in self.bindings]
         return any(allforalls)
 
-            
+
     def bind(self, binding_slice, all_sub_slice=None):
         #return a copy of the fact, where the var has been switched out
         #TODO: CONVERT PATH_VARS TO NODE IDS TO RETRIEVE AND MOD LATER
         assert isinstance(binding_slice, ELBindingSlice)
         if all_sub_slice is not None:
             assert isinstance(all_sub_slice, ELBindingSlice)
-            
+
         new_string = []
         new_pair = None
         for x in self.data:
@@ -573,10 +571,7 @@ class ELFACT(ELSTRUCTURE):
         return self
 
     def __eq__(self, other):
-        if all([x == y for x, y in zip(self.data, other.data)]):
-            return True
-        else:
-            return False
+        return all([x == y for x, y in zip(self.data, other.data)])
 
     def __repr__(self):
         if self.negated:
@@ -737,7 +732,7 @@ class ELRESULT:
 class ELFail(ELRESULT):
     """ Indication of failure """
     def __eq__(self, other):
-        return other == False
+        return other is False
     def __repr__(self):
         return "(ELFailure)"
 
@@ -769,25 +764,25 @@ class ELSuccess(ELRESULT):
         """ Allow for each looping through the bindings """
         return iter(self.bindings)
 
-    def __contains__(self, key):
-        """ Check the result for a value in the children """
-        if isinstance(key, ELPAIR):
-            return key.value in self.children
-        elif isinstance(key, ELTERM):
-            return key.value in self.children
-        else:
-            return key in self.children
+    # def __contains__(self, key):
+    #     """ Check the result for a value in the children """
+    #     if isinstance(key, ELPAIR):
+    #         return key.value in self.bindings
+    #     elif isinstance(key, ELTERM):
+    #         return key.value in self.bindings
+    #     else:
+    #         return key in self.children
 
-    def __eq__(self, other):
-        """ Compare a value to the internal value """
-        if isinstance(other, bool):
-            return True == other
-        if isinstance(other, ELPAIR):
-            return self.value == other.value
-        elif isinstance(other, ELTERM):
-            return self.value == other.value
-        else:
-            return self.value == other
+    # def __eq__(self, other):
+    #     """ Compare a value to the internal value """
+    #     if isinstance(other, bool):
+    #         return other is True
+    #     if isinstance(other, ELPAIR):
+    #         return self.value == other.value
+    #     elif isinstance(other, ELTERM):
+    #         return self.value == other.value
+    #     else:
+    #         return self.value == other
 
 
 #----------------------------------------
@@ -820,16 +815,16 @@ class ELTrieNode:
 
     def simple_string(self):
         val = str(self.value)
-        if isinstance(self.value,float):
-            val = val.replace('.','d')
-        
+        if isinstance(self.value, float):
+            val = val.replace('.', 'd')
+
         if self.parent is None:
             return "{}".format(ELOP2STR(self.elop))
         elif len(self.children) > 0:
             return "{}{}".format(val, ELOP2STR(self.elop))
         else:
             return "{}".format(val)
-    
+
     def __hash__(self):
         """ Not a true hashing of the object, but good enough to enable
         usage in sets.
