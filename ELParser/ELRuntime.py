@@ -47,6 +47,7 @@ class ELRuntime:
         else:
             return actResults
 
+    #Binding state operations:
     def add_level(self):
         self.bindings.add_level()
 
@@ -58,11 +59,14 @@ class ELRuntime:
         
     def pop_stack(self):
         self.bindings.pop()
-    
+
+    #Simulation functions:
     def run(self):
         """ run the simulation """
         None
-        
+
+
+    #Action functions:
     def act(self,action):
         """ Given an action (one of ELBDs action types),
         perform it
@@ -83,14 +87,11 @@ class ELRuntime:
         elif isinstance(action,ELBD.ELRULE):
             result = self.run_rule(action)
         elif isinstance(action,ELBD.ELBIND):
-            #Binding, update current stack
             self.set_binding(action.var,action.root)
         elif isinstance(action,ELBD.ELARITH_FACT):
-            #todo: enact arithmetic on the fact /binding
             #Get the designated leaf.
             node = self.trie[action.data]
             action.apply(node)
-            #done            
         elif isinstance(action,ELBD.ELQUERY):
             #Don't replace vars with bindings, populate them
             logging.debug("Querying")
@@ -105,38 +106,36 @@ class ELRuntime:
         else:
             return False
 
+    
     def act_on_array(self, actions): #todo
         """ Given a collection of actions, perform each """
+        assert False
         if any([not isinstance(x,ELBD.ELAction) for x in actions]):
             raise Exception("An Action is invalid")
 
 
+    #Fact operations:
     def fact_assert(self,fact):
         """ Add a fact """
-        #todo: bind?
-        #bindings are ELVAR -> ELPAIR in f(fact)->fact
-        
-        self.trie.push(fact)
+        return_val = self.trie.push(fact)
         if isinstance(fact[-1].value, ELBD.ELRULE):
             self.add_rule(fact.short_str(), fact[-1].value)
-
+        return return_val
+            
     def fact_retract(self,fact):
         """ Remove a fact """
-        #todo: fill out bindings?
-        self.trie.pop(fact)
+        return_val = self.trie.pop(fact)
         if isinstance(fact[-1].value, ELBD.ELRULE):
             self.remove_rule(fact.short_str())
-        
+        return return_val
+            
     def fact_query(self,query, bindingFrame=None):
+        """ Test a fact, BE CAREFUL IT MODIFES THE TOP OF THE VAR STACK  """
         logging.debug('Recieved Query: {}'.format(query))
         if bindingFrame is None:
             bindingFrame = self.top_stack()
-        if not isinstance(bindingFrame, ELBD.ELBindingFrame):
-            IPython.embed(simple_prompt=True)
         assert isinstance(bindingFrame, ELBD.ELBindingFrame)
-        """ Test a fact, BE CAREFUL IT MODIFES THE TOP OF THE VAR STACK  """
-        if not isinstance(query,ELBD.ELQUERY):
-            raise ELE.ELConsistencyException('Querying requires the use of a query')
+        assert isinstance(query, ELBD.ELQUERY)
         
         current_frame = bindingFrame
         if len(current_frame) == 0:
@@ -145,12 +144,15 @@ class ELRuntime:
         #fill in any variables from the current bindings
         bound_queries = [query.bind(slice) for slice in current_frame]
         logging.debug('Bound: {}'.format(bound_queries))
+        
         #then query
         results = [self.trie.query(query) for query in bound_queries]
         logging.debug("Trie Query results: {}".format(results))
+        
         #then integrate into bindings:
         successes = [success for success in results if success == True]
         logging.debug("Trie Query Successes: {}".format(successes))
+        
         #Flatten the frame
         updated_frame = ELBD.ELBindingFrame([bind_slice for success in successes for bind_slice in success.bindings])
 
@@ -160,6 +162,21 @@ class ELRuntime:
             return (successes[0], updated_frame)
         else:
             return (ELBD.ELFail(), current_frame)
+
+    #Rule Operations
+    def add_rule(self,name,rule):
+        if name in self.rules:
+            raise ELE.ELConsistencyException('{} already stored as a rule already'.format(name))
+        self.rules[name] = rule        
+
+    def remove_rule(self,name):
+        if name in self.rules:
+            del self.rules[name]
+
+    def get_rule(self,name):
+        if name not in self.rules:
+            raise ELE.ELConsistencyException('{} : Getting a rule, but its not in the dict'.format(name))
+        return self.rules[name]
 
     def run_rule(self,rule):
         """ Given a rule, check its conditions then queue its results """
@@ -175,22 +192,23 @@ class ELRuntime:
 
             # passing_bindings :: ELBindingFrame
             passing_bindings = current_frame
+            
             #get the comparison functions, as a tuple 
             comp_tuple = self.format_comparisons(rule)
             compared_bindings = self.filter_by_comparisons(comp_tuple, passing_bindings)
+            
             #if filtered the rule down to nothing
             if len(compared_bindings) == 0:
                 raise ELE.ELRuleException()
-
             
             #select a still viable rule
             #todo: add variability here. utility, curves, distributions,
             #round_robins? state?
             selection = choice(compared_bindings)
 
-            #perform modifications to bindings
+            #perform modifications to bindings (regex?)
             
-            #todo: make the parser check for unbound variables before adding to runtime
+            #todo: make the parser check for unbound variables before adding to runtime?  or should that be covered by the parser?
             for action in rule.actions:
 
                 if action.hasForAllBinding():
@@ -211,6 +229,7 @@ class ELRuntime:
             self.pop_stack()
         return return_val
 
+    #Rule Utilities:
     def format_comparisons(self, rule):
         #get the bindings from the rule
         retrieved = [(comp, get_COMP_FUNC(comp.op)) for comp in rule.binding_comparisons]
@@ -230,7 +249,6 @@ class ELRuntime:
         if comparison.b1.value not in binding or \
            (isinstance(comparison.b2, ELBD.ELVAR) and comparison.b2.value not in binding):
             raise ELE.ELConsistencyException('Comparison being run without the necessary bindings')
-        #todo: have a 'get variable from binding' function to take into account array access?
         val1 = comparison.b1.get_val(binding)
         if isinstance(comparison.b2, ELBD.ELVAR):
             val2 = comparison.b2.get_val(binding)
@@ -246,13 +264,15 @@ class ELRuntime:
         else:
             return func(val1, val2)
 
-    
+
+    #String Operations:
     def format_string(self,format_string):
         """ Given a format_string, use defined variables in the runtime
         to fill it in """
         #todo: Take a string of "this is a $x test", and replace $x with the variable val
         None
 
+    #subtree Operations:
     def subtree_query(self, interface_string):
         """ Verify the trie location fulfills the defined interface """
         None
@@ -261,20 +281,6 @@ class ELRuntime:
         """ Apply the subtree to the given location """
         None
 
-    #Rule store:
-    def add_rule(self,name,rule):
-        if name in self.rules:
-            raise ELE.ELConsistencyException('{} already stored as a rule already'.format(name))
-        self.rules[name] = rule        
-
-    def remove_rule(self,name):
-        if name in self.rules:
-            del self.rules[name]
-
-    def get_rule(self,name):
-        if name not in self.rules:
-            raise ELE.ELConsistencyException('{} : Getting a rule, but its not in the dict'.format(name))
-        return self.rules[name]
             
     #history:
     def add_change(self,changes):
@@ -285,17 +291,24 @@ class ELRuntime:
         
     #### METRICS
     def max_depth(self):
-        None
+        return self.trie.dfs_for_metrics()['maxDepth']
+
     def num_leaves(self):
-        None
+        return len(self.trie.dfs_for_metrics()['leaves'])
+        
     def num_rules(self):
-        None
+        return len(self.trie.dfs_for_metrics()['rules'])
+        
     def num_assertions(self):
-        None
+        return len([x for x in self.history if isinstance(x, ELBD.ELFACT) and not x.negated])
+        
     def num_retractions(self):
-        None
+        return len([x for x in self.history if isinstance(x, ELBD.ELFACT)  and x.negated])
+        
         
     #EXPORTING
-    def export_to_string(self):
-        """ TODO: print out every leaf path of the trie """
-        None
+    def __str__(self):
+        leaves = self.trie.dfs_for_metrics()['leaves']
+        strings = [str(x) for x in leaves]
+        return "\n".join(strings)
+
