@@ -191,7 +191,7 @@ if __name__ == "__main__":
     console.setLevel(root_logger.INFO)
     root_logger.getLogger('').addHandler(console)
     logging = root_logger.getLogger(__name__)
-    root_logger.disable(root_logger.CRITICAL)
+    #root_logger.disable(root_logger.CRITICAL)
     ##############################
     
     unittest.main()

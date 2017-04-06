@@ -259,8 +259,10 @@ class ELParser_Tests(unittest.TestCase):
     def test_bindings_complain_when_unbalanced(self):
         """ undefined bindings in actions should complain """
         test_fact = ".this.is.a.rule.{[.blah.bloo?] -> [.blah.bloo.$blee]}"
+        logging.debug("A Warning should be logged for rule bindings")
         with self.assertRaises(ELE.ELConsistencyException):
             self.parser(test_fact)
+        logging.debug("The warning should have been logged")
 
     def test_fact_negation(self):
         """ ~.a.fact.should.be.negatable """
@@ -318,8 +320,10 @@ class ELParser_Tests(unittest.TestCase):
     def test_only_actions_can_have_arith_ops(self):
         """ The fact .a.b.c + 20 should fail """
         test_fact = ".a.b.c + 20"
+        logging.debug("A Warning should be logged for .a.b.c + 20")  
         with self.assertRaises(ELE.ELParseException):
             self.parser(test_fact)
+        logging.debug("The warning should have been logged")
 
     def test_rule_brackets_as_optional(self):
         """ .this.is.a.rule.{ .a.b.$c?, .d.e.$f? | $c < $f -> .a.b.e } """
@@ -427,8 +431,10 @@ class ELParser_Tests(unittest.TestCase):
     def test_rules_cant_have_sub_facts(self):
         """ Rules must be terminals """
         test_fact = ".a.b.rule.{ [] -> [] }.d"
+        logging.debug("A Warning should be logged for .a.b.rule.{}.d")
         with self.assertRaises(ELE.ELParseException):
             self.parser(test_fact)
+        logging.debug("The warning should have been logged")
 
     def test_condition_separately(self):
         """ Parsing a query on its own should work """
@@ -535,7 +541,7 @@ if __name__ == "__main__":
     console.setLevel(root_logger.INFO)
     root_logger.getLogger('').addHandler(console)
     logging = root_logger.getLogger(__name__)
-    root_logger.disable(root_logger.CRITICAL)
+    #root_logger.disable(root_logger.CRITICAL)
     ##############################
 
     unittest.main()

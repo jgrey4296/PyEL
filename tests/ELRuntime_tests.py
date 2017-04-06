@@ -583,11 +583,20 @@ class ELRuntime_Tests(unittest.TestCase):
 
     def test_comments_are_ignored(self):
         """
-        //.this.is.a.bad.fact
+        #.this.is.a.bad.fact
         .a.b.c
         ~.this.is.a.bad.fact?
         """
-        None
+        self.runtime('#.this.is.a.bad.fact\n.a.b.c')
+        self.assertFalse(self.runtime('.this.is.a.bad.fact?'))
+        self.assertTrue(self.runtime('.a.b.c?'))
+
+    def test_comments_ignore_rest_of_line(self):
+        self.runtime('.this.is.a.test#.but.not.this.far')
+        self.assertTrue(self.runtime('.this.is.a.test?'))
+        self.assertFalse(self.runtime('.this.is.a.test.but.not.this.far?'))
+        self.assertFalse(self.runtime('.but.not.this.far?'))
+                         
 
     def test_rule_binding_balances(self):
         """
@@ -699,6 +708,6 @@ if __name__ == "__main__":
     console.setLevel(root_logger.DEBUG)
     root_logger.getLogger('').addHandler(console)
     logging = root_logger.getLogger(__name__)
-    root_logger.disable(root_logger.CRITICAL)
+    root_logger.disable(root_logger.INFO)
     ##############################
     unittest.main()
