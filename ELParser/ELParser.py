@@ -260,7 +260,8 @@ BIND_STATEMENT = NON_PATH_VAR + s(BIND) + op(FACT)
 
 #The entire grammar:
 ROOT = pp.OneOrMore((BIND_STATEMENT | CONDITION | FACT) + \
-                    s(COMMA | pp.LineEnd() | pp.StringEnd())).ignore(COMMENTS)
+                    s(COMMA | pp.LineEnd())).ignore(COMMENTS) \
+                    + pp.StringEnd()
 
 ##############################
 # PARSE NAMES
@@ -285,37 +286,34 @@ BIND_STATEMENT.setName('Binding')
 ##############################
 # PARSE ACTIONS
 ##############################
+
+#Straight forward creation of Symbols/Enums
 DOT.setParseAction(lambda toks: ELBD.EL.DOT)
 EX.setParseAction(lambda toks: ELBD.EL.EX)
+DOLLAR.setParseAction(lambda toks: ELBD.ELVARSCOPE.EXIS)
+AT.setParseAction(lambda toks: ELBD.ELVARSCOPE.FORALL)
+
+#Creating the lowest level data structures:
 COMP.setParseAction(construct_comp_op)
 ARITH.setParseAction(lambda toks: construct_arith_op(toks[0]))
 NUM.setParseAction(lambda toks: construct_num(toks[0]))
 STRING.setParseAction(pp.removeQuotes)
 
-DOLLAR.setParseAction(lambda toks: ELBD.ELVARSCOPE.EXIS)
-AT.setParseAction(lambda toks: ELBD.ELVARSCOPE.FORALL)
-
+#Variable construction
 PATH_VAR.setParseAction(construct_el_var)
 NON_PATH_VAR.setParseAction(construct_el_var)
 
+#wapping a fact in a query:
 CONDITION.setParseAction(lambda toks: ELBD.ELQUERY(toks[0]))
-
 EL_COMPARISON.setParseAction(lambda toks: ELBD.ELComparison(toks[0], toks[1], toks[2]))
-
 EL_RULE.setParseAction(construct_rule)
-
 EL_PAIR.setParseAction(lambda tok: ELBD.ELPAIR(tok[0], tok[1]))
 EL_FACT_ROOT.setParseAction(construct_el_root_fact)
 #tok[0][0] for the group wrapping then element/array wrapping
 EL_FACT_TERMINAL.setParseAction(lambda tok: ELBD.ELTERM(tok[0][0]))
-
 EL_ARRAY.setParseAction(lambda toks: [toks[:]])
-
 ARITH_FACT.setParseAction(construct_arith_fact)
-
-
 FACT.setParseAction(construct_el_fact)
-
 BIND_STATEMENT.setParseAction(construct_bind_statement)
 
 ##############################
@@ -344,5 +342,6 @@ if __name__ == "__main__":
     console.setLevel(root_logger.INFO)
     root_logger.getLogger('').addHandler(console)
     logging = root_logger.getLogger(__name__)
+    #An Example of usage:
     parse_results = ROOT.parseString('.this.is.a.test\n.here.is!another\n.and.one.more.[1,2,3]')
     IPython.embed(simple_prompt=True)
