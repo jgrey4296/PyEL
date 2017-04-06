@@ -26,11 +26,9 @@ class ELTrie:
             return self.root[key]
         else:
             raise KeyError("{} not found in {}".format(repr(key),repr(self.root)))
-
         
     def __repr__(self):
         return "Trie: {}".format(self.root)
-
 
     def dfs_for_metrics(self):
         #Queue is an array of (node,depth)
@@ -54,11 +52,9 @@ class ELTrie:
 
         return {
             'maxDepth': maxDepth,
-            'leaves'  : len(leaves),
-            'rules'   : len(rules)
+            'leaves'  : leaves,
+            'rules'   : rules
         }
-    
-        
     
     def is_empty(self):
         return self.root.is_empty()
@@ -217,7 +213,6 @@ class ELTrie:
                 remaining_string = []
 
         #cleanup after looping:
-                
         #remove all ELBD.ELFails
         containsAFail = any([isinstance(x, ELBD.ELFail) for x in results])
         results = ELBD.ELBindingFrame([x for x in results if not isinstance(x, ELBD.ELFail)])
