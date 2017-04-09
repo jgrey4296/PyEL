@@ -556,28 +556,56 @@ class ELRuntime_Tests(unittest.TestCase):
         """
         { .a.b.$c -> $..c ~= /a/A/ }
         """
-        None
+        self.runtime('.a.b.c')
+        self.runtime('.this.is.a.rule.{ .a.b.$x? -> $..x ~= /c/C }')
+        self.assertFalse(self.runtime('.a.b.C?'))
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rule = self.runtime.get_rule(parse_hash)
+        self.runtime.run_rule(the_rule)
+        self.assertTrue(self.runtime('.a.b.C?'))
+
 
     def test_rule_collections(self):
         """
-        .a.b.{ .a.b -> .a.b.c }
-        .a.b.{ .a.b -> .a.b.d }
+        .a.b.{ .x.y? -> .x.y.a }
+        .a.b.{ .x.y? -> .x.y.b }
         Run both
         """
-        None
-        
-        
+        self.runtime('.x.y')
+        self.runtime('.a.b.{ .x.y? -> .x.y.a }')
+        self.runtime('.a.b.{ .x.y? -> .x.y.b }')
+        self.assertFalse(all(self.runtime('.x.y.a?, .x.y.b?')))
+        parsed = ELPARSE('.this.is.a.rule')[0]
+        parse_hash = str(parsed)
+        the_rules = self.runtime.get_rules(parse_hash)
+        self.runtime.run_rule(the_rules)
+        self.assertTrue(all(self.runtime('.x.y.a?, .x.y.b?')))
+
+
     def test_fact_arrays(self):
         """
         .a.b.[ .a.b.c, .a.b.d, .a.b.e ]
+        be able to assert all?
+        { .a.b.$x -> $x }
+        .a.b.c? .a.b.d? .a.b.e?
         """
         None
+        
 
     def test_string_interpolation(self):
         """
         .a.b."this is my {}"
         .a.val.test
         .this.is.a.rule.{ .a.b.$x?, .a.val.$y? -> .output.$x($y) }
+        """
+        None
+
+    def test_multi_string_interpolation(self):
+        """
+        .a.b."this is my {} : {}"
+        .a.val.test.blah
+        .this.is.a.rule.{ .a.b.$x?, .a.val.$y.$z? -> .output.$x($y, $z) }
         """
         None
 
