@@ -140,10 +140,11 @@ class ELParser_Tests(unittest.TestCase):
         """ Check that adding the same fact, or head components of the same fact
         twice, doesnt duplicate those facts. .test.bloo * 2
         """
+        logging.debug("Starting bad test")
         base_fact = ELBD.ELFACT(r=True).pair("test").term("bloo")
         self.trie.push(base_fact)
         successOrFail = self.trie.push(base_fact)
-        self.assertTrue(successOrFail)
+        self.assertFalse(successOrFail)
         #check the root node:
         self.assertEqual(len(self.trie.root),1)
         
@@ -155,6 +156,7 @@ class ELParser_Tests(unittest.TestCase):
         test_node_actual = self.trie[test_node_uuid]
         self.assertEqual(len(test_node_actual),1)
 
+        
     def test_exclusion_addition(self):
         """ Check adding an exclusion operator works .test!blah """
         base_fact = ELBD.ELFACT(r=True).epair("test").term('blah')
@@ -190,8 +192,6 @@ class ELParser_Tests(unittest.TestCase):
         """ Check that updating a value of an exclusion node works 
         .test!bloo => .test!blah
         """
-        root_logger.disable(root_logger.NOTSET)
-        logging.debug("Exclusion rewrite")
         orig_fact = ELBD.ELFACT(r=True).epair("test").term("bloo")
         update_fact = ELBD.ELFACT(r=True).epair("test").term("blah")
         self.trie.push(orig_fact)
@@ -203,7 +203,6 @@ class ELParser_Tests(unittest.TestCase):
         self.assertFalse(gotten_2)
         gotten_3 = self.trie.get(ELBD.ELFACT(r=True).epair('test').pair('blah'))
         self.assertTrue(gotten_3)
-        root_logger.disable(root_logger.CRITICAL)
         
     def test_exclusion_to_non_downscale(self):
         """ Check that .a.b!c => a.b.c passes and updates """
@@ -365,13 +364,13 @@ class ELParser_Tests(unittest.TestCase):
         self.trie.push(base_fact2)
         results = self.trie.dfs_for_metrics()
         self.assertEqual(results['maxDepth'],3)
-        self.assertEqual(results['leaves'],2)
-        self.assertEqual(results['rules'],0)
+        self.assertEqual(len(results['leaves']),2)
+        self.assertEqual(len(results['rules']),0)
         base_fact3 = ELBD.ELFACT(r=True).pair('a').pair('d').pair('f').term('g')
         self.trie.push(base_fact3)
         results2 = self.trie.dfs_for_metrics()
         self.assertEqual(results2['maxDepth'],4)
-        self.assertEqual(results2['leaves'],3)
+        self.assertEqual(len(results2['leaves']),3)
         retract_fact = ELBD.ELFACT(r=True).pair('a').term('d')
         self.trie.pop(retract_fact)
         results3 = self.trie.dfs_for_metrics()

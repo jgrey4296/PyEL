@@ -11,6 +11,8 @@ from ELParser import ELBaseData as ELBD
 from ELParser import ELExceptions as ELE
 from fractions import Fraction
 
+
+logging = root_logger.getLogger(__name__)
 #Parser returns a ParseResult, which is an array of actual parse data structures
 
 gen_n = lambda: 2 + int(random()*20)
@@ -497,10 +499,6 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(result.access_point.value, 'y')
         self.assertFalse(result.is_path_var)
 
-        
-
-        
-            
     def test_condition_variables(self):
         """ test:
         .this.is.a.condition.set.{.a.b.c?, .b.d.e?, .e.f.$1?}
@@ -540,7 +538,6 @@ if __name__ == "__main__":
     console = root_logger.StreamHandler()
     console.setLevel(root_logger.INFO)
     root_logger.getLogger('').addHandler(console)
-    logging = root_logger.getLogger(__name__)
     #root_logger.disable(root_logger.CRITICAL)
     ##############################
 

@@ -475,7 +475,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(all(self.runtime('.a.b.c?, .a.b.d?, .a.b.e?')))
         #Just checking the call is passing automatically, make sure it *can* fail: 
         self.assertFalse(all(self.runtime('.a.b.c?, .a.b.d?, .a.b.f?')))
-
+        
     def test_run_rule_on_all_variations(self):
         """
         .a.b.d.20, .a.b.e.30
@@ -705,9 +705,9 @@ if __name__ == "__main__":
     LOG_FILE_NAME = "ELRuntime_tests.log"
     root_logger.basicConfig(filename=LOG_FILE_NAME, level=LOGLEVEL, filemode='w')
     console = root_logger.StreamHandler()
-    console.setLevel(root_logger.DEBUG)
+    console.setLevel(root_logger.WARNING)
     root_logger.getLogger('').addHandler(console)
     logging = root_logger.getLogger(__name__)
-    root_logger.disable(root_logger.INFO)
+    #root_logger.disable(root_logger.INFO)
     ##############################
     unittest.main()
