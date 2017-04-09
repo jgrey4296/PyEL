@@ -5,10 +5,10 @@ import unittest
 import logging as root_logger
 import IPython
 from random import random
-from test_context import ELParser
-from ELParser import ELParser
-from ELParser import ELBaseData as ELBD
-from ELParser import ELExceptions as ELE
+from test_context import ielpy
+from ielpy import ELParser
+from ielpy import ELExceptions as ELE
+from ielpy import ELBaseData as ELBD
 from fractions import Fraction
 
 #Parser returns a ParseResult, which is an array of actual parse data structures

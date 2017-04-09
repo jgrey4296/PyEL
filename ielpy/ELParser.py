@@ -15,8 +15,8 @@ logging = root_logger.getLogger(__name__)
 from enum import Enum
 import pyparsing as pp
 from fractions import Fraction
-import ELParser.ELBaseData as ELBD
-import ELParser.ELExceptions as ELE
+from . import ELBaseData as ELBD
+from . import ELExceptions as ELE
 import IPython
 
 ##############################

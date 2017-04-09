@@ -17,8 +17,8 @@ from enum import Enum
 from collections import namedtuple
 import logging as root_logger
 import uuid
-from ELParser.ELCompFunctions import get_ARITH_FUNC, ELCOMP, ELARITH
-import ELParser.ELExceptions as ELE
+from .ELCompFunctions import get_ARITH_FUNC, ELCOMP, ELARITH
+from . import ELExceptions as ELE
 
 logging = root_logger.getLogger(__name__)
 ##############################

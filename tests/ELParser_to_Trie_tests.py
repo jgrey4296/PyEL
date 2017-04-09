@@ -5,10 +5,10 @@ import unittest
 import IPython
 import logging as root_logger
 from random import random
-from test_context import ELParser
-from ELParser import ELParser
-from ELParser.ELTrie import ELTrie
-from ELParser import ELBaseData as ELBD
+from test_context import ielpy
+from ielpy import ELParser
+from ielpy import ELBaseData as ELBD
+from ielpy.ELTrie import ELTrie
 from fractions import Fraction
 
 class ELParser_to_Trie_tests(unittest.TestCase):

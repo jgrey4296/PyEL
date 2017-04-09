@@ -10,11 +10,10 @@ from collections import namedtuple
 from fractions import Fraction
 from random import choice
 import IPython
-import ELParser
-from ELParser import ELParser, ELTrie
-from ELParser import ELBaseData as ELBD
-from ELParser import ELExceptions as ELE
-from ELParser.ELCompFunctions import get_COMP_FUNC, get_ARITH_FUNC
+from . import ELParser, ELTrie
+from . import ELBaseData as ELBD
+from . import ELExceptions as ELE
+from . ELCompFunctions import get_COMP_FUNC, get_ARITH_FUNC
 
 
 class ELRuntime:

@@ -3,9 +3,9 @@ A Simple Trie for EL
 """
 import IPython
 import logging as root_logger
-from ELParser import ELBaseData as ELBD
-from ELParser.ELBaseData import ELTrieNode
-from ELParser import ELExceptions as ELE
+from . import ELBaseData as ELBD
+from . ELBaseData import ELTrieNode
+from . import ELExceptions as ELE
 import uuid
 logging = root_logger.getLogger(__name__)
 

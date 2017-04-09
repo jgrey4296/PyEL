@@ -5,9 +5,9 @@ import unittest
 import IPython
 import logging as root_logger
 from random import random
-from test_context import ELParser
-from ELParser.ELTrie import ELTrie
-from ELParser import ELBaseData as ELBD
+from test_context import ielpy
+from ielpy.ELTrie import ELTrie
+from ielpy import ELBaseData as ELBD
 from fractions import Fraction
 
 
