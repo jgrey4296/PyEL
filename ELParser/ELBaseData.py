@@ -216,6 +216,7 @@ class ELARITH_FACT(ELAction):
         return any(forallbindings)
 
     def apply(self, node):
+        """ An encapuslated way to perform an arithmetic action, just add a target """
         func = get_ARITH_FUNC(self.op)
         new_value = func(node.value, self.val)
         #update the parent:
@@ -670,12 +671,14 @@ class ELFACT(ELSTRUCTURE):
         Validity means the fact is made of ELPAIRS and is finished with an ELTERM
         """
         #Must end with a term
+        if len(self) == 0:
+            return
         if not isinstance(self.data[-1], ELTERM):
-            raise Exception("Fact is not valid: No ELTERM")
+            raise ELE.ELConsistencyException()
         for x in self.data[1:]:
             if isinstance(x, ELPAIR) and isinstance(x.value, list):
                 #must not have arrays as pairs, only terminals
-                raise Exception("Fact is not valid: has Array in non-terminal")
+                return ELE.ELConsistencyException()
 
     def is_valid_for_searching(self):
         """ Ensure this fact is valid for using as a search

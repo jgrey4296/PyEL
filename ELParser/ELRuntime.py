@@ -87,6 +87,7 @@ class ELRuntime:
         elif isinstance(action,ELBD.ELRULE):
             result = self.run_rule(action)
         elif isinstance(action,ELBD.ELBIND):
+            raise ELE.ELRuntimeException("Not Implemented")
             self.set_binding(action.var,action.root)
         elif isinstance(action,ELBD.ELARITH_FACT):
             #Get the designated leaf.
@@ -101,10 +102,7 @@ class ELRuntime:
             self.pop_stack()
             logging.debug('Query Result: {}'.format(result))
 
-        if result == True:
-            return True
-        else:
-            return False
+        return result
 
     
     def act_on_array(self, actions): #todo
@@ -150,7 +148,7 @@ class ELRuntime:
         logging.debug("Trie Query results: {}".format(results))
         
         #then integrate into bindings:
-        successes = [success for success in results if success == True]
+        successes = [success for success in results if bool(success) is True]
         logging.debug("Trie Query Successes: {}".format(successes))
         
         #Flatten the frame
@@ -223,7 +221,8 @@ class ELRuntime:
 
             return_val = ELBD.ELSuccess()
         except ELE.ELRuleException:
-            None
+            logging.warning("ELRule Exception occurred")
+            return_val = ELBD.ELFail()
         finally:
             #then pop the frame off
             self.pop_stack()

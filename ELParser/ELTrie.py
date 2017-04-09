@@ -70,7 +70,7 @@ class ELTrie:
             assert isinstance(el_string.data[-1],ELBD.ELTERM)
         try:
             el_string.is_valid()
-            returnVal = ELBD.ELSuccess()
+            returnVal = ELBD.ELFail()
             changes = []
             current = None
             #Go through the passed in string
@@ -90,6 +90,7 @@ class ELTrie:
                     newNode = ELTrieNode(statement,parent=current)
                     current[statement] = newNode
                     self.allNodes[newNode.uuid] = newNode
+                    returnVal = ELBD.ELSuccess()
                 elif isinstance(statement,ELBD.ELPAIR) and statement not in current:
                     #came to a pair, and it is missing
                     logging.debug("Missing PAIR: {}".format(repr(statement)))
@@ -99,7 +100,7 @@ class ELTrie:
                 #for everything but finding the root:
                 logging.debug("-> {}".format(repr(statement)))
                 current = current[statement]
-        except Exception as e:
+        except ELE.ELException as e:
             logging.critical(e)
             returnVal = ELBD.ELFail()
         finally:
@@ -107,18 +108,17 @@ class ELTrie:
         
     def pop(self,el_string):
         """ Remove an EL String from the Trie """
+        returnVal = ELBD.ELFail()
         theTarget = None
         if isinstance(el_string, ELBD.ELFACT):
             searchResult = self.get(el_string)
             if searchResult:
                 theTarget = self.allNodes[searchResult.bindings[0].uuid]
-            else:
-                return ELBD.ELFail()
         elif isinstance(el_string, ELBD.ELSuccess):
             theTarget = self.allNodes[el_string.bindings[0][0]]
 
         if theTarget is None:
-            raise ELE.ELConsistencyException('Pop requires a valid target')
+            return ELBD.ELFail()
         
         target_parent = theTarget.parent
         

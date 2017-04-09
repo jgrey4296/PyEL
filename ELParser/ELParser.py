@@ -75,7 +75,7 @@ def construct_el_fact(toks):
 
     #retrieve sub vars
     bindings.extend([x.access_point for x in bindings if isinstance(x.access_point, ELBD.ELVAR)])
-        
+
     return ELBD.ELFACT(root + base + term, bindings=bindings, negated=negated)
 
 def construct_arith_fact(toks):
