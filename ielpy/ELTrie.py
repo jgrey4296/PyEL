@@ -46,51 +46,43 @@ class ELTrie:
                 maxDepth = depth
             if len(current) == 0:
                 leaves.append(current)
-            if current.contains_rule():
-                rules.append(current)
             processed.add(current)
 
         return {
             'maxDepth': maxDepth,
             'leaves'  : leaves,
-            'rules'   : rules
         }
     
     def is_empty(self):
         return self.root.is_empty()
         
     def push(self,el_string):
-        """ Take an ELFact of [ROOT, [PAIRS], TERM],
+        """ Take an ELFact of [ROOT, [PAIRS]],
         and attempt to add to the trie
         """
         logging.debug("Starting to push: {}".format(repr(el_string)))
         assert isinstance(el_string,ELBD.ELFACT)
         assert isinstance(el_string.data[0],ELBD.ELROOT)
-        if len(el_string.data) > 1:
-            assert isinstance(el_string.data[-1],ELBD.ELTERM)
         try:
-            el_string.is_valid()
             returnVal = ELBD.ELFail()
-            changes = []
             current = None
             #Go through the passed in string
             for statement in el_string:
-                if isinstance(statement,ELBD.ELROOT):
+                if isinstance(statement,ELBD.ELROOT) and current is None:
                     logging.debug("Hit Root")
                     if isinstance(statement.value, uuid.UUID) and statement.value in self.allNodes:
                         current = self.allNodes[statement.value]
-                    elif statement.value is None:
+                    elif statement.value is None and current is None:
                         current = self.root
                     else:
-                        raise ELE.ELConsistencyException('Root is not a uuid or empty')
+                        raise ELE.ELConsistencyException("Issue with the root")
                     continue # <---- note this
-                elif isinstance(statement,ELBD.ELTERM) and statement not in current:
-                    #came to the terminal, and it is missing
-                    logging.debug("Missing TERM: {}".format(repr(statement)))
-                    newNode = ELTrieNode(statement,parent=current)
+                elif isinstance(statement, ELBD.ELROOT) and current is not None and \
+                     statement not in current:
+                    logging.debug("Adding a pseudo-root")
+                    newNode = ELTrieNode(statement, parent=current)
                     current[statement] = newNode
                     self.allNodes[newNode.uuid] = newNode
-                    returnVal = ELBD.ELSuccess()
                 elif isinstance(statement,ELBD.ELPAIR) and statement not in current:
                     #came to a pair, and it is missing
                     logging.debug("Missing PAIR: {}".format(repr(statement)))
@@ -184,9 +176,7 @@ class ELTrie:
         while len(remaining_string) > 0:
             statement = remaining_string.pop(0)
             #if a var
-            if (isinstance(statement, ELBD.ELPAIR) or \
-               isinstance(statement, ELBD.ELTERM)) and \
-               statement.isVar():
+            if isinstance(statement, ELBD.ELPAIR) and statement.isVar():
                 #Trigger a recursion
                 
                 #todo: complain on duplicate keys

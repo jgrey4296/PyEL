@@ -3,7 +3,7 @@ Base Data for EL
 Enums: EL, ELV, ELCOMP, ELARITH
 
 Classes: ELAction, ELComparison,
-ELROOT, ELPAIR, ELTERM, ELRULE, ELARITH_FACT,
+ELROOT, ELPAIR, ELRULE, ELARITH_FACT,
 ELVAR
 ELFACT, ELBIND
 
@@ -25,12 +25,13 @@ logging = root_logger.getLogger(__name__)
 # ENUMS
 ####################
 #Exclusion Type of a fact component
-EL = Enum('EL', 'DOT EX')
+EL = Enum('EL', 'DOT EX ROOT')
 #Subtypes of leaves
 ELV = Enum('ELV', 'ARR RULE')
 #Scope Applicability of a Variable:
 ELVARSCOPE = Enum('ELVARSCOPE', 'EXIS FORALL')
-
+#Execution Types:
+ELEXT = Enum('EL_Ex_t','TRIE TREE FSM SEL INS')
 
 ##############################
 # Enum Utilities
@@ -376,6 +377,7 @@ class ELVAR(ELSTRUCTURE):
         else:
             self.access_point = None
 
+            
     def __repr__(self):
         if self.access_point is None:
             return "VAR({})".format(self.value)
@@ -467,9 +469,6 @@ class ELFACT(ELSTRUCTURE):
                 #ELPair.value :: ELVar
                 new_pair = ELPAIR(x.value.get_val(binding_slice, all_sub_slice), \
                                   x.elop)
-            elif isinstance(x, ELTERM) and x.value.value in binding_slice:
-                #ELTerm.value :: ELVar
-                new_pair = ELTERM(x.value.get_val(binding_slice, all_sub_slice))
             elif isinstance(x, ELROOT) and x.isVar() and x.value.value in binding_slice:
                 #ELRoot.value :: ELVAR
                 new_pair = ELROOT(elop=x.elop, \
@@ -506,16 +505,28 @@ class ELFACT(ELSTRUCTURE):
         return all([x == y for x, y in zip(self.data, other.data)])
 
     def __repr__(self):
+        strings = [repr(x) for x in self.data[:-1]]
+        if isinstance(self.data[-1], list):
+            strings.append(repr(self.data[-1]))
+        elif isinstance(self.data[-1], ELSTRUCTURE):
+            strings.append(self.data[-1].termrepr())
+        joined_strings = "".join(strings)
         if self.negated:
-            return "| ~{} |".format("".join([repr(x) for x in self]))
+            return "| ~{} |".format(joined_strings)
         else:
-            return "| {} |" .format("".join([repr(x) for x in self]))
+            return "| {} |" .format(joined_strings)
 
     def __str__(self):
-        if self.negated:
-            return "~{}".format("".join([str(x) for x in self.data]))
+        strings = [str(x) for x in self.data[:-1]]
+        if isinstance(self.data[-1], list):
+            strings.append(str(self.data[-1]))
         else:
-            return "".join([str(x) for x in self.data])
+            strings.append(self.data[-1].termstr())
+        joined_strings = "".join(strings)
+        if self.negated:
+            return "~{}".format(joined_strings)
+        else:
+            return joined_strings
 
     def short_str(self):
         """ Get the string up to, but not including,

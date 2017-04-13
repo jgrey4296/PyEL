@@ -15,6 +15,7 @@ logging = root_logger.getLogger(__name__)
 from enum import Enum
 import pyparsing as pp
 from fractions import Fraction
+import re
 from . import ELBaseData as ELBD
 from . import ELExceptions as ELE
 import IPython
@@ -24,7 +25,7 @@ import IPython
 ####################
 #Allows management of Components in the parse, but remember to wrap in str()
 #Not intended to be human usable, or anywhere other than the parser.
-PARSENAMES = Enum('PARSENAMES', 'BASEFACT ARRAY FACT TERMINAL ROOT RULE CONDITIONS ACTIONS BINDINGS BINDCOMPS NOT ARITH_OP STANDARDCOMP_OP NEARCOMP_OP')
+PARSENAMES = Enum('PARSENAMES', 'BASEFACT ARRAY FACT TERMINAL ROOT CONDITIONS ACTIONS BINDINGS BINDCOMPS NOT ARITH_OP STANDARDCOMP_OP NEARCOMP_OP')
 
 ##############################
 # Utilities
@@ -122,25 +123,14 @@ def construct_el_var(toks):
     return ELBD.ELVAR(var_name, arr_access_value, is_a_path_var, scope_type)
 
 def construct_el_root_fact(toks):
-    if toks[0][0] == ELBD.EL.DOT:
+    if toks[0][0] is ELBD.EL.DOT:
         return ELBD.ELROOT(ELBD.EL.DOT)
+    elif toks[0][0] is ELBD.EL.ROOT:
+        return ELBD.ELROOT(elop=toks[0][1], var=ELBD.EL.ROOT)
     elif isinstance(toks[0][0], ELBD.ELVAR):
         return ELBD.ELROOT(elop=toks[0][1], var=toks[0][0])
     else:
         raise ELE.ELParseException('Unrecognised element of el_root_fact')
-
-
-def construct_rule(toks):
-    conditions = toks[str(PARSENAMES.CONDITIONS)][:]
-    actions = toks[str(PARSENAMES.ACTIONS)][:]
-    if str(PARSENAMES.BINDCOMPS) in toks:
-        bind_comp = toks[str(PARSENAMES.BINDCOMPS)][:]
-    else:
-        bind_comp = []
-    constructed_rule = ELBD.ELRULE(conditions, actions, bind_comp)
-    if not constructed_rule.balanced_bindings():
-        raise ELE.ELConsistencyException("Rule bindings are not balanced")
-    return constructed_rule
 
 def construct_bind_statement(toks):
     if len(toks) == 2:
@@ -170,6 +160,8 @@ O_PAREN   = pp.Literal('(')
 C_PAREN   = pp.Literal(')')
 DOLLAR    = pp.Literal('$')
 AT        = pp.Literal('@')
+SLASH     = pp.Literal('/')
+DBL_VLINE      = pp.Literal('||')
 
 #Subtree application and testing
 S_APP     = pp.Keyword('::', identChars='?!')
@@ -199,6 +191,9 @@ NON_PATH_VAR << VAR_HEADER.setResultsName('VAR_SCOPE') + \
            pp.Word(pp.alphas + pp.nums).setResultsName('VARNAME') - \
            op(s(O_PAREN) + (NUM | NON_PATH_VAR) + s(C_PAREN)).setResultsName('ARR_ACCESS')
 
+
+
+
 ELEMENT   = (NON_PATH_VAR | NAME | STRING | NUM)
 
 NEAR      = s(pp.Word('~=', exact=2)) + s(O_PAREN) + (NUM | NON_PATH_VAR) + s(C_PAREN)
@@ -213,9 +208,6 @@ EL_COMPARISON_ARRAY = array_template(EL_COMPARISON, brackets_optional=True)
 #Forward declaraction of fact:
 FACT = pp.Forward()
 
-#TODO: EL_ARRAY -> SEQUENCE
-#a basic array of values in EL: [ e1, e2 ... en ]
-EL_ARRAY = array_template(ELEMENT | FACT)
 
 #An array for rules, as it contains facts
 CONDITION = FACT + s(QUERYOP)
@@ -225,31 +217,27 @@ EL_CONDITIONS = array_template(CONDITION, brackets_optional=True)
 ARITH_FACT = (FACT | NON_PATH_VAR | PATH_VAR) + \
              pp.Group(ARITH + (NON_PATH_VAR | NUM)).setResultsName(str(PARSENAMES.ARITH_OP))
 
+
 #Regex Action?
-REGEX_OP = pp.Word('<<')
-REGEX = pp.Word('/') + pp.Regex(r'[a-zA-Z0-9*+?()[]\'"<>,.]+') + pp.Word('/')
+REGEX_OP = pp.Word('>>')
+REGEX = s(SLASH) + pp.Regex(r'[a-zA-Z0-9*+?()\[\]\\\'" <>,.$]+') + s(SLASH) + \
+        pp.Regex(r'[a-zA-Z0-9*+?()\[\]\\\'"<> ,.$]+') + s(SLASH)
 REGEX_ACTION = (FACT | NON_PATH_VAR) + pp.Group(REGEX_OP + (NON_PATH_VAR | REGEX))
+
+#TODO: EL_ARRAY -> SEQUENCE
+#a basic array of values in EL: [ e1, e2 ... en ]
+EL_ARRAY = array_template(CONDITION | FACT | ARITH_FACT | REGEX_ACTION | ELEMENT)
 
 #TODO:Other Actions? Stack/Queue/sample_from?
 #TODO: add a negated path var fact special case.
 # (ie: {.a.b.$x? -> ~@..x }
 ACTION_ARRAY = array_template(ARITH_FACT | REGEX_ACTION | FACT, brackets_optional=True)
 
-
-
-#a Rule of conditions -> actions
-EL_RULE = s(O_BRACE) + opLn + \
-          EL_CONDITIONS.setResultsName(str(PARSENAMES.CONDITIONS)) + \
-          op(s(VBAR) + pp.Group(EL_COMPARISON_ARRAY).setResultsName(str(PARSENAMES.BINDCOMPS))) + \
-          opLn + ARROW + opLn + \
-          ACTION_ARRAY.setResultsName(str(PARSENAMES.ACTIONS)) + \
-          opLn + s(C_BRACE)
-
 #Fact Components, [Root ... pairs ... terminal]
 #Core part of a fact: a.b!c => (a,DOT),(b.EX)
 EL_PAIR = ELEMENT + pp.NotAny(pp.LineEnd()) + (DOT | EX)
-EL_FACT_ROOT = pp.Group((PATH_VAR + (DOT | EX)) | DOT).setResultsName(str(PARSENAMES.ROOT))
-EL_FACT_TERMINAL = pp.Group(ELEMENT | EL_ARRAY | EL_RULE)
+EL_FACT_ROOT = pp.Group(((PATH_VAR | DBL_VLINE) + (DOT | EX)) | DOT).setResultsName(str(PARSENAMES.ROOT))
+EL_FACT_TERMINAL = ELEMENT | EL_ARRAY
 #An Entire sequence, note the stopOn to not continue over lines
 FACT << op(NOT).setResultsName(str(PARSENAMES.NOT)) + \
                               EL_FACT_ROOT + \
@@ -257,6 +245,8 @@ FACT << op(NOT).setResultsName(str(PARSENAMES.NOT)) + \
                               pp.Group(EL_FACT_TERMINAL).setResultsName(str(PARSENAMES.TERMINAL))
 
 BIND_STATEMENT = NON_PATH_VAR + s(BIND) + op(FACT)
+
+#Execute Statements?
 
 #The entire grammar:
 ROOT = pp.OneOrMore((BIND_STATEMENT | CONDITION | FACT) + \
@@ -280,7 +270,6 @@ EL_COMPARISON.setName('Comparison')
 FACT.setName('Fact')
 CONDITION.setName('Condition')
 ARITH_FACT.setName('Arith Fact')
-EL_RULE.setName('Rule')
 BIND_STATEMENT.setName('Binding')
 
 ##############################
@@ -292,6 +281,7 @@ DOT.setParseAction(lambda toks: ELBD.EL.DOT)
 EX.setParseAction(lambda toks: ELBD.EL.EX)
 DOLLAR.setParseAction(lambda toks: ELBD.ELVARSCOPE.EXIS)
 AT.setParseAction(lambda toks: ELBD.ELVARSCOPE.FORALL)
+DBL_VLINE.setParseAction(lambda toks: ELBD.EL.ROOT)
 
 #Creating the lowest level data structures:
 COMP.setParseAction(construct_comp_op)
@@ -299,18 +289,21 @@ ARITH.setParseAction(lambda toks: construct_arith_op(toks[0]))
 NUM.setParseAction(lambda toks: construct_num(toks[0]))
 STRING.setParseAction(pp.removeQuotes)
 
+#Regex Action:
+#todo: make a substitute action
+REGEX.setParseAction(lambda toks: re.compile(toks[0]))
+
 #Variable construction
 PATH_VAR.setParseAction(construct_el_var)
 NON_PATH_VAR.setParseAction(construct_el_var)
 
 #wapping a fact in a query:
-CONDITION.setParseAction(lambda toks: ELBD.ELQUERY(toks[0]))
+CONDITION.setParseAction(lambda toks: construct_el_query(toks))
 EL_COMPARISON.setParseAction(lambda toks: ELBD.ELComparison(toks[0], toks[1], toks[2]))
-EL_RULE.setParseAction(construct_rule)
 EL_PAIR.setParseAction(lambda tok: ELBD.ELPAIR(tok[0], tok[1]))
 EL_FACT_ROOT.setParseAction(construct_el_root_fact)
 #tok[0][0] for the group wrapping then element/array wrapping
-EL_FACT_TERMINAL.setParseAction(lambda tok: ELBD.ELTERM(tok[0][0]))
+EL_FACT_TERMINAL.setParseAction(lambda tok: tok[0])
 EL_ARRAY.setParseAction(lambda toks: [toks[:]])
 ARITH_FACT.setParseAction(construct_arith_fact)
 FACT.setParseAction(construct_el_fact)

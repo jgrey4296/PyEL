@@ -4,7 +4,6 @@
 import logging as root_logger
 logging = root_logger.getLogger(__name__)
 
-
 from enum import Enum
 from collections import namedtuple
 from fractions import Fraction
@@ -24,8 +23,6 @@ class ELRuntime:
     def __init__(self):
         self.parser = ELParser.ELPARSE
         self.trie = ELTrie.ELTrie()
-        #Rule dictionary using hash(repr(rule))
-        self.rules = {}
         #list of tuples (asserted, retracted) for each action?
         self.history = []
         #bindings :: stack<ELBindingFrame>
@@ -83,24 +80,15 @@ class ELRuntime:
             else:
                 logging.debug("Hit an assertion")
                 result = self.fact_assert(action)
-        elif isinstance(action,ELBD.ELRULE):
-            result = self.run_rule(action)
         elif isinstance(action,ELBD.ELBIND):
             raise ELE.ELRuntimeException("Not Implemented")
-            self.set_binding(action.var,action.root)
+            #self.set_binding(action.var,action.root)
         elif isinstance(action,ELBD.ELARITH_FACT):
             #Get the designated leaf.
             node = self.trie[action.data]
             action.apply(node)
-        elif isinstance(action,ELBD.ELQUERY):
-            #Don't replace vars with bindings, populate them
-            logging.debug("Querying")
-            self.add_level()
-            success, frame = self.fact_query(action, self.top_stack())
-            result = success
-            self.pop_stack()
-            logging.debug('Query Result: {}'.format(result))
-
+        else:
+            raise ELE.ELRuntimeException("Unrecognised Action: {}".format(action))
         return result
 
     
@@ -115,15 +103,11 @@ class ELRuntime:
     def fact_assert(self,fact):
         """ Add a fact """
         return_val = self.trie.push(fact)
-        if isinstance(fact[-1].value, ELBD.ELRULE):
-            self.add_rule(fact.short_str(), fact[-1].value)
         return return_val
             
     def fact_retract(self,fact):
         """ Remove a fact """
         return_val = self.trie.pop(fact)
-        if isinstance(fact[-1].value, ELBD.ELRULE):
-            self.remove_rule(fact.short_str())
         return return_val
             
     def fact_query(self,query, bindingFrame=None):
@@ -132,7 +116,7 @@ class ELRuntime:
         if bindingFrame is None:
             bindingFrame = self.top_stack()
         assert isinstance(bindingFrame, ELBD.ELBindingFrame)
-        assert isinstance(query, ELBD.ELQUERY)
+        assert isinstance(query[-1], ELBD.ELQUERY)
         
         current_frame = bindingFrame
         if len(current_frame) == 0:
@@ -159,21 +143,6 @@ class ELRuntime:
             return (successes[0], updated_frame)
         else:
             return (ELBD.ELFail(), current_frame)
-
-    #Rule Operations
-    def add_rule(self,name,rule):
-        if name in self.rules:
-            raise ELE.ELConsistencyException('{} already stored as a rule already'.format(name))
-        self.rules[name] = rule        
-
-    def remove_rule(self,name):
-        if name in self.rules:
-            del self.rules[name]
-
-    def get_rule(self,name):
-        if name not in self.rules:
-            raise ELE.ELConsistencyException('{} : Getting a rule, but its not in the dict'.format(name))
-        return self.rules[name]
 
     def run_rule(self,rule):
         """ Given a rule, check its conditions then queue its results """
@@ -293,9 +262,6 @@ class ELRuntime:
 
     def num_leaves(self):
         return len(self.trie.dfs_for_metrics()['leaves'])
-        
-    def num_rules(self):
-        return len(self.trie.dfs_for_metrics()['rules'])
         
     def num_assertions(self):
         return len([x for x in self.history if isinstance(x, ELBD.ELFACT) and not x.negated])

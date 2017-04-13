@@ -26,4 +26,6 @@ class ELRuleException(ELException):
     """ A Failure occured in the course of running a rule """
     None
     
-    
+class ELNotImplementedException(ELException):
+    """ Raised when a not-implemented feature is called """
+    None
