@@ -579,15 +579,25 @@ class ELFACT(ELSTRUCTURE):
     def push(self, statement):
         """ Utility for easy construction of a fact """
         self.data.append(statement)
+        if isinstance(statement, ELPAIR) and isinstance(statement.value, ELVAR):
+            self.bindings.append(statement.value)
+            if isinstance(statement.value.access_point, ELVAR):
+                self.bindings.append(statement.value.access__point)
+        elif isinstance(statement, ELVAR):
+            self.bindings.append(statement)
+            if isinstance(statement.access_point, ELVAR):
+                self.bindings.append(statement.access_point)
         return self
 
+    def query(self):
+        copy = self.copy()
+        copy.push(ELQUERY())
+        return copy
+    
     def var(self, *args):
         """ Utility for easy construction of a variable """
         var = ELVAR(*args)
         pair = ELPAIR(var)
-        self.bindings.append(var)
-        if isinstance(var.access_point, ELVAR):
-            self.bindings.append(var.access_point)
         return self.push(pair)
 
     def pair(self, *args):
