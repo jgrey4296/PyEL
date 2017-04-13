@@ -28,13 +28,79 @@ class ELRuntime:
         #bindings :: stack<ELBindingFrame>
         self.bindings = ELBD.ELBindingStack()
 
+    def execute(self, etype, data):
+        return_val = []
+        if etype is ELBD.ELEXT.TRIE:
+            return_val = self.execute_as_trie(data)
+        elif etype is ELBD.ELEXT.TREE:
+            None
+        elif etype is ELBD.ELEXT.FSM:
+            None
+        elif etype is ELBD.ELEXT.SEL:
+            None
+        elif etype is ELBD.ELEXT.INS:
+            None
+        else:
+            raise ELE.ELNotImplementedException()
+
+        return return_val
+
+    def execute_as_trie(self, data):
+        """
+        Data{ root: '.a.start.string?, }
+        Assumes structure where each node has a 'next' child,
+        .node.next.[...],
+        .node.conditions.[]
+        .node.mods.[]
+        .node.performance."blah"
+        .node.weight!n
+        .node.rules...
+        ....
+        """
+
+        output = ["Start"]
+        state = []
+        #Get the starting node
+        current = self(data['root'])
+        
+        while len(current) > 0:
+            #perform any statemods
+            
+            #Add text to the output
+            
+            #pick a child
+            potential_children = current.keys()
+            chosen = choice(potential_children)
+            current = current[chosen]
+            
+
+        #perform the leaf
+
+        
+        return output
+        
+    def perform_node(self,node):
+        """
+        .node.next.[...],
+        .node.preconditions.[]
+        .node.statemods...
+        .node.performance."blah"
+        .node.bindings.[] <- or is this implicit?
+        .node.weight!n
+        .node.rules...
+        """
+
+    
+        
     def __call__(self,string):
         """ Parse a string, act accordingly with the results """
         parsed_representations = self.parser(string)
         #todo: return a {status: bool, data: [] } obj
         actResults = []
         for r in parsed_representations:
-            actResults.append(self.act(r))
+            expanded = r.expand()
+            for x in expanded:
+                actResults.append(self.act(x))
             
         if len(actResults) == 0:
             return None
