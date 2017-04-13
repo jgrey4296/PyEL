@@ -365,99 +365,6 @@ class ELPAIR(ELSTRUCTURE):
         except AttributeError as e:
             return ELPAIR(self.value, self.elop)
 
-class ELTERM(ELSTRUCTURE):
-    """ Internal representation of the terminal of the EL String
-    Houses a value, which may be a rule, or array, or simple value
-    """
-    def __init__(self, value):
-        self.value = value
-
-    def isVar(self):
-        return isinstance(self.value, ELVAR)
-
-    def __repr__(self):
-        return "{} ||".format(repr(self.value))
-
-    def __str__(self):
-        value = str(self.value)
-        if value[-1] == '.' or value[-1] == '!':
-            return value[0:-1]
-        else:
-            return value
-
-    def __eq__(self, other):
-        return self.value == other.value
-
-    def copy(self):
-        try:
-            return ELTERM(self.value.copy())
-        except AttributeError as e:
-            return ELTERM(self.value)
-
-class ELRULE(ELSTRUCTURE):
-    """ Internal representation of a rule """
-    def __init__(self, conditions, actions, binding_comparisons=None):
-        if binding_comparisons is None:
-            binding_comparisons = []
-        self.conditions = conditions
-        self.actions = actions
-        self.binding_comparisons = binding_comparisons
-
-        #get the vars in each binding fact in conditions
-        self.condition_bindings = set([var.value \
-                                       for c in self.conditions \
-                                       for var in c.value.bindings])
-
-        #combine them all together:
-        self.action_bindings = set([var.value \
-                                    for clause in self.actions \
-                                    for var in clause.bindings])
-
-    def __hash__(self):
-        return hash(repr(self))
-
-    def copy(self):
-        conditionsCopy = [x.copy() for x in self.conditions]
-        actionsCopy = [x.copy() for x in self.actions]
-        bindingsCopy = [x.copy() for x in self.binding_comparisons]
-        return ELRULE(conditionsCopy, actionsCopy, bindingsCopy)
-
-
-    def __repr__(self):
-        return "Rule({},{},{})".format(repr(self.conditions),
-                                       repr(self.actions),
-                                       repr(self.binding_comparisons))
-
-    def __str__(self):
-        conditions = ", ".join([str(x) for x in self.conditions])
-        bindings = ", ".join([str(x) for x in self.binding_comparisons])
-        actions = ", ".join([str(x) for x in self.actions])
-        if len(bindings) > 0:
-            return "{} {} | {} -> {} {}".format('{', conditions,
-                                                bindings,
-                                                actions, '}')
-        else:
-            return "{} {} -> {} {}".format('{', conditions,
-                                           actions, '}')
-
-    def __eq__(self, other):
-        #no need to compare condition/action_bindings as they are generated from these:
-        return all([x == y for x, y in zip(self.conditions, other.conditions)]) \
-            and all([x == y for x, y in zip(self.actions, other.actions)]) \
-            and all([x == y for x, y in zip(self.binding_comparisons, other.binding_comparisons)])
-
-
-
-    def balanced_bindings(self):
-        #get the set of all bindings used in comparisons
-        comparison_set = set([x.b1.value for x in self.binding_comparisons]).union(set([x.b2.value for x in self.binding_comparisons if isinstance(x.b2, ELVAR)]))
-        #get all bindings used in comparisons and actions:
-        combined_bindings = self.action_bindings.union(comparison_set)
-        #then get the ones that aren't in the condition_bindings
-        the_difference = combined_bindings.difference(self.condition_bindings)
-        return len(the_difference) == 0
-
-
 class ELVAR(ELSTRUCTURE):
     """ An internal representation of a binding """
     def __init__(self, bindName, access_point=None, path_var=False, scope=ELVARSCOPE.EXIS):
@@ -656,9 +563,6 @@ class ELFACT(ELSTRUCTURE):
         """ Utility for easy construction of an exclusive variable """
         var = ELVAR(*args)
         pair = ELPAIR(var, EL.EX)
-        self.bindings.append(var)
-        if isinstance(var.access_point, ELVAR):
-            self.bindings.append(var.access_point)
         self.push(pair)
 
     def epair(self, arg):
@@ -667,80 +571,9 @@ class ELFACT(ELSTRUCTURE):
         """
         return self.push(ELPAIR(arg, EL.EX))
 
-    def vterm(self, *args):
-        var = ELVAR(*args)
-        term = ELTERM(var)
-        self.bindings.append(var)
-        if isinstance(var.access_point, ELVAR):
-            self.bindings.append(var.access_point)
-        return self.push(term)
-
-    def term(self, *args):
-        """ Utility for construction of a new fact:
-        Internally create a new terminal
-        """
-        return self.push(ELTERM(*args))
-
-
     def pop(self):
         """ Get the last element of the fact """
         return self.data.pop()
-
-    def complete(self):
-        """ Check to see if the fact is 'whole' (ended with a terminal) """
-        return len(self) > 0 and isinstance(self.data[-1], ELTERM)
-
-    def is_valid(self):
-        """ Ensure this is a valid fact.
-        Validity means the fact is made of ELPAIRS and is finished with an ELTERM
-        """
-        #Must end with a term
-        if len(self) == 0:
-            return
-        if not isinstance(self.data[-1], ELTERM):
-            raise ELE.ELConsistencyException()
-        for x in self.data[1:]:
-            if isinstance(x, ELPAIR) and isinstance(x.value, list):
-                #must not have arrays as pairs, only terminals
-                return ELE.ELConsistencyException()
-
-    def is_valid_for_searching(self):
-        """ Ensure this fact is valid for using as a search
-        relaxes constraints on the string, can be just '.', and doesn't have to end
-        with an ELTERM
-        """
-        for x in self.data[1:]:
-            if isinstance(x, ELPAIR) and isinstance(x.value, list):
-                #must not have arrays as pairs, only terminals
-                raise Exception("Fact is not valid: has Array in non-terminal")
-        return True
-
-class ELQUERY(ELSTRUCTURE):
-    """ A wrapper around a fact to signify it should be a query """
-    def __init__(self, fact):
-        if not isinstance(fact, ELFACT):
-            raise ELE.ELConsistencyException("Queries need a fact")
-        self.value = fact
-
-    def bind(self, bindings):
-        return ELQUERY(self.value.bind(bindings))
-
-    def __eq__(self, query):
-        if isinstance(query, ELQUERY):
-            return self.value == query.value
-        elif isinstance(query, ELFACT):
-            return self.value == query
-        else:
-            return False
-
-    def __repr__(self):
-        return repr(self.value) + "?"
-
-    def __str__(self):
-        return str(self.value) + "?"
-
-    def copy(self):
-        return ELQUERY(self.value.copy())
 
 
 #----------
@@ -791,27 +624,6 @@ class ELSuccess(ELRESULT):
         """ Allow for each looping through the bindings """
         return iter(self.bindings)
 
-    # def __contains__(self, key):
-    #     """ Check the result for a value in the children """
-    #     if isinstance(key, ELPAIR):
-    #         return key.value in self.bindings
-    #     elif isinstance(key, ELTERM):
-    #         return key.value in self.bindings
-    #     else:
-    #         return key in self.children
-
-    # def __eq__(self, other):
-    #     """ Compare a value to the internal value """
-    #     if isinstance(other, bool):
-    #         return other is True
-    #     if isinstance(other, ELPAIR):
-    #         return self.value == other.value
-    #     elif isinstance(other, ELTERM):
-    #         return self.value == other.value
-    #     else:
-    #         return self.value == other
-
-
 #----------------------------------------
 ##  CORE TRIE NODE
 #----------------------------------------
@@ -832,13 +644,8 @@ class ELTrieNode:
         if isinstance(val, ELPAIR):
             self.elop = val.elop
             self.value = val.value
-        elif isinstance(val, ELTERM):
-            self.value = val.value
         else:
             self.value = val
-
-    def contains_rule(self):
-        return isinstance(self.value, ELRULE)
 
     def simple_string(self):
         val = str(self.value)
@@ -895,13 +702,6 @@ class ELTrieNode:
             del self.children[key.value]
         elif isinstance(key, ELPAIR):
             del self.children[key.value]
-        elif isinstance(key, ELTERM):
-            if isinstance(key.value, list):
-                del self.children[ELV.ARR]
-            elif isinstance(key.value, ELRULE):
-                del self.children[ELV.RULE]
-            else:
-                del self.children[key.value]
         else:
             del self.children[key]
 
@@ -911,14 +711,6 @@ class ELTrieNode:
             return self.children[key.value]
         elif isinstance(key, ELPAIR):
             return self.children[key.value]
-        elif isinstance(key, ELTERM):
-            if isinstance(key.value, list):
-                #Only terminals can have arrays, but they are unhashable so use the ELV.ARR enum
-                return self.children[ELV.ARR]
-            elif isinstance(key.value, ELRULE):
-                return self.children[ELV.RULE]
-            else:
-                return self.children[key.value]
         else:
             return self.children[key]
 
@@ -932,14 +724,6 @@ class ELTrieNode:
             self.children[key.value] = value
         elif isinstance(key, ELPAIR):
             self.children[key.value] = value
-        elif isinstance(key, ELTERM):
-            #Only terminals can have arrays, but they are unhashable so use the ELV.ARR enum
-            if isinstance(key.value, list):
-                self.children[ELV.ARR] = value
-            elif isinstance(key.value, ELRULE):
-                self.children[ELV.RULE] = value
-            else:
-                self.children[key.value] = value
         else:
             self.children[key] = value
 
@@ -951,16 +735,6 @@ class ELTrieNode:
                 raise Exception('checking trie for a var doesnt make sense')
             #check the key is right, and the elop is right
             return key.value in self.children and self.children[key.value] == key
-        elif isinstance(key, ELTERM):
-            #only check the key is right, as a terminal doesn't specify exclusion status
-            if isinstance(key.value, list):
-                return key.value in self.keys()
-            elif isinstance(key.value, ELRULE):
-                return key.value in self.keys()
-            elif isinstance(key.value, ELVAR):
-                raise Exception('checking a trie for a var doesnt make sense: {}'.format(key.value))
-            else:
-                return key.value in self.children
         else:
             return key in self.children
 
