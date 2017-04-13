@@ -140,7 +140,15 @@ class ELRuntime:
         #Perform based on parsed type
         if isinstance(action,ELBD.ELFACT):
             #Fact: Assert /retract
-            if action.negated:
+            if isinstance(action[-1], ELBD.ELQUERY):
+                #Don't replace vars with bindings, populate them
+                logging.debug("Querying")
+                self.add_level()
+                success, frame = self.fact_query(action, self.top_stack())
+                result = success
+                self.pop_stack()
+                logging.debug('Query Result: {}'.format(result))
+            elif action.negated:
                 logging.debug("Hit a negation, retracting")
                 result = self.fact_retract(action)
             else:

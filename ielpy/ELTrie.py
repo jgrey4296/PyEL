@@ -92,6 +92,7 @@ class ELTrie:
                 #for everything but finding the root:
                 logging.debug("-> {}".format(repr(statement)))
                 current = current[statement]
+            returnVal = ELBD.ELSuccess()
         except ELE.ELException as e:
             logging.critical(e)
             returnVal = ELBD.ELFail()
@@ -120,32 +121,31 @@ class ELTrie:
         
     def query(self,query):
         """ Given an EL String, test the Trie to see if it is true """
-        assert isinstance(query,ELBD.ELQUERY)
+        assert isinstance(query[-1],ELBD.ELQUERY)
         #result :: ELFail | ELSuccess
-        result = self.get(query.value)
+        result = self.get(query)
         logging.debug('Get Result: {}'.format(result))
-        if isinstance(result,ELBD.ELSuccess) and not query.value.negated:
+        if isinstance(result,ELBD.ELSuccess) and not query.negated:
             return result
-        elif isinstance(result, ELBD.ELFail) and query.value.negated:
+        elif isinstance(result, ELBD.ELFail) and query.negated:
             #successful, but with no bindings
             #Todo: or should it be the passed in bindings?
-            return ELBD.ELSuccess(bindings=ELBD.ELBindingFrame([query.value.filled_bindings]))
+            return ELBD.ELSuccess(bindings=ELBD.ELBindingFrame([query.filled_bindings]))
         else:
             return ELBD.ELFail()
         
         
     def get(self,el_string):
         assert isinstance(el_string, ELBD.ELFACT)
-        assert el_string.is_valid_for_searching()
 
-        if not el_string.data[0].isVar():
+        if not el_string[0].isVar():
             root = self.root
-        elif el_string.data[0].value in self.allNodes: 
-            root = self.allNodes[el_string.data[0].value]
+        elif el_string[0].value in self.allNodes: 
+            root = self.allNodes[el_string[0].value]
         else:
             raise ELE.ELRuleException('Root Value not found in allnodes')
         #results :: ELBindingFrame
-        results = self.sub_get(root, el_string.data[1:], el_string.filled_bindings)
+        results = self.sub_get(root, el_string[1:], el_string.filled_bindings)
         logging.debug("Sub Get Results: {}".format(results))
         returnVal = ELBD.ELFail()
         if isinstance(results,list) and not isinstance(results[0], ELBD.ELFail):
@@ -190,14 +190,15 @@ class ELTrie:
                 remaining_string = []
                 current = None
             #not a var
-            elif (isinstance(statement, ELBD.ELPAIR) or \
-                 isinstance(statement, ELBD.ELTERM)) and \
-                 statement in current:
+            elif isinstance(statement, ELBD.ELPAIR) and statement in current:
                 current = current[statement]
             #not anything usable
-            elif not isinstance(statement, ELBD.ELPAIR) and \
-                 not isinstance(statement, ELBD.ELTERM):
-                raise ELE.ELConsistencyException('Getting something that is not a pair or term')
+            elif isinstance(statement, ELBD.ELQUERY):
+                None
+            elif isinstance(statement, ELBD.ELROOT) and statement in current:
+                current = current[statement]
+            elif not isinstance(statement, ELBD.ELPAIR):
+                raise ELE.ELConsistencyException('Getting something that is not a pair: {}'.format(statement))
             else:
                 results.append(ELBD.ELFail())
                 remaining_string = []
