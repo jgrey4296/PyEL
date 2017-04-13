@@ -446,6 +446,32 @@ class ELFACT(ELSTRUCTURE):
         if r is True:
             self.data.append(ELROOT())
 
+    def expand(self):
+        """ Takes a fact with a terminal array,
+        and converts it into a list of facts """
+        ROOT_VAR = ELVAR("ROOT")
+        current = self[0:-1]
+        term = self[-1]
+        if not isinstance(term, list):
+            return [self]
+        output = []
+        #Add the root
+        output.append(ELFACT(current))
+        for x in term:
+            if isinstance(x, ELFACT):
+                #lop off the duplicated root
+                new_fact = ELFACT(current + x[1:])
+            elif isinstance(x, list):
+                new_fact = ELFACT(current + x)
+            else:
+                new_fact = ELFACT(current)
+                new_fact.pair(x)
+            flattened = new_fact.expand()
+            output.extend(flattened)
+
+        return output
+
+            
     def hasForAllBinding(self):
         """ Return true if any binding is a forall binding """
         #todo: this doesn't account for forall variables that are array accessors
