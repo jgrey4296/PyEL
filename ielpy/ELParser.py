@@ -63,21 +63,31 @@ def construct_el_fact(toks):
     if str(PARSENAMES.BASEFACT) not in toks:
         raise ELE.ELParseException('No BaseFact provided', toks)
     negated = str(PARSENAMES.NOT) in toks
-    root = [toks[str(PARSENAMES.ROOT)]]
+    root = toks[str(PARSENAMES.ROOT)]
     base = toks[str(PARSENAMES.BASEFACT)][:]
-    term = [toks[str(PARSENAMES.TERMINAL)][0]]
-    #values in basefact are wrapped in elpairs, need to unwrap:
-    #TODO: should i check the terminal deeply (ie: for rules) for bindings?
-    bindings = [x.value for x in base if isinstance(x.value, ELBD.ELVAR)]
-    if isinstance(term[0].value, ELBD.ELVAR):
-        bindings.append(term[0].value)
-    if isinstance(root[0].value, ELBD.ELVAR):
-        bindings.append(root[0].value)
+    new_fact = ELBD.ELFACT(negated=negated)
+    new_fact.push(root)
+    for x in base:
+        new_fact.push(x)
 
-    #retrieve sub vars
-    bindings.extend([x.access_point for x in bindings if isinstance(x.access_point, ELBD.ELVAR)])
+    if len(toks[str(PARSENAMES.TERMINAL)]) == 0:
+        term = None
+    elif len(toks[str(PARSENAMES.TERMINAL)]) > 1:
+        term = toks[str(PARSENAMES.TERMINAL)][:]
+    else:
+        term = toks[str(PARSENAMES.TERMINAL)][0]
+    if term is not None and isinstance(term, list):
+        new_fact.push(term)
+    elif term is not None:
+        new_fact.pair(term)
+            
+    return new_fact
 
-    return ELBD.ELFACT(root + base + term, bindings=bindings, negated=negated)
+def construct_el_query(toks):
+    if not isinstance(toks[0], ELBD.ELFACT):
+        raise ELE.ELConsistencyException("Query constructed on non-fact")
+    toks[0].push(ELBD.ELQUERY())
+    return toks[0]
 
 def construct_arith_fact(toks):
     if not (isinstance(toks[0], ELBD.ELFACT) or isinstance(toks[0], ELBD.ELVAR)):
