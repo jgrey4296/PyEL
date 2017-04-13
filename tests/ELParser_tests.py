@@ -57,17 +57,15 @@ class ELParser_Tests(unittest.TestCase):
         test_fact = ".this.is.an.array.[1,2,3,4,5]"
         results = self.parser(test_fact)
         self.assertEqual(len(results[0].data),6)
-        self.assertIsInstance(results[0].data[-1],ELBD.ELTERM)
-        self.assertEqual(results[0].data[-1].value,[1,2,3,4,5])
+        self.assertEqual(results[0].data[-1],[1,2,3,4,5])
 
     def test_empty_array(self):
         """ check that an array can be empty """
         test_fact = ".this.is.an.empty.array.[]"
         results = self.parser(test_fact)
         #length is 7, num of '.' + terminal
-        self.assertEqual(len(results[0].data),7)
-        self.assertIsInstance(results[0].data[-1],ELBD.ELTERM)
-        self.assertEqual(len(results[0].data[-1].value),0)
+        self.assertEqual(len(results[0].data), 6)
+        self.assertEqual(results[0][-1].value, "array")
         
     def test_multi_line_array(self):
         """ check that an array can be on multiple lines """
@@ -78,11 +76,10 @@ class ELParser_Tests(unittest.TestCase):
         ]"""
         results = self.parser(test_fact)
         self.assertEqual(len(results[0].data),7)
-        self.assertIsInstance(results[0].data[-1],ELBD.ELTERM)
         #Checking LENGTH:
-        self.assertEqual(len(results[0].data[-1].value),3)
+        self.assertEqual(len(results[0].data[-1]),3)
         #Checking CONTENT:
-        self.assertEqual(results[0].data[-1].value,[1,2,3])
+        self.assertEqual(results[0].data[-1],[1,2,3])
 
     def test_fact_with_string_inside(self):
         """ check facts can have strings inside them """
@@ -132,7 +129,7 @@ class ELParser_Tests(unittest.TestCase):
         """ check that numbers can be in arrays """
         test_fact ='.a.b.[1,2,3]'
         results = self.parser(test_fact)
-        self.assertEqual(results[0].data[-1].value,[1,2,3])
+        self.assertEqual(results[0].data[-1],[1,2,3])
 
     def test_fact_with_underscore_negative_number(self):
         """ check that formatted numbers can be negative """
@@ -167,83 +164,6 @@ class ELParser_Tests(unittest.TestCase):
 
     ####################
 
-    def test_empty_rule(self):
-        """ test .this.is.a.rule.{[] -> []} """
-        test_fact = ".this.is.a.rule.{[]->[]} """
-        results = self.parser(test_fact)
-        self.assertEqual(len(results),1)
-        self.assertIsInstance(results[0],ELBD.ELFACT)
-        self.assertEqual(len(results[0]),5)
-        self.assertIsInstance(results[0][-1],ELBD.ELTERM)
-        self.assertIsInstance(results[0][-1].value,ELBD.ELRULE)
-        self.assertEqual(len(results[0][-1].value.conditions),0)
-        self.assertEqual(len(results[0][-1].value.actions),0)
-        
-                
-    
-    def test_rule_definition(self):
-        """ Test .this.is.a.rule.{[.blah?, .bloo?, .blee?] -> [.wee.bloo.blah]} """
-        test_fact = ".this.is.a.rule.{[.a?, .b?, .c?] -> [.d, .e, .f]}"
-        conditions = ".a\n.b\n.c"
-        actions = ".d\n.e\n.f"
-        results = self.parser(test_fact)
-        conditions_parsed = self.parser(conditions)
-        actions_parsed = self.parser(actions)
-        for x,y in zip(results[0][-1].value.conditions,conditions_parsed):
-            self.assertIsInstance(x,ELBD.ELQUERY)
-            self.assertEqual(x.value,y)
-        for x,y in zip(results[0][-1].value.actions,actions_parsed):
-            self.assertIsInstance(x,ELBD.ELFACT)
-            self.assertEqual(x,y)
-
-    def test_rule_multiline(self):
-        """ As above, but across multiple lines """
-        test_fact = """ .this.is.a.rule.{
-        [.a?, .b?, .c?]
-        ->
-        [.d, .e, .f]
-        }
-        """
-        results = self.parser(test_fact)
-        self.assertIsInstance(results[0][-1].value,ELBD.ELRULE)
-        for x in results[0][-1].value.conditions:
-            self.assertIsInstance(x,ELBD.ELQUERY)
-        for x in results[0][-1].value.actions:
-            self.assertIsInstance(x,ELBD.ELFACT)
-            
-        
-    def test_rule_multiconditions(self):
-        """ Test .this.is.a.rule{[.blah.bloo?, .blee.blah?] -> [.wee.bloo, .wee.blah]} """
-        test_fact = ".this.is.a.rule.{[.blah.bloo?, .blee.blah?] -> [.wee.bloo, .wee.blah]}"
-        results = self.parser(test_fact)
-        self.assertIsInstance(results[0][-1].value,ELBD.ELRULE)
-        for x in results[0][-1].value.conditions:
-            self.assertIsInstance(x,ELBD.ELQUERY)
-        for x in results[0][-1].value.actions:
-            self.assertIsInstance(x,ELBD.ELFACT)
-        
-
-    def test_rule_multiconditions_multiline(self):
-        """ As above, but across multiple lines """
-        test_fact = """.this.is.a.rule.{
-    		[.blah.bloo?, .blee.blah?] 
-        	-> 
-		[.wee.bloo, .wee.blah]}"""
-        results = self.parser(test_fact)
-        self.assertIsInstance(results[0][-1].value,ELBD.ELRULE)
-        for x in results[0][-1].value.conditions:
-            self.assertIsInstance(x,ELBD.ELQUERY)
-        for x in results[0][-1].value.actions:
-            self.assertIsInstance(x,ELBD.ELFACT)
-        
-
-    def test_rule_bindings(self):
-        """ Test .this.is.a.rule.{[.blah.bloo.$1?] -> [.bloo.blee.$1]} """
-        test_fact = ".this.is.a.rule.{[.blah.bloo.$1?] -> [.bloo.blee.$1]}"
-        results = self.parser(test_fact)
-        self.assertIsInstance(results[0][-1].value.conditions[0].value[-1].value, ELBD.ELVAR)
-        self.assertIsInstance(results[0][-1].value.actions[0][-1].value,ELBD.ELVAR)
-
     def test_bindings_are_registered(self):
         """ bindings need to be registered with their parent fact, and that facts parent rule """
         test_fact = ".this.is.a.$binding"
@@ -258,19 +178,10 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(len(results[0].bindings),1)
         self.assertEqual(results[0].bindings[0].value,"binding")
 
-    def test_bindings_complain_when_unbalanced(self):
-        """ undefined bindings in actions should complain """
-        test_fact = ".this.is.a.rule.{[.blah.bloo?] -> [.blah.bloo.$blee]}"
-        logging.debug("A Warning should be logged for rule bindings")
-        with self.assertRaises(ELE.ELConsistencyException):
-            self.parser(test_fact)
-        logging.debug("The warning should have been logged")
-
     def test_fact_negation(self):
         """ ~.a.fact.should.be.negatable """
         test_fact = "~.a.fact.should.be.negatable """
         results = self.parser(test_fact)
-        self.assertIsInstance(results[0][-1],ELBD.ELTERM)
         self.assertEqual(results[0][-1].value,"negatable")
         self.assertTrue(results[0].negated)
 
@@ -280,28 +191,6 @@ class ELParser_Tests(unittest.TestCase):
         results = self.parser(test_fact)
         self.assertFalse(results[0].negated)
             
-    def test_rule_negation_testing(self):
-        """ Test .this.is.a.rule.{[~.blah.bloo.blee?] -> [.blah.bloo.blee]} """
-        test_fact = ".this.is.a.rule.{[~.blah.bloo.blee?] -> [.blah.bloo.blee]}"
-        results = self.parser(test_fact)
-        self.assertTrue(results[0][-1].value.conditions[0].value.negated)
-        self.assertFalse(results[0][-1].value.actions[0].negated)
-
-    def test_rule_action_negation(self):
-        """ test .this.is.a.rule.{[] -> [~.blah.bloo.blee]} """
-        test_fact = ".this.is.a.rule.{[] -> [~.blah.bloo.blee]}"
-        results = self.parser(test_fact)
-        self.assertTrue(results[0][-1].value.actions[0].negated)
-
-    def test_rule_condition_comparison(self):
-        """ .this.is.a.rule.{[.a.b.$c?, .a.b.$d?] | [$c > $d ] -> [] } """
-        test_fact = ".this.is.a.rule.{[.a.b.$c?, .a.b.$d?] | [$c > $d] -> [] } "
-        results = self.parser(test_fact)
-        self.assertEqual(len(results[0][-1].value.binding_comparisons),1)
-        self.assertEqual(results[0][-1].value.binding_comparisons[0].b1.value,'c')
-        self.assertEqual(results[0][-1].value.binding_comparisons[0].b2.value,'d')
-        self.assertEqual(results[0][-1].value.binding_comparisons[0].op,ELBD.ELCOMP.GREATER)
-
     def test_simple_comparison_lookup(self):
         test_comp = ">"
         results = ELParser.COMP.parseString(test_comp)
@@ -313,12 +202,6 @@ class ELParser_Tests(unittest.TestCase):
         results = ELParser.ARITH.parseString(test_arith)
         self.assertEqual(results[0],ELBD.ELARITH.PLUS)
         
-    def test_rule_arith_action(self):
-        """ test .this.is.a.rule.{[] -> [.a.b.c + 20 ]} """
-        test_fact = ".this.is.a.rule.{[] -> [.a.b.c + 20]} """
-        results = self.parser(test_fact)
-        self.assertIsInstance(results[0][-1].value.actions[0],ELBD.ELARITH_FACT)
-       
     def test_only_actions_can_have_arith_ops(self):
         """ The fact .a.b.c + 20 should fail """
         test_fact = ".a.b.c + 20"
@@ -327,66 +210,6 @@ class ELParser_Tests(unittest.TestCase):
             self.parser(test_fact)
         logging.debug("The warning should have been logged")
 
-    def test_rule_brackets_as_optional(self):
-        """ .this.is.a.rule.{ .a.b.$c?, .d.e.$f? | $c < $f -> .a.b.e } """
-        test_fact = ".this.is.a.rule.{ .a.b.$c?, .d.e.$f? | $c < $f -> .a.b.e }"
-        results = self.parser(test_fact)
-        self.assertIsInstance(results[0][-1].value,ELBD.ELRULE)
-        self.assertEqual(len(results[0][-1].value.binding_comparisons),1)
-        self.assertEqual(len(results[0][-1].value.condition_bindings),2)
-            
-    def test_rule_arith_action_expanded(self):
-        """ test .this.is.a.rule.{[] -> [.a.b.c+2/3, .a.b.d-1d4, .a.b.c*5/6, .a.b.c / 2]} """
-        test_fact = ".this.is.a.rule.{[] -> .a.b.c+2/3, .a.b.d-1d4, .a.b.c*5/6, .a.b.c/2}"
-        results = self.parser(test_fact)
-        self.assertEqual(len(results[0][-1].value.actions),4)
-        for action in results[0][-1].value.actions:
-            self.assertIsInstance(action,ELBD.ELARITH_FACT)
-
-    def test_arith_action_using_var_not_fact(self):
-        """ .this.is.a.rule.{ .a.b.$c? -> $c + 2 } """
-        test_fact = ".this.is.a.rule.{ .a.b.$c? -> $c + 2 }"
-        result = self.parser(test_fact)
-        self.assertIn('c',result[0][-1].value.condition_bindings)
-        self.assertIn('c',result[0][-1].value.action_bindings)
-            
-
-    def test_rule_modulo_action(self):
-        """ test .this.is.a.rule.{ [] -> [.a.b.c % 2]} """
-        test_fact = ".this.is.a.rule.{ [] -> .a.b.c % 5 }"
-        result = self.parser(test_fact)
-        self.assertIsInstance(result[0][-1].value.actions[0],ELBD.ELARITH_FACT)
-
-    def test_rule_implicit_binding_comparison(self):
-        """ test .this.is.a.rule.{[.a.b.c.$1?, .a.b.d.$1] -> []} """
-        test_fact = ".this.is.a.rule.{.a.b.c.$1?, .a.b.d.$1? -> [] } """
-        result = self.parser(test_fact)
-        self.assertIn('1',result[0][-1].value.condition_bindings)
-                
-    def test_rule_binding_comparison_non_equality(self):
-        """" test .this.is.a.rule.{[.a.b.c.$1?, .a.b.d.$2?] | [$1 != $2] -> []} """
-        test_fact = ".this.is.a.rule.{.a.b.c.$1?, .a.b.d.$2? | $1 != $2 -> [] }"
-        result = self.parser(test_fact)
-        self.assertEqual(result[0][-1].value.binding_comparisons[0].op,ELBD.ELCOMP.NOTEQUAL)
-
-    def test_rule_binding_comparisons(self):
-        """ test .this.is.a.rule.{[.a.b.c.$1?,.a.b.d.$2?] | [$1 < $2] -> []} """
-        test_fact = """.this.is.a.rule.{ .a.b.c.$1?, .a.b.d.$2? | 
-        $1 > $2, $1 < $2, $1 >= $2, $1 <= $2, $1 == $2, $1 != $2, $1 @ $2, $1 !@ $2 -> []}"""
-        result = self.parser(test_fact)
-        comparisons = result[0][-1].value.binding_comparisons
-        #pair with the enums apart from the 'near' enum
-        paired = zip(comparisons,list(ELBD.ELCOMP)[:-1])
-        for comp,enumValue in paired:
-            self.assertEqual(comp.op,enumValue)
-
-    def test_near_operator(self):
-        """ The near operator ~=(num) """
-        test_fact = ".this.is.a.rule.{.a.b.$1.$2? | $1 ~=(2) $2 -> [] }"
-        result = self.parser(test_fact)
-        self.assertIsInstance(result[0][-1].value.binding_comparisons[0],ELBD.ELComparison)
-        self.assertEqual(result[0][-1].value.binding_comparisons[0].op,ELBD.ELCOMP.NEAR)
-        self.assertEqual(result[0][-1].value.binding_comparisons[0].nearVal,2)
             
     def test_global_binding(self):
         """ test just the bind statement  """
@@ -426,23 +249,16 @@ class ELParser_Tests(unittest.TestCase):
         """ test a sequence of facts """
         test_fact = ".a.b.list.[.a.b.c, .a.b.c, .a.b.d]"
         result = self.parser(test_fact)
-        self.assertEqual(len(result[0][-1].value),3)
-        for entry in result[0][-1].value:
+        self.assertEqual(len(result[0][-1]),3)
+        for entry in result[0][-1]:
             self.assertIsInstance(entry,ELBD.ELFACT)
-
-    def test_rules_cant_have_sub_facts(self):
-        """ Rules must be terminals """
-        test_fact = ".a.b.rule.{ [] -> [] }.d"
-        logging.debug("A Warning should be logged for .a.b.rule.{}.d")
-        with self.assertRaises(ELE.ELParseException):
-            self.parser(test_fact)
-        logging.debug("The warning should have been logged")
 
     def test_condition_separately(self):
         """ Parsing a query on its own should work """
         test_query = ".a.b.c?"
         result = self.parser(test_query)[0]
-        self.assertIsInstance(result,ELBD.ELQUERY)
+        self.assertIsInstance(result,ELBD.ELFACT)
+        self.assertIsInstance(result[-1], ELBD.ELQUERY)
 
     def test_path_var_scoping_exis(self):
         test_var = "$..x"

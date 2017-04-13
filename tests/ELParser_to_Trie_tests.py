@@ -57,16 +57,26 @@ class ELParser_to_Trie_tests(unittest.TestCase):
         
     def test_non_empty_array(self):
         fact_string = ".this.is.an.array.[1,2,3,4]"
-        result = self.trie.push(self.parser(fact_string)[0])
-        self.assertTrue(result)
-        self.assertTrue(self.trie.query(self.parser('.this.is.an.array.[1,2,3,4]?')[0]))
-        self.assertFalse(self.trie.query(self.parser('.this.is.an.array.[1,2,2,4]?')[0]))
-        self.assertFalse(self.trie.query(self.parser('.this.is.an.array.[1,2,2,4]?')[0]))       
+        expanded = self.parser(fact_string)[0].expand()
+        for x in expanded:
+            self.trie.push(x)
+        
+        self.assertTrue(self.trie.query(self.parser('.this.is.an.array.1?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.an.array.2?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.an.array.3?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.an.array.4?')[0]))
+        self.assertFalse(self.trie.query(self.parser('.this.is.an.array.5?')[0]))
+
 
     def test_fraction_array(self):
         fact_string = ".this.is.an.array.[1/2,3/4,5/6]"
-        result = self.trie.push(self.parser(fact_string)[0])
-        self.assertTrue(self.trie.query(self.parser('.this.is.an.array.[1/2,3/4,5/6]?')[0]))
+        expanded = self.parser(fact_string)[0].expand()
+        for x in expanded:
+            self.trie.push(x)
+            
+        self.assertTrue(self.trie.query(self.parser('.this.is.an.array.1/2?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.an.array.3/4?')[0]))
+        self.assertTrue(self.trie.query(self.parser('.this.is.an.array.5/6?')[0]))
 
 
     def test_fact_with_string(self):
@@ -79,21 +89,28 @@ class ELParser_to_Trie_tests(unittest.TestCase):
         """ Check an array of facts is parsed and integrated appropriately """
         fact_string = ".this.is.a.test.[.a.b.c, .d.e.f]"
         parsed = self.parser(fact_string)
-        self.trie.push(parsed[0])
-        self.assertTrue(self.trie.query(self.parser('.this.is.a.test.[.a.b.c, .d.e.f]?')[0]))
+        expanded = parsed[0].expand()
+        for x in expanded:
+            self.trie.push(x)
+            as_query = x.query()
+            self.assertTrue(self.trie.query(as_query))
 
 
     def test_fact_sequence_re_add(self):
         """ Check that a fact stored in an array is valid to be re-added """
-        fact_string = ".this.is.a.test.[.a.b.c, .d.e.f]"
-        parsed = self.parser(fact_string)
-        self.trie.push(parsed[0])
-        result1 = self.trie.get(self.parser('.this.is.a.test.[.a.b.c, .d.e.f]')[0])
-        self.trie.push(parsed[0])
-        result2 = self.trie.get(self.parser('.this.is.a.test.[.a.b.c, .d.e.f]')[0])
-        self.assertTrue(result1)
-        self.assertTrue(result2)
-        self.assertEqual(result1.bindings,result2.bindings)
+        fact_string = self.parser(".this.is.a.test.[.a.b.c, .d.e.f]")[0]
+        expanded = fact_string.expand()
+        for x in expanded:
+            self.trie.push(x)
+
+        f1 = self.parser(".this.is.a.test?")[0]
+        self.assertTrue(self.trie.query(f1))
+        f2 = self.parser(".this.is.a.test.a.b.c?")[0]
+        self.assertTrue(self.trie.query(f2))
+        f3 = self.parser(".this.is.a.test.d.e.f?")[0]
+        self.assertTrue(self.trie.query(f3))
+
+
         
 
         
@@ -165,23 +182,7 @@ class ELParser_to_Trie_tests(unittest.TestCase):
         self.assertEqual(added,15)
         subbed = val2 - val1
         self.assertEqual(subbed,5)
-                                    
-    def test_empty_rule(self):
-        """ Check rules are stored in the trie appropriately """
-        base_fact = ".this.is.a.rule.{ [] -> [] }"
-        retrieval_string = ".this.is.a.rule"
-        isAdded = self.trie.push(self.parser(base_fact)[0])
-        self.assertTrue(isAdded)
-        self.assertTrue(self.trie.query(self.parser('.this.is.a.rule.{ [] -> [] }?')[0]))
-
-
-    def test_simple_rule(self):
-        """ Check that a simple rule is stored appropriately """
-        base_fact = ".this.is.a.rule.{ .a.b.c? -> .a.b.d }"
-        retrieval_string = ".this.is.a.rule"
-        isAdded = self.trie.push(self.parser(base_fact)[0])
-        self.assertTrue(isAdded)
-        self.assertTrue(self.trie.query(self.parser('.this.is.a.rule.{ .a.b.c? -> .a.b.d }?')[0]))
+                                 
 
 if __name__ == "__main__":
     LOGLEVEL = root_logger.DEBUG

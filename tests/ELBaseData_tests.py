@@ -18,18 +18,36 @@ gen_n = lambda: 2 + int(random()*20)
 class ELBaseData_Tests(unittest.TestCase):
 
     def test_Fact_binding(self):
-        testFact = ELBD.ELFACT(r=True).var('b').var('c').vterm('d')
+        testFact = ELBD.ELFACT(r=True).var('b').var('c').var('d')
         bindingDict = ELBD.ELBindingSlice(
             {'b': ELBD.ELBindingEntry('b',None,'blah'),
              'c': ELBD.ELBindingEntry('c', None, 'crickey'),
              'd': ELBD.ELBindingEntry('d', None, 'dimwit') })
         bound = testFact.bind(bindingDict)
         self.assertEqual(str(testFact), '.$b.$c.$d')
-        self.assertEqual(repr(testFact), '| ROOT.VAR(b).VAR(c).VAR(d) || |')
+        self.assertEqual(repr(testFact), '| ROOT.VAR(b).VAR(c).VAR(d) |')
         self.assertNotEqual(repr(testFact), repr(bound))
         self.assertEqual(str(bound), '.blah.crickey.dimwit')
-        self.assertEqual(repr(bound), "| ROOT.'blah'.'crickey'.'dimwit' || |")
+        self.assertEqual(repr(bound), "| ROOT.'blah'.'crickey'.'dimwit' |")
 
+    def test_fact_expansion(self):
+        testFact = ELBD.ELFACT(r=True).pair('blah').pair('bloo').var('blee')
+        subfact_1 = ELBD.ELFACT(r=True).pair('awef').pair('awefgg').pair('awee')
+        subfact_2 = ELBD.ELFACT(r=True).pair('poi').epair('iuy').pair('oyb')
+        testFact.push([subfact_1, subfact_2])
+
+        expanded = testFact.expand()
+        self.assertEqual(len(expanded),3)
+        self.assertEqual(str(expanded[0]), ".blah.bloo.$blee")
+        self.assertEqual(str(expanded[1]), ".blah.bloo.$blee.awef.awefgg.awee")
+        self.assertEqual(str(expanded[2]), ".blah.bloo.$blee.poi.iuy!oyb")
+
+    def test_fact_array_expansion_ints(self):
+        testFact = ELBD.ELFACT(r=True).pair('blah').pair('bloo').push([1,2,3,4])
+        expanded = testFact.expand()
+        self.assertEqual(len(expanded),5)
+        
+        
     def test_fact_string_str(self):
         None
 
