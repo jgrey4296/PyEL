@@ -286,6 +286,9 @@ class ELROOT(ELSTRUCTURE):
         self.elop = elop
         self.value = var
 
+    def __hash__(self):
+        return hash("ELROOT")
+        
     def isVar(self):
         return self.value is not None
 
@@ -295,12 +298,18 @@ class ELROOT(ELSTRUCTURE):
         else:
             return "ROOT({}){}".format(repr(self.value), ELOP2STR(self.elop))
 
+    def termrepr(self):
+        return repr(self)
+        
     def __str__(self):
         if not self.isVar():
             return ELOP2STR(self.elop)
         else:
             return "{}{}".format(str(self.value), ELOP2STR(self.elop))
 
+    def termstr(self):
+        return str(self)
+        
     def __eq__(self, other):
         return self.elop == other.elop and self.value == other.value
 
@@ -310,6 +319,15 @@ class ELROOT(ELSTRUCTURE):
         else:
             return ELROOT(elop=self.elop)
 
+class ELQUERY(ELSTRUCTURE):
+    """ A structural representation of a query, as a terminal """
+    def __repr__(self):
+        return "?"
+    def termrepr(self):
+        return repr(self)
+    def termstr(self):
+        return str(self)
+        
 
 class ELPAIR(ELSTRUCTURE):
     """ Internal pairs of statements of |test.|blah!|something.|
@@ -319,9 +337,9 @@ class ELPAIR(ELSTRUCTURE):
         self.value = value
         self.elop = elop
 
-    def toTerminal(self):
-        return ELTERM(self.value)
-
+    def isArr(self):
+        return isinstance(self.value, list)
+    
     def isVar(self):
         return isinstance(self.value, ELVAR)
 
@@ -329,9 +347,15 @@ class ELPAIR(ELSTRUCTURE):
         op = ELOP2STR(self.elop)
         return "{}{}".format(repr(self.value), op)
 
+    def termrepr(self):
+        return repr(self.value)
+    
     def __str__(self):
         return str(self.value) + ELOP2STR(self.elop)
 
+    def termstr(self):
+        return str(self.value)
+    
     def __eq__(self, other):
         return self.elop == other.elop and self.value == other.value
 
