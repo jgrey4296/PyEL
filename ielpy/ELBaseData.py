@@ -564,7 +564,7 @@ class ELFACT(ELSTRUCTURE):
             return value
 
     def __len__(self):
-        return len(self.data[1:])
+        return len(self.data[:])
 
     def __iter__(self):
         return iter(self.data)
