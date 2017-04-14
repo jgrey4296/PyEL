@@ -807,3 +807,26 @@ class ELTrieNode:
 
     def is_empty(self):
         return len(self.children) == 0
+
+    def __iter__(self):
+        return iter(self.children.values())
+    
+    def to_el_facts(self):
+        #Return leaves of this node as an array of ELStructure's
+        queue = [(x,[]) for x in self]
+        leaves = []
+        while len(queue) > 0:
+            current, path = queue.pop(0)
+            new_path = path + [ELPAIR(current.value, current.elop)]
+            if len(current) > 0:
+                queue.extend([(x, new_path) for x in current])
+            else:
+                leaves.append(ELFACT(new_path, r=True))
+
+        return leaves
+
+    def struct_equal(self, other):
+        a = set([x for x in self.children.keys()])
+        b = set([x for x in other.children.keys()])
+        return a.issuperset(b)
+    
