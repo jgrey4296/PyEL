@@ -171,36 +171,28 @@ class ELRuntime:
                 logging.debug("Querying")
                 self.add_level()
                 success, frame = self.fact_query(action, self.top_stack())
-                result = success
+                result = (success, frame)
                 self.pop_stack()
                 logging.debug('Query Result: {}'.format(result))
             elif action.negated:
                 logging.debug("Hit a negation, retracting")
-                result = self.fact_retract(action)
+                result = (self.fact_retract(action), None)
             else:
                 logging.debug("Hit an assertion")
-                result = self.fact_assert(action)
+                result = (self.fact_assert(action), None)
         elif isinstance(action,ELBD.ELBIND):
             raise ELE.ELRuntimeException("Not Implemented")
             #self.set_binding(action.var,action.root)
         elif isinstance(action,ELBD.ELARITH_FACT):
             #Get the designated leaf.
             node = self.trie[action.data]
-            action.apply(node)
+            result = (action.apply(node), None)
         else:
             raise ELE.ELRuntimeException("Unrecognised Action: {}".format(action))
         return result
 
-    
-    def act_on_array(self, actions): #todo
-        """ Given a collection of actions, perform each """
-        assert False
-        if any([not isinstance(x,ELBD.ELAction) for x in actions]):
-            raise Exception("An Action is invalid")
 
-
-    #Fact operations:
-    def fact_assert(self,fact):
+    def fact_assert(self,fact): #Fact operations:
         """ Add a fact """
         return_val = self.trie.push(fact)
         return return_val
@@ -221,7 +213,7 @@ class ELRuntime:
         current_frame = bindingFrame
         if len(current_frame) == 0:
             logging.debug("Nothing in the current frame")
-            return (ELBD.ELFail(), None)
+            return (False, None)
         #fill in any variables from the current bindings
         bound_queries = [query.bind(slice) for slice in current_frame]
         logging.debug('Bound: {}'.format(bound_queries))
@@ -240,9 +232,9 @@ class ELRuntime:
         #a frame is valid if it has at least ELSuccess(none,{}) in it
         if len(updated_frame) > 0:
             #successes[1] has no real meaning, its just a success
-            return (successes[0], updated_frame)
+            return (True, updated_frame)
         else:
-            return (ELBD.ELFail(), current_frame)
+            return (False, current_frame)
 
     def run_rule(self,rule):
         """ Given a rule, check its conditions then queue its results """
@@ -296,8 +288,8 @@ class ELRuntime:
             self.pop_stack()
         return return_val
 
-    #Rule Utilities:
-    def format_comparisons(self, rule):
+
+    def format_comparisons(self, rule): #Rule Utilities:
         #get the bindings from the rule
         retrieved = [(comp, get_COMP_FUNC(comp.op)) for comp in rule.binding_comparisons]
         return retrieved
@@ -339,23 +331,6 @@ class ELRuntime:
         #todo: Take a string of "this is a $x test", and replace $x with the variable val
         None
 
-    #subtree Operations:
-    def subtree_query(self, interface_string):
-        """ Verify the trie location fulfills the defined interface """
-        None
-
-    def subtree_application(self, subtree_application):
-        """ Apply the subtree to the given location """
-        None
-
-            
-    #history:
-    def add_change(self,changes):
-        None
-    def rewind_change(self,changes):
-        None
-    
-        
     #### METRICS
     def max_depth(self):
         return self.trie.dfs_for_metrics()['maxDepth']

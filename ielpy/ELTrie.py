@@ -81,13 +81,13 @@ class ELTrie:
                      statement not in current:
                     logging.debug("Adding a pseudo-root")
                     newNode = ELTrieNode(statement, parent=current)
-                    current[statement] = newNode
+                    current[newNode] = newNode
                     self.allNodes[newNode.uuid] = newNode
                 elif isinstance(statement,ELBD.ELPAIR) and statement not in current:
                     #came to a pair, and it is missing
                     logging.debug("Missing PAIR: {}".format(repr(statement)))
                     newNode = ELTrieNode(statement, parent=current)
-                    current[statement] = newNode
+                    current[newNode] = newNode
                     self.allNodes[newNode.uuid] = newNode
                 #for everything but finding the root:
                 logging.debug("-> {}".format(repr(statement)))
@@ -133,7 +133,7 @@ class ELTrie:
         elif isinstance(result, ELBD.ELFail) and query.negated:
             #successful, but with no bindings
             #Todo: or should it be the passed in bindings?
-            return ELBD.ELSuccess(bindings=ELBD.ELBindingFrame([query.filled_bindings]))
+            return ELBD.ELSuccess(query, ELBD.ELBindingFrame([query.filled_bindings]))
         else:
             return ELBD.ELFail()
         
