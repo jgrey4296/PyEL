@@ -47,6 +47,47 @@ class ELBaseData_Tests(unittest.TestCase):
         expanded = testFact.expand()
         self.assertEqual(len(expanded),5)
         
+    def test_trie_node_sub_nodes_to_facts(self):
+        node = ELBD.ELTrieNode(ELBD.ELPAIR('blah'))
+        sub_node_1 = ELBD.ELTrieNode(ELBD.ELPAIR('bloo'))
+        sub_node_2 = ELBD.ELTrieNode(ELBD.ELPAIR('awef'))
+        sub_node_1a = ELBD.ELTrieNode(ELBD.ELPAIR('blarg'))
+        sub_node_1b = ELBD.ELTrieNode(ELBD.ELPAIR('oiju'))
+
+        node[sub_node_1] = sub_node_1
+        node[sub_node_2] = sub_node_2
+        sub_node_1[sub_node_1a] = sub_node_1a
+        sub_node_1[sub_node_1b] = sub_node_1b
+        #Final Trie: blah.[awef, bloo.[blarg, oiju]]
+        as_facts = node.to_el_facts()
+        self.assertEqual(len(as_facts), 3)
+        as_strings = [str(x) for x in as_facts]
+        self.assertIn(".awef", as_strings)
+        self.assertIn(".bloo.blarg", as_strings)
+        self.assertIn(".bloo.oiju", as_strings)
+        
+
+    def test_trie_node_sub_nodes_to_facts_with_var(self):
+        node = ELBD.ELTrieNode(ELBD.ELPAIR('blah'))
+        sub_node_1 = ELBD.ELTrieNode(ELBD.ELPAIR(ELBD.ELVAR('bloo')))
+        sub_node_2 = ELBD.ELTrieNode(ELBD.ELPAIR('awef'))
+        sub_node_1a = ELBD.ELTrieNode(ELBD.ELPAIR('blarg'))
+        sub_node_1b = ELBD.ELTrieNode(ELBD.ELPAIR('oiju'))
+
+        node[sub_node_1] = sub_node_1
+        node[sub_node_2] = sub_node_2
+        sub_node_1[sub_node_1a] = sub_node_1a
+        sub_node_1[sub_node_1b] = sub_node_1b
+        #Final Trie: blah.[awef, bloo.[blarg, oiju]]
+        as_facts = node.to_el_facts()
+        self.assertEqual(len(as_facts), 3)
+        as_strings = [str(x) for x in as_facts]
+        self.assertIn(".awef", as_strings)
+        self.assertIn(".$bloo.blarg", as_strings)
+        self.assertIn(".$bloo.oiju", as_strings)
+        
+
+        
         
     def test_fact_string_str(self):
         None

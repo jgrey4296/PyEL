@@ -51,7 +51,7 @@ class ELRuntime_Tests(unittest.TestCase):
     def test_simple_fact_query_fail(self):
         """ Check a non asserted fact fails a query """
         test_fact = ".this.hasnt.been.added"
-        self.assertFalse(self.runtime(test_fact + "?"))
+        self.assertFalse(self.runtime(test_fact + "?")[0])
         
     def test_multi_fact_assertion(self):
         """ Check multiple assertions in are all added """
@@ -73,7 +73,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime("\n".join(facts))
         as_queries = [x+"?" for x in facts]
         as_queries.append(".and.a.third?")
-        self.assertFalse(all(self.runtime("\n".join(as_queries))))
+        self.assertFalse(all([x[0] for x in self.runtime("\n".join(as_queries))]))
         
     def test_query_call(self):
         """ Check queries can be triggered by calling the runtime """
@@ -91,7 +91,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime(assert_fact)
         self.assertTrue(self.runtime(query))
         self.runtime(retract_fact)
-        self.assertFalse(self.runtime(query))
+        self.assertFalse(self.runtime(query)[0])
         
     def test_negated_query(self):
         """ Check queries can test for negatives """  
@@ -99,7 +99,7 @@ class ELRuntime_Tests(unittest.TestCase):
         query = "~.this.is.a.test?"
         self.assertTrue(self.runtime(query))
         self.runtime(base_fact)
-        self.assertFalse(self.runtime(query))
+        self.assertFalse(self.runtime(query)[0])
         
     def test_exclusion_semantics(self):
         """ Check the exclusion will override """
@@ -114,7 +114,7 @@ class ELRuntime_Tests(unittest.TestCase):
         """ Test that an queries respect exclusion operators """
 
         self.runtime(".this.is.a!test")
-        self.assertFalse(self.runtime(".this.is.a.test?"))
+        self.assertFalse(self.runtime(".this.is.a.test?")[0])
         result = self.runtime(".this.is.a!test?")
         self.assertTrue(result)
 
@@ -123,11 +123,10 @@ class ELRuntime_Tests(unittest.TestCase):
         """ Check that querying can retrieve potential bindings """
         self.runtime(".this.is.a.test\n.this.is.a.second")
         parsed = ELPARSE(".this.is.a.$x?")[0]
-        results = self.runtime.fact_query(parsed)[0]
-        self.assertEqual(len(results),2)
-        self.assertTrue(results)
-        self.assertIsInstance(results,ELBD.ELSuccess)
-        bindings = [x for x in results.bindings]
+        results = self.runtime.fact_query(parsed)
+        self.assertEqual(len(results[1]),2)
+        self.assertTrue(results[0])
+        bindings = results[1]
         test_in_bindings = bindings[0]['x'].value == 'test' or bindings[1]['x'].value == 'test'
         second_in_bindings = bindings[0]['x'].value == 'second' or bindings[1]['x'].value == 'second'
         self.assertTrue(test_in_bindings)
@@ -138,10 +137,10 @@ class ELRuntime_Tests(unittest.TestCase):
         """ Check that multiple variables in a string are retrieved correctly """
         self.runtime(".this.is.a.first.test\n.this.is.a.second.blahh")
         parsed = ELPARSE(".this.is.a.$x.$y?")[0]
-        results = self.runtime.fact_query(parsed, self.runtime.top_stack())[0]
+        results = self.runtime.fact_query(parsed, self.runtime.top_stack())
         self.assertTrue(results)
-        self.assertEqual(len(results[0]),2)
-        bindings = results.bindings
+        self.assertEqual(len(results[1]),2)
+        bindings = results[1]
         self.assertIn('x',bindings[0])
         self.assertIn('y',bindings[0])
         self.assertIn('x',bindings[1])
@@ -165,9 +164,9 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(self.runtime('.a.b.c?'))
         self.assertTrue(self.runtime('.a.b.d?'))
         self.assertTrue(self.runtime('.a.b.e?'))
-        self.assertTrue(all(self.runtime('.a.b.c?, .a.b.d?, .a.b.e?')))
-        #Just checking the call is passing automatically, make sure it *can* fail: 
-        self.assertFalse(all(self.runtime('.a.b.c?, .a.b.d?, .a.b.f?')))
+        self.assertTrue(all([x for x,y in self.runtime('.a.b.c?, .a.b.d?, .a.b.e?')]))
+        #Just checking the call is passing automatically, make sure it *can* fail:
+        self.assertFalse(all([x for x,y in self.runtime('.a.b.c?, .a.b.d?, .a.b.f?')]))
         
     def test_comments_are_ignored(self):
         """
@@ -176,14 +175,14 @@ class ELRuntime_Tests(unittest.TestCase):
         ~.this.is.a.bad.fact?
         """
         self.runtime('#.this.is.a.bad.fact\n.a.b.c')
-        self.assertFalse(self.runtime('.this.is.a.bad.fact?'))
+        self.assertFalse(self.runtime('.this.is.a.bad.fact?')[0])
         self.assertTrue(self.runtime('.a.b.c?'))
 
     def test_comments_ignore_rest_of_line(self):
         self.runtime('.this.is.a.test#.but.not.this.far')
         self.assertTrue(self.runtime('.this.is.a.test?'))
-        self.assertFalse(self.runtime('.this.is.a.test.but.not.this.far?'))
-        self.assertFalse(self.runtime('.but.not.this.far?'))
+        self.assertFalse(self.runtime('.this.is.a.test.but.not.this.far?')[0])
+        self.assertFalse(self.runtime('.but.not.this.far?')[0])
 
 
     def test_condition_evaluation(self):
@@ -194,18 +193,19 @@ class ELRuntime_Tests(unittest.TestCase):
         		.a.b.c?,
         		.d.e!$f?
 		]
+        	.actions.[
+        		$..f.bloo
+        	]
         ]
         """
-        self.runtime(fact_string)
+        # self.runtime(fact_string)
+        # self.assertTrue(self.runtime(".d.e!blah"))
         
-
-
-
-
-
-
-
-
+        # self.assertFalse(self.runtime(".d.e!blah.bloo"))
+        # self.assertTrue(self.perform_node(".a.test"))
+        
+        # self.assertTrue(".d.e!blah.bloo")
+        None
 
 
 
