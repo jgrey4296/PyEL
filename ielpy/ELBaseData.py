@@ -139,10 +139,13 @@ class ELBindingEntry:
     """
     def __init__(self, key, node_uuid, value):
         self.key = key
-        self.node = node_uuid
+        self.uuid = node_uuid
         self.value = value
 
-
+    def __repr__(self):
+        return "ELBindEntry({}, {}, +uuid)".format(self.key, self.value)
+        
+    
 #----------
 # ACTIONS
 #----------
