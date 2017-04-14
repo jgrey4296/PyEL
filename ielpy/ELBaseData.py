@@ -440,17 +440,21 @@ class ELFACT(ELSTRUCTURE):
             data = []
         if bindings is None:
             bindings = []
+
+        self.data = []
         self.negated = negated
+        #variables of the fact. [x,y,z...]
+        self.bindings = bindings.copy()
         #filled_bindings :: ELBindingSlice
         if filled_bindings is None:
             self.filled_bindings = ELBindingSlice()
         else:
             self.filled_bindings = ELBindingSlice(filled_bindings)
-        #variables of the fact. [x,y,z...]
-        self.bindings = bindings.copy()
-        self.data = data.copy()
         if r is True:
-            self.data.append(ELROOT())
+            self.data.insert(0,ELROOT())
+        for x in data:
+            self.push(x)
+            
 
     def expand(self):
         """ Takes a fact with a terminal array,
