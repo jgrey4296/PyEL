@@ -92,6 +92,9 @@ class ELTrie:
                 #for everything but finding the root:
                 logging.debug("-> {}".format(repr(statement)))
                 current = current[statement]
+                #update the elop if necessary:
+                current.update_elop(statement.elop)                    
+                
             returnVal = ELBD.ELSuccess()
         except ELE.ELException as e:
             logging.critical(e)
@@ -144,8 +147,14 @@ class ELTrie:
             root = self.allNodes[el_string[0].value]
         else:
             raise ELE.ELRuleException('Root Value not found in allnodes')
+        #lop off the final query (?) structure:
+        if isinstance(el_string[-1], ELBD.ELQUERY):
+            search_string = el_string[1:-1]
+        else:
+            search_string = el_string[1:]
+                    
         #results :: ELBindingFrame
-        results = self.sub_get(root, el_string[1:], el_string.filled_bindings)
+        results = self.sub_get(root, search_string, el_string.filled_bindings)
         logging.debug("Sub Get Results: {}".format(results))
         returnVal = ELBD.ELFail()
         if isinstance(results,list) and not isinstance(results[0], ELBD.ELFail):
@@ -172,13 +181,14 @@ class ELTrie:
             internal_bindings[new_binding[0]] = ELBD.ELBindingEntry(*new_binding)
         current = root
         results = ELBD.ELBindingFrame([])
-        remaining_string = el_string.copy()
+        remaining_string = el_string[:]
         while len(remaining_string) > 0:
             statement = remaining_string.pop(0)
+            logging.debug("Sub Getting: {}".format(statement))
             #if a var
             if isinstance(statement, ELBD.ELPAIR) and statement.isVar():
+                logging.debug("Dealing with a Variable")
                 #Trigger a recursion
-                
                 #todo: complain on duplicate keys
                 varKey = statement.value.value
                 for child in current.children.values():
@@ -190,16 +200,20 @@ class ELTrie:
                 remaining_string = []
                 current = None
             #not a var
-            elif isinstance(statement, ELBD.ELPAIR) and statement in current:
+            elif isinstance(statement, ELBD.ELPAIR) and \
+                 statement in current and \
+                 (len(remaining_string) == 0 or \
+                  statement.elop == current[statement].elop):
+                logging.debug("ELPair matches")
                 current = current[statement]
-            #not anything usable
-            elif isinstance(statement, ELBD.ELQUERY):
-                None
             elif isinstance(statement, ELBD.ELROOT) and statement in current:
+                logging.debug("Retrieved ROOT")
                 current = current[statement]
             elif not isinstance(statement, ELBD.ELPAIR):
                 raise ELE.ELConsistencyException('Getting something that is not a pair: {}'.format(statement))
             else:
+                logging.debug("Failing out")
+                logging.debug("Remaining: {}".format(remaining_string))
                 results.append(ELBD.ELFail())
                 remaining_string = []
 
