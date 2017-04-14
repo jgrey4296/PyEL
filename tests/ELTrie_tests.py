@@ -182,13 +182,13 @@ class ELParser_Tests(unittest.TestCase):
         orig_fact = ELBD.ELFACT(r=True).epair("test").pair("bloo")
         update_fact = ELBD.ELFACT(r=True).epair("test").pair("blah")
         self.trie.push(orig_fact)
-        gotten = self.trie.get(ELBD.ELFACT(r=True).epair("test").pair('bloo'))
+        gotten = self.trie.get(orig_fact)
         self.assertTrue(gotten)
         
         self.trie.push(update_fact)
-        gotten_2 = self.trie.get(ELBD.ELFACT(r=True).epair("test").pair('bloo'))
+        gotten_2 = self.trie.get(orig_fact)
         self.assertFalse(gotten_2)
-        gotten_3 = self.trie.get(ELBD.ELFACT(r=True).epair('test').pair('blah'))
+        gotten_3 = self.trie.get(update_fact)
         self.assertTrue(gotten_3)
         
     def test_exclusion_to_non_downscale(self):
@@ -198,18 +198,18 @@ class ELParser_Tests(unittest.TestCase):
         non_ex_fact_2 = ELBD.ELFACT(r=True).pair("a").pair("b").pair("d")
         result_1 = self.trie.push(ex_fact)
         self.assertTrue(result_1)
-        initial = self.trie.get(ELBD.ELFACT(r=True).pair("a").epair("b").pair('c'))
+        initial = self.trie.get(ex_fact)
         self.assertTrue(initial)
         #then update:
         update_1 = self.trie.push(non_ex_fact)
         update_2 = self.trie.push(non_ex_fact_2)
         self.assertTrue(update_1)
         self.assertTrue(update_2)
-        old_fact = self.trie.get(ELBD.ELFACT(r=True).pair("a").epair("b").pair('c'))
+        old_fact = self.trie.get(ex_fact)
         self.assertFalse(old_fact)
-        new_fact_1 = self.trie.get(ELBD.ELFACT(r=True).pair('a').pair('b').pair('c'))
+        new_fact_1 = self.trie.get(non_ex_fact)
         self.assertTrue(new_fact_1)
-        new_fact_2 = self.trie.get(ELBD.ELFACT(r=True).pair('a').pair('b').pair('d'))
+        new_fact_2 = self.trie.get(non_ex_fact_2)
         self.assertTrue(new_fact_2)
 
 
@@ -478,6 +478,22 @@ class ELParser_Tests(unittest.TestCase):
                            results.bindings[0]['y'].value == 'd'
 
         self.assertTrue(xb_yd_in_binding)
+        
+
+    def test_exclusion_query_terminal_mismatch(self):
+        """
+        .a.b!c
+        .a.b?  => assumes .a.b.? but needs to check for .a.b!?
+        """
+        base_fact = ELBD.ELFACT(r=True).pair('a').epair('b').pair('c')
+        query = base_fact.query()
+        query2 = ELBD.ELFACT(r=True).pair('a').pair('b').query()
+        self.trie.push(base_fact)
+        result = self.trie.query(query)
+        self.assertTrue(result)
+        result2 = self.trie.query(query2)
+        self.assertTrue(result2)
+
         
         
     #test trie dump

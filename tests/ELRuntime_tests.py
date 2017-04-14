@@ -186,6 +186,32 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertFalse(self.runtime('.but.not.this.far?'))
 
 
+    def test_condition_evaluation(self):
+        fact_string = """ 
+        .a.b.c, .d.e!blah,
+        .a.test.[
+        	.conditions.[
+        		.a.b.c?,
+        		.d.e!$f?
+		]
+        ]
+        """
+        self.runtime(fact_string)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
     def test_global_binding(self):
         """
         $x <- .a.b.c
@@ -204,6 +230,8 @@ class ELRuntime_Tests(unittest.TestCase):
         """
         None
 
+    
+        
         
 if __name__ == "__main__":
     LOGLEVEL = root_logger.DEBUG
