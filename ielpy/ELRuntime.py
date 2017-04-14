@@ -103,7 +103,7 @@ class ELRuntime:
         current = self(data['root'])
         
         while len(current) > 0:
-            #perform any statemods
+            #perform the node
             
             #Add text to the output
             
@@ -113,69 +113,56 @@ class ELRuntime:
             current = current[chosen]
             
 
-        #perform the leaf
+        #perform the final leaf
 
         
         return output
         
-    def perform_node(self,node):
+    def perform_node(self, target):
         """
         .node.next.[...],
-        .node.preconditions.[]
+        .node.conditions.[]
         .node.statemods...
         .node.performance."blah"
         .node.bindings.[] <- or is this implicit?
         .node.weight!n
         .node.rules...
         """
-
-    
-        
-    def __call__(self,string):
-        """ Parse a string, act accordingly with the results """
-        parsed_representations = self.parser(string)
-        #todo: return a {status: bool, data: [] } obj
-        actResults = []
-        for r in parsed_representations:
-            expanded = r.expand()
-            for x in expanded:
-                actResults.append(self.act(x))
-            
-        if len(actResults) == 0:
-            return None
-        if len(actResults) == 1:
-            return actResults[0]
+        return_value = False
+        if isinstance(target, uuid.UUID):
+            target_node = self.trie[target]
         else:
-            return actResults
+            parsed_target = self.parser(target_string)[0]
+            target_node = self.fact_query(target)
 
-    #Binding state operations:
-    def add_level(self):
-        self.bindings.add_level()
-
-    def replace_stack(self,frame):
-        self.bindings[-1] = frame
-
-    def top_stack(self):
-        return self.bindings.top()
+        if 'conditions' not in target_node:
+            raise ELE.ELConsistencyException("Performing a node without conditions")
+        #Get the conditions:
+        conditions = [x.query() for x in target_node['conditions'].to_el_facts()]
+        #bind conditions with general, and target_nodes, bindings
         
-    def pop_stack(self):
-        self.bindings.pop()
+        #run the conditions
 
-    #Simulation functions:
-    def run(self):
-        """ run the simulation """
-        None
+        #run comparisons
+        
+        #update bindings
+
+        #run modifications
+
+        #return the truth value
+        
+        return return_value
 
 
-    #Action functions:
-    def act(self,action):
+
+    def act(self,action): #Action functions:
         """ Given an action (one of ELBDs action types),
         perform it
         """
         #Store in the history
         self.history.append(action)
         
-        result = None
+        result = (False, None)
         #Perform based on parsed type
         if isinstance(action,ELBD.ELFACT):
             #Fact: Assert /retract
