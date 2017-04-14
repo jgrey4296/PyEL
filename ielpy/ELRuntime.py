@@ -28,6 +28,45 @@ class ELRuntime:
         #bindings :: stack<ELBindingFrame>
         self.bindings = ELBD.ELBindingStack()
 
+        #todo: add default type structures
+
+
+        
+    def __call__(self,string):
+        """ Parse a string, act accordingly with the results """
+        parsed_representations = self.parser(string)
+        #todo: return a {status: bool, data: [] } obj
+        actResults = []
+        for r in parsed_representations:
+            expanded = r.expand()
+            for x in expanded:
+                actResults.append(self.act(x))
+            
+        if len(actResults) == 0:
+            return None
+        if len(actResults) == 1:
+            return actResults[0]
+        else:
+            return actResults
+
+    
+    def add_level(self): #Binding state operations:
+        self.bindings.add_level()
+
+    def replace_stack(self,frame):
+        self.bindings[-1] = frame
+
+    def top_stack(self):
+        return self.bindings.top()
+        
+    def pop_stack(self):
+        self.bindings.pop()
+
+
+    def run(self): #Simulation functions:
+        """ run the simulation """
+        None
+
     def execute(self, etype, data):
         return_val = []
         if etype is ELBD.ELEXT.TRIE:
