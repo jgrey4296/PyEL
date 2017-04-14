@@ -777,12 +777,11 @@ class ELTrieNode:
         if self.elop == EL.EX:
             self.children.clear()
         #now process the key val pair:
-        if isinstance(key, ELTrieNode):
+        if isinstance(key, ELTrieNode) and isinstance(value, ELTrieNode): 
             self.children[key.value] = value
-        elif isinstance(key, ELPAIR):
-            self.children[key.value] = value
+            value.parent = self
         else:
-            self.children[key] = value
+            raise ELE.ELConsistencyException('Setting a TrieNode requires passing in a trie node')
 
     def update_elop(self,elop):
         if self.elop is not elop:
