@@ -716,7 +716,7 @@ class ELTrieNode:
     def __repr__(self):
         return "EL_Trie_Node({},{} > {})".format(repr(self.value), \
                                                  repr(self.elop), \
-                                                 repr(self.keys()))
+                                                 repr(self.children.keys()))
 
     def __str__(self):
         """ Get the Str representation, treating this
@@ -736,7 +736,7 @@ class ELTrieNode:
     def __eq__(self, other):
         """ Check that EL ops match """
         if isinstance(other, ELPAIR):
-            return self.elop == other.elop and self.value == other.value
+            return self.value == other.value
         elif isinstance(other, ELTrieNode):
             return self.elop == other.elop and \
                 self.value == other.value and \
@@ -774,25 +774,24 @@ class ELTrieNode:
         else:
             self.children[key] = value
 
+    def update_elop(self,elop):
+        if self.elop is not elop:
+            self.children.clear()
+            self.elop = elop
+            
     def __contains__(self, key):
+        logging.debug("TrieNode __contains__: {}".format(key))
         if isinstance(key, ELTrieNode):
-            return key.value in self.keys()
+            return key.value in self.children
         if isinstance(key, ELPAIR):
             if isinstance(key.value, ELVAR):
                 raise Exception('checking trie for a var doesnt make sense')
             #check the key is right, and the elop is right
-            return key.value in self.children and self.children[key.value] == key
+            logging.debug("TrieNode: {}".format(key.value in self.children))
+            logging.debug("{}".format(list(self.children.keys())))
+            return key.value in self.children
         else:
             return key in self.children
-
-    def keys(self):
-        #get keys, but replace arrays with their actual values
-        keys = list(self.children.keys())
-        if ELV.ARR in keys:
-            keys[keys.index(ELV.ARR)] = self.children[ELV.ARR].value
-        if ELV.RULE in keys:
-            keys[keys.index(ELV.RULE)] = self.children[ELV.RULE].value
-        return keys
 
     def values(self):
         return self.children.values()
