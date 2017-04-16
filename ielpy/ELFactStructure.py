@@ -174,13 +174,20 @@ class ELFACT(ELExpandable):
     def __getitem__(self, i):
         return self.data[i]
 
+
     # Construction Utilities:
     def root(self):
         return self.data[0]
 
     def insert(self, statement, prepend=False):
         """ Utility for easy construction of a fact """
-        self.data.append(statement)
+        if not prepend:
+            self.data.append(statement)
+        elif isinstance(self.data[0], ELROOT):
+            self.data.insert(1, statement)
+        else:
+            self.data.insert(0, statement)
+        #update binding record:
         if isinstance(statement, ELPAIR) and isinstance(statement.value, ELVAR):
             self.bindings.append(statement.value)
             if isinstance(statement.value.access_point, ELVAR):
