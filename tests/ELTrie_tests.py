@@ -88,11 +88,11 @@ class ELParser_Tests(unittest.TestCase):
         """ Check adding a fact .test.bloo is of depth 2 """
         base_fact = ELFACT()
         self.assertEqual(len(base_fact),0)
-        base_fact.push(ELROOT())
+        base_fact.insert(ELROOT())
         self.assertEqual(len(base_fact),1)
-        base_fact.push(ELPAIR("test"))
+        base_fact.insert(ELPAIR("test"))
         self.assertEqual(len(base_fact),2)
-        base_fact.push(ELPAIR("bloo"))
+        base_fact.insert(ELPAIR("bloo"))
         self.assertEqual(len(base_fact),3)
 
     def test_fact_addition_of_depth_2_invalidates_empty(self):
@@ -220,7 +220,7 @@ class ELParser_Tests(unittest.TestCase):
 
     def test_adding_array(self):
         """ Check .a.b.[1,2,3] succeeds """
-        test_fact = ELFACT(r=True).pair("a").pair("b").push([1,2,3])
+        test_fact = ELFACT(r=True).pair("a").pair("b").insert([1,2,3])
         expanded = test_fact.expand()
         for f in expanded:
             s = self.trie.push(f)
