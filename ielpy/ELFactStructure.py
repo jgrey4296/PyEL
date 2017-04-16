@@ -204,33 +204,36 @@ class ELFACT(ELExpandable):
         copy.insert(ELQUERY())
         return copy
     
-    def var(self, *args):
+    def var(self, *args, prepend=False):
         """ Utility for easy construction of a variable """
         var = ELVAR(*args)
         pair = ELPAIR(var)
         return self.insert(pair, prepend=prepend)
 
-    def pair(self, *args):
+    def pair(self, *args, prepend=False):
         """ Utility for easy construction of a fact:
         Internally create a new ELPAIR
         """
         return self.insert(ELPAIR(*args), prepend=prepend)
 
-    def evar(self, *args):
+    def evar(self, *args, prepend=False):
         """ Utility for easy construction of an exclusive variable """
         var = ELVAR(*args)
         pair = ELPAIR(var, EL.EX)
         self.insert(pair, prepend=prepend)
 
-    def epair(self, arg):
+    def epair(self, arg, prepend=False):
         """ Utility for easy construction of a fact:
         Internally create a new Exclusive ELPair
         """
         return self.insert(ELPAIR(arg, EL.EX), prepend=prepend)
 
-    def pop(self):
+    def pop(self, start=False):
         """ Get the last element of the fact """
-        return self.data.pop()
+        if start:
+            return self.data.pop(0)
+        else:
+            return self.data.pop()
 
 
 class ELComparison(ELExpandable):
