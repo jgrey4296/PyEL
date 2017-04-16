@@ -16,8 +16,12 @@ from enum import Enum
 import pyparsing as pp
 from fractions import Fraction
 import re
-from . import ELBaseData as ELBD
 from . import ELExceptions as ELE
+from .ELUtil import ELCOMP_lookup, ELARITH_lookup, EL, ELVARSCOPE
+from .ELCompFunctions import ELCOMP
+from .ELStructure import ELVAR, ELPAIR
+from .ELFactStructure import ELFACT, ELARITH_FACT, ELROOT, ELComparison
+from .ELActions import ELBIND
 import IPython
 
 ##############################
@@ -65,7 +69,7 @@ def construct_el_fact(toks):
     negated = str(PARSENAMES.NOT) in toks
     root = toks[str(PARSENAMES.ROOT)]
     base = toks[str(PARSENAMES.BASEFACT)][:]
-    new_fact = ELBD.ELFACT(negated=negated)
+    new_fact = ELFACT(negated=negated)
     new_fact.push(root)
     for x in base:
         new_fact.push(x)
@@ -84,15 +88,14 @@ def construct_el_fact(toks):
     return new_fact
 
 def construct_el_query(toks):
-    if not isinstance(toks[0], ELBD.ELFACT):
+    if not isinstance(toks[0], ELFACT):
         raise ELE.ELConsistencyException("Query constructed on non-fact")
-    toks[0].push(ELBD.ELQUERY())
-    return toks[0]
+    return toks[0].query()
 
 def construct_arith_fact(toks):
-    if not (isinstance(toks[0], ELBD.ELFACT) or isinstance(toks[0], ELBD.ELVAR)):
+    if not (isinstance(toks[0], ELFACT) or isinstance(toks[0], ELVAR)):
         raise ELE.ELParseException('Arith fact constructor not passed a fact or variable')
-    return ELBD.ELARITH_FACT(data=toks[0], op=toks[1][0], val=toks[1][1])
+    return ELARITH_FACT(data=toks[0], op=toks[1][0], val=toks[1][1])
 
 
 def construct_num(toks):
@@ -106,18 +109,18 @@ def construct_num(toks):
 
 def construct_comp_op(toks):
     if str(PARSENAMES.STANDARDCOMP_OP) in toks:
-        if toks[str(PARSENAMES.STANDARDCOMP_OP)][0] in ELBD.ELCOMP_lookup:
-            return (ELBD.ELCOMP_lookup[toks[str(PARSENAMES.STANDARDCOMP_OP)][0]], None)
+        if toks[str(PARSENAMES.STANDARDCOMP_OP)][0] in ELCOMP_lookup:
+            return (ELCOMP_lookup[toks[str(PARSENAMES.STANDARDCOMP_OP)][0]], None)
         else:
             raise ELE.ELParseException('Unrecognised comparison operator')
     elif str(PARSENAMES.NEARCOMP_OP) in toks:
-        return (ELBD.ELCOMP.NEAR, toks[str(PARSENAMES.NEARCOMP_OP)][0])
+        return (ELCOMP.NEAR, toks[str(PARSENAMES.NEARCOMP_OP)][0])
     else:
         raise ELE.ELParseException("Comparison isn't standard OR the near operator")
 
 def construct_arith_op(tok):
-    if tok in ELBD.ELARITH_lookup:
-        return ELBD.ELARITH_lookup[tok]
+    if tok in ELARITH_lookup:
+        return ELARITH_lookup[tok]
     else:
         raise ELE.ELParseException('Unrecognised arithmetic operator')
 
@@ -130,23 +133,23 @@ def construct_el_var(toks):
         arr_access_value = toks['ARR_ACCESS'][0]
     else:
         arr_access_value = None
-    return ELBD.ELVAR(var_name, arr_access_value, is_a_path_var, scope_type)
+    return ELVAR(var_name, arr_access_value, is_a_path_var, scope_type)
 
 def construct_el_root_fact(toks):
-    if toks[0][0] is ELBD.EL.DOT:
-        return ELBD.ELROOT(ELBD.EL.DOT)
-    elif toks[0][0] is ELBD.EL.ROOT:
-        return ELBD.ELROOT(elop=toks[0][1], var=ELBD.EL.ROOT)
-    elif isinstance(toks[0][0], ELBD.ELVAR):
-        return ELBD.ELROOT(elop=toks[0][1], var=toks[0][0])
+    if toks[0][0] is EL.DOT:
+        return ELROOT(EL.DOT)
+    elif toks[0][0] is EL.ROOT:
+        return ELROOT(elop=toks[0][1], var=EL.ROOT)
+    elif isinstance(toks[0][0], ELVAR):
+        return ELROOT(elop=toks[0][1], var=toks[0][0])
     else:
         raise ELE.ELParseException('Unrecognised element of el_root_fact')
 
 def construct_bind_statement(toks):
     if len(toks) == 2:
-        return ELBD.ELBIND(toks[0], toks[1])
+        return ELBIND(toks[0], toks[1])
     else:
-        return ELBD.ELBIND(toks[0], None)
+        return ELBIND(toks[0], None)
 
 
 ##############################
@@ -213,11 +216,9 @@ COMP      = pp.Group(pp.Word('=><@!', max=2)).setResultsName(str(PARSENAMES.STAN
 
 #Comparison: $v1 < $V2
 EL_COMPARISON = NON_PATH_VAR - COMP - ELEMENT
-EL_COMPARISON_ARRAY = array_template(EL_COMPARISON, brackets_optional=True)
 
 #Forward declaraction of fact:
 FACT = pp.Forward()
-
 
 #An array for rules, as it contains facts
 CONDITION = FACT + s(QUERYOP)
@@ -227,7 +228,6 @@ EL_CONDITIONS = array_template(CONDITION, brackets_optional=True)
 ARITH_FACT = (FACT | NON_PATH_VAR | PATH_VAR) + \
              pp.Group(ARITH + (NON_PATH_VAR | NUM)).setResultsName(str(PARSENAMES.ARITH_OP))
 
-
 #Regex Action?
 REGEX_OP = pp.Word('>>')
 REGEX = s(SLASH) + pp.Regex(r'[a-zA-Z0-9*+?()\[\]\\\'" <>,.$]+') + s(SLASH) + \
@@ -236,7 +236,7 @@ REGEX_ACTION = (FACT | NON_PATH_VAR) + pp.Group(REGEX_OP + (NON_PATH_VAR | REGEX
 
 #TODO: EL_ARRAY -> SEQUENCE
 #a basic array of values in EL: [ e1, e2 ... en ]
-EL_ARRAY = array_template(CONDITION | FACT | ARITH_FACT | REGEX_ACTION | ELEMENT)
+EL_ARRAY = array_template(CONDITION | FACT | EL_COMPARISON | ARITH_FACT | REGEX_ACTION | ELEMENT)
 
 #TODO:Other Actions? Stack/Queue/sample_from?
 #TODO: add a negated path var fact special case.
@@ -287,11 +287,11 @@ BIND_STATEMENT.setName('Binding')
 ##############################
 
 #Straight forward creation of Symbols/Enums
-DOT.setParseAction(lambda toks: ELBD.EL.DOT)
-EX.setParseAction(lambda toks: ELBD.EL.EX)
-DOLLAR.setParseAction(lambda toks: ELBD.ELVARSCOPE.EXIS)
-AT.setParseAction(lambda toks: ELBD.ELVARSCOPE.FORALL)
-DBL_VLINE.setParseAction(lambda toks: ELBD.EL.ROOT)
+DOT.setParseAction(lambda toks: EL.DOT)
+EX.setParseAction(lambda toks: EL.EX)
+DOLLAR.setParseAction(lambda toks: ELVARSCOPE.EXIS)
+AT.setParseAction(lambda toks: ELVARSCOPE.FORALL)
+DBL_VLINE.setParseAction(lambda toks: EL.ROOT)
 
 #Creating the lowest level data structures:
 COMP.setParseAction(construct_comp_op)
@@ -309,8 +309,8 @@ NON_PATH_VAR.setParseAction(construct_el_var)
 
 #wapping a fact in a query:
 CONDITION.setParseAction(lambda toks: construct_el_query(toks))
-EL_COMPARISON.setParseAction(lambda toks: ELBD.ELComparison(toks[0], toks[1], toks[2]))
-EL_PAIR.setParseAction(lambda tok: ELBD.ELPAIR(tok[0], tok[1]))
+EL_COMPARISON.setParseAction(lambda toks: ELComparison(toks[0], toks[1], toks[2]))
+EL_PAIR.setParseAction(lambda tok: ELPAIR(tok[0], tok[1]))
 EL_FACT_ROOT.setParseAction(construct_el_root_fact)
 #tok[0][0] for the group wrapping then element/array wrapping
 EL_FACT_TERMINAL.setParseAction(lambda tok: tok[0])

@@ -3,10 +3,15 @@ A Simple Trie for EL
 """
 import IPython
 import logging as root_logger
-from . import ELBaseData as ELBD
-from . ELBaseData import ELTrieNode
+from .ELBinding import ELBindingFrame, ELBindingSlice, ELBindingEntry
+from .ELStructure import ELROOT
+from .ELFactStructure import ELFACT, ELPAIR, ELQUERY
+from .ELTrieNode import ELTrieNode
+from .ELResults import ELSuccess, ELFail
 from . import ELExceptions as ELE
 import uuid
+
+
 logging = root_logger.getLogger(__name__)
 
 class ELTrie:
@@ -61,14 +66,14 @@ class ELTrie:
         and attempt to add to the trie
         """
         logging.debug("Starting to push: {}".format(repr(el_string)))
-        assert isinstance(el_string,ELBD.ELFACT)
-        assert isinstance(el_string.data[0],ELBD.ELROOT)
+        assert isinstance(el_string, ELFACT)
+        assert isinstance(el_string.data[0], ELROOT)
         try:
-            returnVal = ELBD.ELFail()
+            returnVal = ELFail()
             current = None
             #Go through the passed in string
             for statement in el_string:
-                if isinstance(statement,ELBD.ELROOT) and current is None:
+                if isinstance(statement, ELROOT) and current is None:
                     logging.debug("Hit Root")
                     if isinstance(statement.value, uuid.UUID) and statement.value in self.allNodes:
                         current = self.allNodes[statement.value]
@@ -77,13 +82,13 @@ class ELTrie:
                     else:
                         raise ELE.ELConsistencyException("Issue with the root")
                     continue # <---- note this
-                elif isinstance(statement, ELBD.ELROOT) and current is not None and \
+                elif isinstance(statement, ELROOT) and current is not None and \
                      statement not in current:
                     logging.debug("Adding a pseudo-root")
                     newNode = ELTrieNode(statement, parent=current)
                     current[newNode] = newNode
                     self.allNodes[newNode.uuid] = newNode
-                elif isinstance(statement,ELBD.ELPAIR) and statement not in current:
+                elif isinstance(statement, ELPAIR) and statement not in current:
                     #came to a pair, and it is missing
                     logging.debug("Missing PAIR: {}".format(repr(statement)))
                     newNode = ELTrieNode(statement, parent=current)
@@ -95,52 +100,53 @@ class ELTrie:
                 #update the elop if necessary:
                 current.update_elop(statement.elop)                    
                 
-            returnVal = ELBD.ELSuccess()
+            returnVal = ELSuccess()
         except ELE.ELException as e:
             logging.critical(e)
-            returnVal = ELBD.ELFail()
+            returnVal = ELFail()
         finally:
             return returnVal
         
     def pop(self,el_string):
         """ Remove an EL String from the Trie """
-        returnVal = ELBD.ELFail()
+        returnVal = ELFail()
         theTarget = None
-        if isinstance(el_string, ELBD.ELFACT):
+        if isinstance(el_string, ELFACT):
             searchResult = self.get(el_string)
             if searchResult:
                 theTarget = self.allNodes[searchResult.bindings[0].uuid]
-        elif isinstance(el_string, ELBD.ELSuccess):
+        elif isinstance(el_string, ELSuccess):
             theTarget = self.allNodes[el_string.bindings[0][0]]
 
         if theTarget is None:
-            return ELBD.ELFail()
+            return ELFail()
         
         target_parent = theTarget.parent
         
         del target_parent[theTarget]
-        return ELBD.ELSuccess()
+        return ELSuccess()
         
         
     def query(self,query):
         """ Given an EL String, test the Trie to see if it is true """
-        assert isinstance(query[-1],ELBD.ELQUERY)
+        assert isinstance(query[-1], ELQUERY)
         #result :: ELFail | ELSuccess
         result = self.get(query)
         logging.debug('Get Result: {}'.format(result))
-        if isinstance(result,ELBD.ELSuccess) and not query.negated:
+        if isinstance(result, ELSuccess) and not query.negated:
             return result
-        elif isinstance(result, ELBD.ELFail) and query.negated:
+        elif isinstance(result, ELFail) and query.negated:
             #successful, but with no bindings
             #Todo: or should it be the passed in bindings?
-            return ELBD.ELSuccess(query, ELBD.ELBindingFrame([query.filled_bindings]))
+            return ELSuccess(path=query,
+                                  bindings=ELBindingFrame([query.filled_bindings]),
+                                  nodes=None)
         else:
-            return ELBD.ELFail()
+            return ELFail()
         
         
     def get(self,el_string):
-        assert isinstance(el_string, ELBD.ELFACT)
-
+        assert isinstance(el_string, ELFACT)
         if not el_string[0].isVar():
             root = self.root
         elif el_string[0].value in self.allNodes: 
@@ -148,45 +154,47 @@ class ELTrie:
         else:
             raise ELE.ELRuleException('Root Value not found in allnodes')
         #lop off the final query (?) structure:
-        if isinstance(el_string[-1], ELBD.ELQUERY):
+        if isinstance(el_string[-1], ELQUERY):
             search_string = el_string[1:-1]
         else:
             search_string = el_string[1:]
                     
-        #results :: ELBindingFrame
+        #results :: ELBindingFrame< ELBindingSlice | ELFail >
         results = self.sub_get(root, search_string, el_string.filled_bindings)
         logging.debug("Sub Get Results: {}".format(results))
-        returnVal = ELBD.ELFail()
-        if isinstance(results,list) and not isinstance(results[0], ELBD.ELFail):
+        returnVal = ELFail()
+        if isinstance(results,list) and not isinstance(results[0], ELFail):
             #verify all bindings are the same:
             #firstKeys :: ELBindingSlice
             firstKeys = results[0].keys()
             allSame = all([firstKeys == bindings.keys() for bindings in results])
             if allSame:
-                returnVal = ELBD.ELSuccess(path=el_string,bindings=results)
+                returnVal = ELSuccess(path=el_string,
+                                           bindings=results,
+                                           nodes=[x.uuid for x in results if x.uuid is not None])
 
         # returnVal :: ELSuccess | ELFail
         return returnVal
                 
     #the recursive call of get where most of the work goes on
     def sub_get(self, root, el_string, current_bindings=None, new_binding=None):
-        assert isinstance(root, ELBD.ELTrieNode)
+        assert isinstance(root, ELTrieNode)
         assert isinstance(el_string, list)
         if current_bindings is None:
-            internal_bindings = ELBD.ELBindingSlice()
+            internal_bindings = ELBindingSlice()
         else:
-            internal_bindings = ELBD.ELBindingSlice(current_bindings)
+            internal_bindings = ELBindingSlice(current_bindings)
         if new_binding is not None:
             assert len(new_binding) == 3
-            internal_bindings[new_binding[0]] = ELBD.ELBindingEntry(*new_binding)
+            internal_bindings[new_binding[0]] = ELBindingEntry(*new_binding)
         current = root
-        results = ELBD.ELBindingFrame([])
+        results = ELBindingFrame([])
         remaining_string = el_string[:]
         while len(remaining_string) > 0:
             statement = remaining_string.pop(0)
             logging.debug("Sub Getting: {}".format(statement))
             #if a var
-            if isinstance(statement, ELBD.ELPAIR) and statement.isVar():
+            if isinstance(statement, ELPAIR) and statement.isVar():
                 logging.debug("Dealing with a Variable")
                 #Trigger a recursion
                 #todo: complain on duplicate keys
@@ -194,40 +202,39 @@ class ELTrie:
                 for child in current.children.values():
                     results.extend(self.sub_get(self[child.uuid],
                                                 remaining_string,
-                                                internal_bindings,
-                                                (varKey, child.uuid, child.value)))
+                                                current_bindings=internal_bindings,
+                                                new_binding=(varKey, child.uuid, child.value)))
                 #clear so only the recursions continue
                 remaining_string = []
                 current = None
             #not a var
-            elif isinstance(statement, ELBD.ELPAIR) and \
+            elif isinstance(statement, ELPAIR) and \
                  statement in current and \
                  (len(remaining_string) == 0 or \
                   statement.elop == current[statement].elop):
                 logging.debug("ELPair matches")
                 current = current[statement]
-            elif isinstance(statement, ELBD.ELROOT) and statement in current:
+            elif isinstance(statement, ELROOT) and statement in current:
                 logging.debug("Retrieved ROOT")
                 current = current[statement]
-            elif not isinstance(statement, ELBD.ELPAIR):
+            elif not isinstance(statement, ELPAIR):
                 raise ELE.ELConsistencyException('Getting something that is not a pair: {}'.format(statement))
             else:
                 logging.debug("Failing out")
                 logging.debug("Remaining: {}".format(remaining_string))
-                results.append(ELBD.ELFail())
+                results.append(ELFail())
                 remaining_string = []
 
         #cleanup after looping:
         #remove all ELBD.ELFails
-        containsAFail = any([isinstance(x, ELBD.ELFail) for x in results])
-        results = ELBD.ELBindingFrame([x for x in results if not isinstance(x, ELBD.ELFail)])
+        containsAFail = any([isinstance(x, ELFail) for x in results])
+        results = ELBindingFrame([x for x in results if not isinstance(x, ELFail)])
         #if nothing remains, return just an ELFail
         if len(results) == 0 and containsAFail:
-            results = ELBD.ELBindingFrame([ ELBD.ELFail() ])
+            results = ELBindingFrame([ ELFail() ])
         elif len(results) == 0:
             #if successful, store the internal bindings and where this node is
-            results = ELBD.ELBindingFrame([ ELBD.ELBindingSlice(internal_bindings, current.uuid) ])
-        #results are: [ ELFail | bindings ]
+            results = ELBindingFrame([ ELBindingSlice(internal_bindings, current.uuid) ])
         #Results :: ELBindingFrame
         return results
         

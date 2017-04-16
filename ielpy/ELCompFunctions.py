@@ -1,12 +1,16 @@
+"""
+Functions for enacting particular actions in EL
+"""
 import logging as root_logger
-logging = root_logger.getLogger(__name__)
 from enum import Enum
 from math import log, exp
 from random import random
 
+logging = root_logger.getLogger(__name__)
+
 #Enums, moved here from base data to stop circular dependence
 ELCOMP = Enum('ELCOMP','GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL NOTEQUAL CONTAINS NOTCONTAINS NEAR')
-ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW MOD RAND LOG')
+ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW MOD RAND LOG EXP')
 
 
 #Comparison Functions:
@@ -30,10 +34,11 @@ ARITH_FUNCS = {
     ELARITH.PLUS : lambda a, b: a + b,
     ELARITH.MUL : lambda a, b: a * b,
     ELARITH.DIV : lambda a, b : a / b,
-    ELARITH.POW : lambda a, b : pow(a,b),
+    ELARITH.POW : pow,
     ELARITH.MOD : lambda a, b : a % b,
-    ELARITH.RAND : lambda a, b : False,
-    ELARITH.LOG : lambda a, b : False
+    ELARITH.RAND : random,
+    ELARITH.LOG : log,
+    ELARITH.EXP : exp
 }
 
 def get_COMP_FUNC(op):

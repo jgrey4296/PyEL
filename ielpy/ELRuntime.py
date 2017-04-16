@@ -9,8 +9,15 @@ from collections import namedtuple
 from fractions import Fraction
 from random import choice
 import IPython
+import uuid
+from .ELUtil import EL, ELEXT, ELCOMP
+from .ELBinding import ELBindingStack, ELBindingFrame
+from .ELTrieNode import ELTrieNode
+from .ELResults import ELFail, ELSuccess
+from .ELActions import ELBIND
+from .ELStructure import ELQUERY, ELVAR
+from .ELFactStructure import ELFACT, ELARITH_FACT
 from . import ELParser, ELTrie
-from . import ELBaseData as ELBD
 from . import ELExceptions as ELE
 from . ELCompFunctions import get_COMP_FUNC, get_ARITH_FUNC
 
@@ -26,7 +33,7 @@ class ELRuntime:
         #list of tuples (asserted, retracted) for each action?
         self.history = []
         #bindings :: stack<ELBindingFrame>
-        self.bindings = ELBD.ELBindingStack()
+        self.bindings = ELBindingStack()
 
         #todo: add default type structures
 
@@ -50,8 +57,8 @@ class ELRuntime:
             return actResults
 
     
-    def add_level(self): #Binding state operations:
-        self.bindings.add_level()
+    def push_stack(self): #Binding state operations:
+        self.bindings.push_stack()
 
     def replace_stack(self,frame):
         self.bindings[-1] = frame
@@ -69,15 +76,15 @@ class ELRuntime:
 
     def execute(self, etype, data):
         return_val = []
-        if etype is ELBD.ELEXT.TRIE:
+        if etype is ELEXT.TRIE:
             return_val = self.execute_as_trie(data)
-        elif etype is ELBD.ELEXT.TREE:
+        elif etype is ELEXT.TREE:
             None
-        elif etype is ELBD.ELEXT.FSM:
+        elif etype is ELEXT.FSM:
             None
-        elif etype is ELBD.ELEXT.SEL:
+        elif etype is ELEXT.SEL:
             None
-        elif etype is ELBD.ELEXT.INS:
+        elif etype is ELEXT.INS:
             None
         else:
             raise ELE.ELNotImplementedException()
@@ -86,39 +93,49 @@ class ELRuntime:
 
     def execute_as_trie(self, data):
         """
-        Data{ root: '.a.start.string?, }
+        data :: string -> ELFACT
         Assumes structure where each node has a 'next' child,
         .node.next.[...],
-        .node.conditions.[]
-        .node.mods.[]
+        .node.preconditions.[]
+        .node.condition_action_pairs.[]
+        .node.actions.[]
         .node.performance."blah"
         .node.weight!n
         .node.rules...
         ....
         """
-
+        self.push_stack()
         output = ["Start"]
-        state = []
-        #Get the starting node
-        current = self(data['root'])
+        state = self.top_stack()
+        #Parse, search, then get the exact node from the trie
+        current = self.trie[self.fact_query(self.parser(data)[0]).nodes[0]]
+        assert current is not None
         
-        while len(current) > 0:
+        while len(current['next']) > 0:
+            #verify the structure of the node:
+            
             #perform the node
+            success_value, state = self.perform_node(current, state)
+            #get the text of the node
+            text = current['text']
+            #interpolate the text of the node with bindings
+            interp_text = self.format_string(text.format, state)
             
-            #Add text to the output
+            #add the text to the record
+            output.append(interp_text)
             
-            #pick a child
-            potential_children = current.keys()
-            chosen = choice(potential_children)
-            current = current[chosen]
+            #pick the next node
+            potential_children = current['next'].to_weighted_el_facts()
+            next_location = choice(potential_children)
+            current = self(next_location)
             
 
         #perform the final leaf
 
-        
+        self.pop_stack()
         return output
         
-    def perform_node(self, target):
+    def perform_node(self, target, state=None):
         """
         .node.next.[...],
         .node.conditions.[]
@@ -128,30 +145,46 @@ class ELRuntime:
         .node.weight!n
         .node.rules...
         """
-        return_value = False
-        if isinstance(target, uuid.UUID):
+        if state is None:
+            state = self.top_stack()
+            
+        internal_state = state.copy()
+        #selected variation:
+        selected_state = choice(internal_state)
+
+        if isinstance(target, ELTrieNode):
+            target_node = target        
+        elif isinstance(target, uuid.UUID):
             target_node = self.trie[target]
         else:
-            parsed_target = self.parser(target_string)[0]
-            target_node = self.fact_query(target)
+            parsed_target = self.parser(target)[0]
+            #todo: make fact_query return the uuid of each possible leaf?
+            target_node = self.fact_query(parsed_target)
 
         if 'conditions' not in target_node:
             raise ELE.ELConsistencyException("Performing a node without conditions")
         #Get the conditions:
         conditions = [x.query() for x in target_node['conditions'].to_el_facts()]
-        #bind conditions with general, and target_nodes, bindings
-        
         #run the conditions
-
-        #run comparisons
+        for cond in conditions:
+            bound = cond.bind(selected_state)
+            query_result = self.fact_query(bound)
+            #todo: go down state stack if conditions fail
+            if bool(query_result) is not True:
+                raise ELE.ELRuntimeException("A Condition failed in the performance of a node")
+            #select a binding set from the conditions
+            selected_state = choice(query_result.bindings)
         
-        #update bindings
-
+        #run and filter by comparisons
+        
         #run modifications
-
-        #return the truth value
         
-        return return_value
+
+        #return the bindings and truth value
+        if return_value:
+            return (return_value, selected_state)
+        else:
+            return (return_value, state)
 
 
 
@@ -162,28 +195,27 @@ class ELRuntime:
         #Store in the history
         self.history.append(action)
         
-        result = (False, None)
+        result = ELFail()
         #Perform based on parsed type
-        if isinstance(action,ELBD.ELFACT):
+        if isinstance(action, ELFACT):
             #Fact: Assert /retract
-            if isinstance(action[-1], ELBD.ELQUERY):
+            if isinstance(action[-1], ELQUERY):
                 #Don't replace vars with bindings, populate them
                 logging.debug("Querying")
-                self.add_level()
-                success, frame = self.fact_query(action, self.top_stack())
-                result = (success, frame)
+                self.push_stack()
+                result = self.fact_query(action, self.top_stack())
                 self.pop_stack()
                 logging.debug('Query Result: {}'.format(result))
             elif action.negated:
                 logging.debug("Hit a negation, retracting")
-                result = (self.fact_retract(action), None)
+                result = self.fact_retract(action) 
             else:
                 logging.debug("Hit an assertion")
-                result = (self.fact_assert(action), None)
-        elif isinstance(action,ELBD.ELBIND):
+                result = self.fact_assert(action)
+        elif isinstance(action, ELBIND):
             raise ELE.ELRuntimeException("Not Implemented")
             #self.set_binding(action.var,action.root)
-        elif isinstance(action,ELBD.ELARITH_FACT):
+        elif isinstance(action, ELARITH_FACT):
             #Get the designated leaf.
             node = self.trie[action.data]
             result = (action.apply(node), None)
@@ -207,8 +239,8 @@ class ELRuntime:
         logging.debug('Recieved Query: {}'.format(query))
         if bindingFrame is None:
             bindingFrame = self.top_stack()
-        assert isinstance(bindingFrame, ELBD.ELBindingFrame)
-        assert isinstance(query[-1], ELBD.ELQUERY)
+        assert isinstance(bindingFrame, ELBindingFrame)
+        assert isinstance(query[-1], ELQUERY)
         
         current_frame = bindingFrame
         if len(current_frame) == 0:
@@ -227,21 +259,21 @@ class ELRuntime:
         logging.debug("Trie Query Successes: {}".format(successes))
         
         #Flatten the frame
-        updated_frame = ELBD.ELBindingFrame([bind_slice for success in successes for bind_slice in success.bindings])
-
+        updated_frame = ELBindingFrame([bind_slice for success in successes for bind_slice in success.bindings])
+        nodes = [x for success in successes for x in success.nodes]
+        
         #a frame is valid if it has at least ELSuccess(none,{}) in it
         if len(updated_frame) > 0:
-            #successes[1] has no real meaning, its just a success
-            return (True, updated_frame)
+            return ELSuccess(path=query, bindings=updated_frame, nodes=nodes)
         else:
-            return (False, current_frame)
+            return ELFail()
 
     def run_rule(self,rule):
         """ Given a rule, check its conditions then queue its results """
         logging.info("Running Rule: {}".format(rule))
-        return_val = ELBD.ELFail()
+        return_val = ELFail()
         try:
-            self.add_level()
+            self.push_stack()
             current_frame = self.top_stack()
             for condition in rule.conditions:
                 is_successful, current_frame = self.fact_query(condition, current_frame)
@@ -279,10 +311,10 @@ class ELRuntime:
                 for act in bound_actions:
                     self.act(act)
 
-            return_val = ELBD.ELSuccess()
+            return_val = ELSuccess()
         except ELE.ELRuleException:
             logging.warning("ELRule Exception occurred")
-            return_val = ELBD.ELFail()
+            return_val = ELFail()
         finally:
             #then pop the frame off
             self.pop_stack()
@@ -296,25 +328,25 @@ class ELRuntime:
     
 
     def filter_by_comparisons(self, comparison_tuples, potential_bindings):
-        assert isinstance(potential_bindings, ELBD.ELBindingFrame)
+        assert isinstance(potential_bindings, ELBindingFrame)
         compared_bindings = potential_bindings
         for comp, func in comparison_tuples:
-            compared_bindings = ELBD.ELBindingFrame([slice for slice in compared_bindings if self.run_function(slice, func, comp)])
+            compared_bindings = ELBindingFrame([slice for slice in compared_bindings if self.run_function(slice, func, comp)])
         ## compared_bindings :: ELBD.ELBindingFrame
         return compared_bindings
         
     def run_function(self, binding, func, comparison):
         #get values from bindings:
         if comparison.b1.value not in binding or \
-           (isinstance(comparison.b2, ELBD.ELVAR) and comparison.b2.value not in binding):
+           (isinstance(comparison.b2, ELVAR) and comparison.b2.value not in binding):
             raise ELE.ELConsistencyException('Comparison being run without the necessary bindings')
         val1 = comparison.b1.get_val(binding)
-        if isinstance(comparison.b2, ELBD.ELVAR):
+        if isinstance(comparison.b2, ELVAR):
             val2 = comparison.b2.get_val(binding)
         else:
             val2 = comparison.b2
-        if comparison.op == ELBD.ELCOMP.NEAR:
-            if isinstance(comparison.nearVal, ELBD.ELVAR):
+        if comparison.op == ELCOMP.NEAR:
+            if isinstance(comparison.nearVal, ELVAR):
                 nearVal = comparison.nearVal.get_val(binding)
             else:
                 nearVal = comparison.nearVal
@@ -325,11 +357,11 @@ class ELRuntime:
 
 
     #String Operations:
-    def format_string(self,format_string):
+    def format_string(self,raw_string, bindings):
         """ Given a format_string, use defined variables in the runtime
         to fill it in """
         #todo: Take a string of "this is a $x test", and replace $x with the variable val
-        None
+        return raw_string
 
     #### METRICS
     def max_depth(self):
@@ -339,10 +371,10 @@ class ELRuntime:
         return len(self.trie.dfs_for_metrics()['leaves'])
         
     def num_assertions(self):
-        return len([x for x in self.history if isinstance(x, ELBD.ELFACT) and not x.negated])
+        return len([x for x in self.history if isinstance(x, ELFACT) and not x.negated])
         
     def num_retractions(self):
-        return len([x for x in self.history if isinstance(x, ELBD.ELFACT)  and x.negated])
+        return len([x for x in self.history if isinstance(x, ELFACT)  and x.negated])
         
         
     #EXPORTING
@@ -350,4 +382,3 @@ class ELRuntime:
         leaves = self.trie.dfs_for_metrics()['leaves']
         strings = [str(x) for x in leaves]
         return "\n".join(strings)
-
