@@ -317,11 +317,12 @@ class ELARITH_FACT(ELExpandable):
             raise ELE.ELConsistencyException('Arith Fact missing an operator')
         if val is None:
             raise ELE.ELConsistencyException('Arith fact must have a value')
+        ####
         self.data = data #A fact or Var
         self.op = op   #an operator
         self.val = val #a value or binding
         self.bindings = []
-        #todo: populate bindings from data, and val
+        ####
         if isinstance(data, ELVAR):
             self.bindings.append(data)
         elif isinstance(data, ELPAIR):
