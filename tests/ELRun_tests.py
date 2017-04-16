@@ -7,7 +7,6 @@ import IPython
 from random import random
 from test_context import ielpy
 from ielpy import ELPARSE
-from ielpy import ELBaseData as ELBD
 from ielpy import ELExceptions as ELE
 from ielpy import ELRuntime as ELR
 from fractions import Fraction

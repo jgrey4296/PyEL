@@ -7,8 +7,12 @@ import IPython
 from random import random
 from test_context import ielpy
 from ielpy import ELParser
-from ielpy import ELBaseData as ELBD
 from ielpy import ELExceptions as ELE
+from ielpy.ELCompFunctions import ELCOMP, ELARITH
+from ielpy.ELActions import ELBIND
+from ielpy.ELStructure import ELVAR, ELQUERY
+from ielpy.ELFactStructure import ELFACT, ELComparison
+from ielpy.ELUtil import ELVARSCOPE, EL
 from fractions import Fraction
 
 
@@ -27,7 +31,7 @@ class ELParser_Tests(unittest.TestCase):
     def test_simple(self):
         """ Check the parser works in a minimal case """
         result = self.parser('.this.is.a.test')[0]
-        self.assertIsInstance(result,ELBD.ELFACT)
+        self.assertIsInstance(result,ELFACT)
 
     def test_n_facts(self):
         """ check that n facts are parsed together """
@@ -38,11 +42,11 @@ class ELParser_Tests(unittest.TestCase):
         self.assertEqual(len(results),n_facts)
 
     def test_results_are_ELFACTS(self):
-        """ check that the returned type is a ELBD.ELFACT """
+        """ check that the returned type is a ELFACT """
         fact_string = ".this.is.a.test\n.this.is.another.test"
         results = self.parser(fact_string)
-        self.assertIsInstance(results[0],ELBD.ELFACT)
-        self.assertIsInstance(results[1],ELBD.ELFACT)
+        self.assertIsInstance(results[0], ELFACT)
+        self.assertIsInstance(results[1], ELFACT)
 
     def test_results_contain_data(self):
         """ check that a parsed result contains the correct amount of data in its data field """
@@ -98,7 +102,7 @@ class ELParser_Tests(unittest.TestCase):
         test_fact = ".this.is.an!exclusive.fact"
         results = self.parser(test_fact)
         self.assertEqual(len(results[0].data),6)
-        self.assertEqual(results[0].data[3].elop,ELBD.EL.EX)
+        self.assertEqual(results[0].data[3].elop, EL.EX)
 
     def test_fact_with_string_including_ex_op(self):
         """ check that an ! in a string doesn't interfere """
@@ -194,13 +198,13 @@ class ELParser_Tests(unittest.TestCase):
     def test_simple_comparison_lookup(self):
         test_comp = ">"
         results = ELParser.COMP.parseString(test_comp)
-        self.assertEqual(results[0][0],ELBD.ELCOMP.GREATER)
+        self.assertEqual(results[0][0], ELCOMP.GREATER)
         self.assertIsNone(results[0][1])
 
     def test_simple_arith_lookup(self):
         test_arith = '+'
         results = ELParser.ARITH.parseString(test_arith)
-        self.assertEqual(results[0],ELBD.ELARITH.PLUS)
+        self.assertEqual(results[0], ELARITH.PLUS)
         
     def test_only_actions_can_have_arith_ops(self):
         """ The fact .a.b.c + 20 should fail """
@@ -216,7 +220,7 @@ class ELParser_Tests(unittest.TestCase):
         test_fact = "$x <- .person.bob"
         result = self.parser(test_fact)
         root_fact = self.parser('.person.bob')[0]
-        self.assertIsInstance(result[0],ELBD.ELBIND)
+        self.assertIsInstance(result[0], ELBIND)
         self.assertEqual(result[0].var.value,'x')
         self.assertEqual(result[0].root,root_fact)
 
@@ -224,7 +228,7 @@ class ELParser_Tests(unittest.TestCase):
         """ test an empty bind statement """
         test_fact = "$x <- "
         result = self.parser(test_fact)
-        self.assertIsInstance(result[0],ELBD.ELBIND)
+        self.assertIsInstance(result[0], ELBIND)
         self.assertEqual(result[0].var.value,'x')
         self.assertIsNone(result[0].root)
 
@@ -237,11 +241,11 @@ class ELParser_Tests(unittest.TestCase):
         bill = self.parser('.person.bill')[0]
         self.assertEqual(len(results),2)
         #check bob binding:
-        self.assertIsInstance(results[0],ELBD.ELBIND)
+        self.assertIsInstance(results[0], ELBIND)
         self.assertEqual(results[0].var.value,'x')
         self.assertEqual(results[0].root,bob)
         #check bill binding:
-        self.assertIsInstance(results[1],ELBD.ELBIND)
+        self.assertIsInstance(results[1], ELBIND)
         self.assertEqual(results[1].var.value,'x')
         self.assertEqual(results[1].root,bill)
 
@@ -251,70 +255,77 @@ class ELParser_Tests(unittest.TestCase):
         result = self.parser(test_fact)
         self.assertEqual(len(result[0][-1]),3)
         for entry in result[0][-1]:
-            self.assertIsInstance(entry,ELBD.ELFACT)
+            self.assertIsInstance(entry, ELFACT)
 
     def test_condition_separately(self):
         """ Parsing a query on its own should work """
         test_query = ".a.b.c?"
         result = self.parser(test_query)[0]
-        self.assertIsInstance(result,ELBD.ELFACT)
-        self.assertIsInstance(result[-1], ELBD.ELQUERY)
+        self.assertIsInstance(result, ELFACT)
+        self.assertIsInstance(result[-1], ELQUERY)
 
     def test_path_var_scoping_exis(self):
         test_var = "$..x"
         result = ELParser.PATH_VAR.parseString(test_var)[0]
-        self.assertIsInstance(result, ELBD.ELVAR)
+        self.assertIsInstance(result, ELVAR)
         self.assertEqual(result.value, 'x')
-        self.assertEqual(result.scope, ELBD.ELVARSCOPE.EXIS)
+        self.assertEqual(result.scope, ELVARSCOPE.EXIS)
         self.assertIsNone(result.access_point)
         self.assertTrue(result.is_path_var)
 
     def test_path_var_scoping_forall(self):
         test_var = "@..x"
         result = ELParser.PATH_VAR.parseString(test_var)[0]
-        self.assertIsInstance(result, ELBD.ELVAR)
+        self.assertIsInstance(result, ELVAR)
         self.assertEqual(result.value, 'x')
-        self.assertEqual(result.scope, ELBD.ELVARSCOPE.FORALL)
+        self.assertEqual(result.scope, ELVARSCOPE.FORALL)
         self.assertIsNone(result.access_point)
         self.assertTrue(result.is_path_var)
 
     def test_non_path_var_scoping_exis(self):
         test_var = "$x"
         result = ELParser.NON_PATH_VAR.parseString(test_var)[0]
-        self.assertIsInstance(result, ELBD.ELVAR)
+        self.assertIsInstance(result, ELVAR)
         self.assertEqual(result.value, 'x')
-        self.assertEqual(result.scope, ELBD.ELVARSCOPE.EXIS)
+        self.assertEqual(result.scope, ELVARSCOPE.EXIS)
         self.assertIsNone(result.access_point)
         self.assertFalse(result.is_path_var)
         
     def test_non_path_var_scoping_forall(self):
         test_var = "@x"
         result = ELParser.NON_PATH_VAR.parseString(test_var)[0]
-        self.assertIsInstance(result, ELBD.ELVAR)
+        self.assertIsInstance(result, ELVAR)
         self.assertEqual(result.value, 'x')
-        self.assertEqual(result.scope, ELBD.ELVARSCOPE.FORALL)
+        self.assertEqual(result.scope, ELVARSCOPE.FORALL)
         self.assertIsNone(result.access_point)
         self.assertFalse(result.is_path_var)
     
     def test_non_path_array_access(self):
         test_var = "$x(4)"
         result = ELParser.NON_PATH_VAR.parseString(test_var)[0]
-        self.assertIsInstance(result, ELBD.ELVAR)
+        self.assertIsInstance(result, ELVAR)
         self.assertEqual(result.value, 'x')
-        self.assertEqual(result.scope, ELBD.ELVARSCOPE.EXIS)
+        self.assertEqual(result.scope, ELVARSCOPE.EXIS)
         self.assertEqual(result.access_point,4)
         self.assertFalse(result.is_path_var)
 
     def test_non_path_array_access_from_var(self):
         test_var = "$x($y)"
         result = ELParser.NON_PATH_VAR.parseString(test_var)[0]
-        self.assertIsInstance(result, ELBD.ELVAR)
+        self.assertIsInstance(result, ELVAR)
         self.assertEqual(result.value, 'x')
-        self.assertEqual(result.scope, ELBD.ELVARSCOPE.EXIS)
-        self.assertIsInstance(result.access_point, ELBD.ELVAR)
+        self.assertEqual(result.scope, ELVARSCOPE.EXIS)
+        self.assertIsInstance(result.access_point, ELVAR)
         self.assertEqual(result.access_point.value, 'y')
         self.assertFalse(result.is_path_var)
 
+    def test_comparison_array(self):
+        test_string = ".this.is.a.test.[ $x < $y, $y == $z ]"
+        result = self.parser(test_string)[0]
+        self.assertIsInstance(result, ELFACT)
+        self.assertIsInstance(result[-1], list)
+        self.assertTrue(all([isinstance(x, ELComparison) for x in result[-1]]))
+        
     def test_condition_variables(self):
         """ test:
         .this.is.a.condition.set.{.a.b.c?, .b.d.e?, .e.f.$1?}

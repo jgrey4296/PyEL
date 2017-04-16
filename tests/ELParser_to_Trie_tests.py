@@ -7,7 +7,6 @@ import logging as root_logger
 from random import random
 from test_context import ielpy
 from ielpy import ELParser
-from ielpy import ELBaseData as ELBD
 from ielpy.ELTrie import ELTrie
 from fractions import Fraction
 
