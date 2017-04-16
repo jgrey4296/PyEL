@@ -40,7 +40,7 @@ class ELFACT(ELExpandable):
         if r is True:
             self.data.insert(0,ELROOT())
         for x in data:
-            self.push(x)
+            self.insert(x)
             
 
     def expand(self):
@@ -178,7 +178,7 @@ class ELFACT(ELExpandable):
     def root(self):
         return self.data[0]
 
-    def push(self, statement):
+    def insert(self, statement, prepend=False):
         """ Utility for easy construction of a fact """
         self.data.append(statement)
         if isinstance(statement, ELPAIR) and isinstance(statement.value, ELVAR):
@@ -191,34 +191,35 @@ class ELFACT(ELExpandable):
                 self.bindings.append(statement.access_point)
         return self
 
+    
     def query(self):
         copy = self.copy()
-        copy.push(ELQUERY())
+        copy.insert(ELQUERY())
         return copy
     
     def var(self, *args):
         """ Utility for easy construction of a variable """
         var = ELVAR(*args)
         pair = ELPAIR(var)
-        return self.push(pair)
+        return self.insert(pair, prepend=prepend)
 
     def pair(self, *args):
         """ Utility for easy construction of a fact:
         Internally create a new ELPAIR
         """
-        return self.push(ELPAIR(*args))
+        return self.insert(ELPAIR(*args), prepend=prepend)
 
     def evar(self, *args):
         """ Utility for easy construction of an exclusive variable """
         var = ELVAR(*args)
         pair = ELPAIR(var, EL.EX)
-        self.push(pair)
+        self.insert(pair, prepend=prepend)
 
     def epair(self, arg):
         """ Utility for easy construction of a fact:
         Internally create a new Exclusive ELPair
         """
-        return self.push(ELPAIR(arg, EL.EX))
+        return self.insert(ELPAIR(arg, EL.EX), prepend=prepend)
 
     def pop(self):
         """ Get the last element of the fact """

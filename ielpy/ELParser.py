@@ -70,9 +70,9 @@ def construct_el_fact(toks):
     root = toks[str(PARSENAMES.ROOT)]
     base = toks[str(PARSENAMES.BASEFACT)][:]
     new_fact = ELFACT(negated=negated)
-    new_fact.push(root)
+    new_fact.insert(root)
     for x in base:
-        new_fact.push(x)
+        new_fact.insert(x)
 
     if len(toks[str(PARSENAMES.TERMINAL)]) == 0:
         term = None
@@ -80,8 +80,9 @@ def construct_el_fact(toks):
         term = toks[str(PARSENAMES.TERMINAL)][:]
     else:
         term = toks[str(PARSENAMES.TERMINAL)][0]
+        
     if term is not None and isinstance(term, list):
-        new_fact.push(term)
+        new_fact.insert(term)
     elif term is not None:
         new_fact.pair(term)
             
