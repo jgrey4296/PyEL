@@ -52,21 +52,27 @@ class ELFACT(ELExpandable):
             return [self]
         output = []
         #Add the root fact up to the terminal
-        output.append(ELFACT(current))
+        #output.append(ELFACT(current))
         #Now expand out each element in the list
-        for x in term:
+        for i,x in enumerate(term):
+            index_pair = [ELPAIR(i)]
             if isinstance(x, ELFACT):
                 #lop off the duplicated root
                 new_fact = ELFACT(current + x[1:])
             elif isinstance(x, list):
                 new_fact = ELFACT(current + x)
             elif isinstance(x, ELARITH_FACT):
-                new_fact = ELFACT(current + x.expand())
+                local_string = current.copy() + index_pair
+                local_string.append(x.expand())
+                new_fact = ELFACT(local_string)
             elif isinstance(x, ELComparison):
-                new_fact = ELFACT(current + x.expand())
+                local_string = current.copy() + index_pair
+                local_string.append(x.expand())
+                new_fact = ELFACT(local_string)
             else:
                 new_fact = ELFACT(current)
                 new_fact.pair(x)
+
             #recurse down, extending as necessary:
             flattened = new_fact.expand()
             output.extend(flattened)
