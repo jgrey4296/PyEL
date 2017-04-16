@@ -132,8 +132,9 @@ class ELFACT(ELExpandable):
                       filled_bindings=filled_bindings_copy)
 
     def negate(self):
-        self.negated = not self.negated
-        return self
+        copy = self.copy()
+        copy.negated = not self.negated
+        return copy
 
     def __eq__(self, other):
         return all([x == y for x, y in zip(self.data, other.data)])
