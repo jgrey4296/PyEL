@@ -56,9 +56,13 @@ class ELPAIR(ELSTRUCTURE):
     """ Internal pairs of statements of |test.|blah!|something.|
     Does not represent terminals
     """
-    def __init__(self, value, elop=EL.DOT):
+    def __init__(self, value, elop=EL.DOT, ex=False):
         self.value = value
-        self.elop = elop
+        if not ex:
+            self.elop = elop
+        else:
+            self.elop = EL.EX
+            
 
     def isArr(self):
         return isinstance(self.value, list)
