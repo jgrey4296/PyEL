@@ -246,6 +246,40 @@ class ELComparison(ELExpandable):
         self.b1 = b1
         self.b2 = b2
 
+    def expand(self):
+        """ Convert the IR representation of the comparison to a 
+        true Trie representation in the form:
+        .operator!{op}
+        .near!{nearVal}
+        .focus!{b1}
+        .value!{b2}
+        """
+        #focus:
+        if isinstance(self.b1, ELVAR):
+            focus = ELFACT(r=True).epair('focus').pair(self.b1)
+        elif isinstance(self.b1, ELFACT):
+            focus = self.b1.copy().epair('focus', prepend=True)
+        #value:
+        if isinstance(self.b2, ELVAR):
+            value = ELFACT(r=True).epair('value').pair(self.b2)
+        elif isinstance(self.b2, ELFACT):
+            value = self.b2.copy().epair('value', prepend=True)
+        #operator:
+        operator = ELFACT(r=True).epair('operator').pair(self.op)
+        #nearVal:
+        if self.nearVal is not None and isinstance(self.nearVal, ELVAR):
+            near = ELFACT(r=True).epair('near').pair(self.nearVal)
+        elif self.nearVal is not None and isinstance(self.nearVal, ELFACT):
+            near = self.nearVal.copy().epair('near', prepend=True)
+        else:
+            near = None
+            
+        if near is not None:
+            return [focus, value, operator, near]
+        else:
+            return [focus, value, operator]
+        
+        
     def __repr__(self):
         if self.nearVal is None:
             return "({} {} {})".format(self.b1, EL_COMP_2_STR(self.op), self.b2)
@@ -298,6 +332,33 @@ class ELARITH_FACT(ELExpandable):
         #retrieve sub vars
         self.bindings.extend([x.access_point for x in self.bindings if isinstance(x.access_point, ELVAR)])
 
+    def expand(self):
+        """ Take the IR representation of an arithmetic fact,
+        and turn it into a true trie representation of form:
+        .focus!{data}
+        .operator!{op}
+        .value!{val}
+        """
+        operator = ELFACT(r=True)
+        value = ELFACT(r=True)
+        #Add focus data:
+        if isinstance(self.data, ELVAR):
+            focus = ELFACT(r=True).epair('focus').pair(self.data)
+        elif isinstance(self.data, ELFACT):
+            focus = self.data.copy().epair('focus', prepend=True)
+
+        #add op data:
+        operator.epair('operator').pair(self.op)
+        #add value data:
+        if isinstance(self.val, ELVAR):
+            value.epair('value').pair(self.val)
+        elif isinstance(self.val, ELFACT):
+            value = self.val
+            value.epair('value', prepend=True)
+                
+        return [focus, operator, value ]
+
+        
     def hasForAllBinding(self):
         """ If one of the bindings is scoped to forall, return true """
         forallbindings = [x.scope is ELVARSCOPE.FORALL for x in self.bindings]
