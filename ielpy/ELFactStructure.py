@@ -140,11 +140,8 @@ class ELFACT(ELExpandable):
         return all([x == y for x, y in zip(self.data, other.data)])
 
     def __repr__(self):
-        strings = [repr(x) for x in self.data[:-1]]
-        if isinstance(self.data[-1], list):
-            strings.append(repr(self.data[-1]))
-        elif isinstance(self.data[-1], ELSTRUCTURE):
-            strings.append(self.data[-1].termrepr())
+        strings = [repr(x) for x in self.data]
+        
         joined_strings = "".join(strings)
         if self.negated:
             return "| ~{} |".format(joined_strings)
@@ -152,11 +149,7 @@ class ELFACT(ELExpandable):
             return "| {} |" .format(joined_strings)
 
     def __str__(self):
-        strings = [str(x) for x in self.data[:-1]]
-        if isinstance(self.data[-1], list):
-            strings.append(str(self.data[-1]))
-        else:
-            strings.append(self.data[-1].termstr())
+        strings = [str(x) for x in self.data]
         joined_strings = "".join(strings)
         if self.negated:
             return "~{}".format(joined_strings)
