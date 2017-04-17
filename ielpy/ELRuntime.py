@@ -381,12 +381,12 @@ class ELRuntime:
             self.push_stack()
             current_frame = self.top_stack()
             for condition in rule.conditions:
-                is_successful, current_frame = self.fact_query(condition, current_frame)
-                if not is_successful:
+                result = self.fact_query(condition, current_frame)
+                if not bool(result):
                     raise ELE.ELRuleException()
 
             # passing_bindings :: ELBindingFrame
-            passing_bindings = current_frame
+            passing_bindings = current_frame.bindings
             
             #get the comparison functions, as a tuple 
             comp_tuple = self.format_comparisons(rule)
@@ -426,8 +426,8 @@ class ELRuntime:
         return return_val
 
 
-    def format_comparisons(self, rule): #Rule Utilities:
-        #get the bindings from the rule
+    def format_comparisons(self, comparisons): #Rule Utilities:
+        #get the operator from the compariso
         retrieved = [(comp, get_COMP_FUNC(comp.op)) for comp in rule.binding_comparisons]
         return retrieved
     
