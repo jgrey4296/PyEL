@@ -1,12 +1,16 @@
 """
 The ways ELStructure components can be assembled into facts
 """
+import IPython
+import logging as root_logger
 from uuid import UUID
 from .ELCompFunctions import ELCOMP, ELARITH, get_ARITH_FUNC
 from .ELUtil import EL, ELVARSCOPE, EL_ARITH_2_STR, EL_COMP_2_STR
 from .ELBinding import ELBindingSlice 
 from .ELStructure import ELSTRUCTURE, ELPAIR, ELROOT, ELVAR, ELQUERY
 from . import ELExceptions as ELE
+
+logging = root_logger.getLogger(__name__)
 
 ##########
 # FACT Structure
@@ -46,6 +50,7 @@ class ELFACT(ELExpandable):
     def expand(self):
         """ Takes a fact with a terminal array,
         and converts it into a list of facts """
+        logging.info("Expanding Fact")
         current = self[0:-1]
         term = self[-1]
         if not isinstance(term, list):
@@ -77,6 +82,7 @@ class ELFACT(ELExpandable):
             flattened = new_fact.expand()
             output.extend(flattened)
 
+        logging.info("Result of expanded Fact: {}".format(output))
         return output
 
             
@@ -90,6 +96,7 @@ class ELFACT(ELExpandable):
     def bind(self, binding_slice, all_sub_slice=None):
         #return a copy of the fact, where the var has been switched out
         #TODO: CONVERT PATH_VARS TO NODE IDS TO RETRIEVE AND MOD LATER?
+        logging.info("Binding to fact: {}".format(binding_slice))
         assert isinstance(binding_slice, ELBindingSlice)
         if all_sub_slice is not None:
             assert isinstance(all_sub_slice, ELBindingSlice)
@@ -120,6 +127,7 @@ class ELFACT(ELExpandable):
                           bindings=self.bindings,
                           filled_bindings=updated_bindings,
                           negated=self.negated)
+        logging.info("Binding Result: {}".format(new_fact))
         return new_fact
 
     def copy(self):
@@ -340,6 +348,7 @@ class ELARITH_FACT(ELExpandable):
         .operator!{op}
         .value!{val}
         """
+        logging.info("Expanding Arith: {}".format(str(self)))
         operator = ELFACT(r=True)
         value = ELFACT(r=True)
         #Add focus data:

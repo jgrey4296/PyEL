@@ -92,6 +92,7 @@ class ELTrieNode:
 
 
     def __getitem__(self, key):
+        logging.info("Getting: {}".format(key))
         if isinstance(key, ELTrieNode):
             return self.children[key.value]
         elif isinstance(key, ELPAIR):

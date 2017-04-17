@@ -1,6 +1,8 @@
 """
 Classes relating to the structuring of binding
 """
+import logging as root_logger
+logging = root_logger.getLogger(__name__)
 
 ##########
 # Binding
