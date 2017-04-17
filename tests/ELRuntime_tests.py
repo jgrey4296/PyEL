@@ -184,24 +184,139 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertFalse(self.runtime('.but.not.this.far?'))
 
 
-    def test_condition_evaluation(self):
-        fact_string = """ 
-        .a.b.c, .d.e!blah,
-        .a.test.[
-        	.conditions.[
-        		.a.b.c?,
-        		.d.e!$f?
-		],
-        	.actions.[
-        		$..f.bloo
-        	]
-        ]
+    def test_condition_running(self):
         """
-        self.runtime(fact_string)
-        self.assertTrue(self.runtime(".d.e!blah"))
-        self.assertFalse(self.runtime(".d.e!blah.bloo?"))
-        self.assertTrue(self.runtime.perform_node(".a.test?"))
-        self.assertTrue(self.runtime(".d.e!blah.bloo?"))
+        .a.b.c, .d.e.f
+        .conditions.[ .a.b.c?, .d.e.f? ] => True
+        """
+        self.runtime('.a.b.c, .d.e.f')
+        self.assertTrue(all(self.runtime('.a.b.c?, .d.e.f?')))
+        self.runtime('.conditions.[ .a.b.c?, .d.e.f? ]')
+        self.assertTrue(self.runtime.run_conditions('.conditions?'))
+
+    def test_condition_binding(self):
+        """
+        .a.b.blah
+        .conditions.[ .a.b.$x? ] => (True, {x: blah })
+        """
+        self.runtime('.a.b.blah')
+        self.runtime('.conditions.[ .a.b.$x? ]')
+        result = self.runtime.run_conditions('.conditions?')
+        self.assertTrue(result)
+        self.assertEqual(len(result.bindings), 1)
+        self.assertIn('x', result.bindings[0])
+        self.assertEqual('blah', result.bindings[0]['x'].value)
+        
+
+    def test_condition_sequence_binding(self):
+        """
+        .a.b.blah, .a.d.blah,
+        .conditions.[ .a.b.$x?, .a.d.$x? ] => (True, {x: blah})
+        """
+        self.runtime('.a.b.blah, .a.d.blah')
+        self.runtime('.conditions.[ .a.b.$x?, .a.d.$x? ]')
+        result = self.runtime.run_conditions('.conditions?')
+        self.assertTrue(result)
+        self.assertEqual(len(result.bindings),1)
+        self.assertIn('x', result.bindings[0])
+        self.assertEqual('blah', result.bindings[0]['x'].value)
+
+    def test_conditions_with_prior_bindings(self):
+        """
+        .a.b.blah, .a.d.blah
+        bindings <- .a.b.$x?
+        .conditions.[ .a.d.$x? ]
+        bindings -> .conditions? => True
+        """
+        self.runtime('.a.b.blah, .a.d.blah')
+        self.runtime('.conditions.[ .a.d.$x? ]')
+        bindings = self.runtime('.a.b.$x?').bindings
+        result = self.runtime.run_conditions('.conditions?', bindings=bindings)
+        self.assertTrue(result)
+
+        
+    def test_condition_binding_comparison(self):
+        """
+        .a.b.10, .a.d.20,
+        .test.conditions.[ .a.b.$x?, .a.d.$y? ] => (True, {x : 10, y: 20 })
+        .test.comparisons.[ $x < $y ] => True
+        """
+        self.runtime('.a.b.10, .a.d.20')
+        self.runtime('.test.conditions.[.a.b.$x?, .a.d.$y? ]')
+        self.runtime('.test.comparisons.[ $x < $y ]')
+        result = self.runtime.run_conditions('.test.conditions?')
+        self.assertTrue(result)
+        self.assertIn('x', result.bindings[0])
+        self.assertIn('y', result.bindings[0])
+        passing_bindings = self.runtime.run_comparisons('.test.comparisons?', result.bindings)
+        self.assertEqual(len(passing_bindings), 1)
+
+    def test_condition_binding_filtering(self):
+        """
+        .a.b.10, .a.b.40, .a.d.20,
+        .test.conditions.[ .a.b.$x?, .a.d.$y? ],
+        .test.comparisons.[ $x < $y ] 
+        """
+        self.runtime('.a.b.10, .a.b.40, .a.b.18, .a.d.20')
+        self.runtime('.test.conditions.[ .a.b.$x?, .a.d.$y? ]')
+        self.runtime('.test.comparisons.[ $x < $y ]')
+        result = self.runtime.run_conditions('.test.conditions?')
+        self.assertTrue(result)
+        self.assertEqual(len(result), 3)
+        passing_bindings = self.runtime.run_comparisons('.test.comparisons?', result.bindings)
+        self.assertEqual(len(passing_bindings), 2)
+
+        
+    # def test_arith_action(self):
+    #     """
+    #     .a.b.10,
+    #     .test.conditions.[ .a.b.$x ],
+    #     .test.arithmetic.[ $..x + 10 ],
+    #     .a.b.20? => True
+    #     """
+    #     self.runtime('.a.b.10')
+    #     self.runtime('.test.conditions.[ .a.b.$x ]')
+    #     self.runtime('.test.arithmetic.[ $..x + 10 ]')
+    #     self.assertFalse(self.runtime('.a.b.20?'))
+    #     self.runtime.run_arithmetic('.test.arithmetic')
+    #     self.assertTrue(self.runtime('.a.b.20?'))
+        
+
+    # def test_action(self):
+    #     """
+    #     .a.b.blah
+    #     .test.conditions.[ .a.b.$x? ] => (True, {x: blah})
+    #     .test.actions.[ $..x.bloo ]
+    #     .a.b.blah.bloo? => True
+    #     """
+    #     self.runtime('.a.b.blah')
+    #     self.runtime('.test.conditions.[ .a.b.$x? ]')
+    #     self.runtime('.test.actions.[ $..x.bloo ]')
+    #     self.assertFalse(self.runtime('.a.b.blah.bloo?'))
+    #     self.runtime.run_action('.test.actions')
+    #     self.assertTrue(self.runtime('.a.b.blah.bloo?'))
+        
+
+    # def test_condition_evaluation(self):
+    #     fact_string = """ 
+    #     .a.b.c, .d.e!blah,
+    #     .a.test.[
+    #     	.conditions.[
+    #     		.a.b.c?,
+    #     		.d.e!$f?
+    #     	],
+    #     	.actions.[
+    #     		$..f.bloo
+    #     	]
+    #     ]
+    #     """
+    #     # root_logger.disable(root_logger.NOTSET)
+    #     # self.runtime(fact_string)
+    #     # self.assertTrue(self.runtime(".d.e!blah"))
+    #     # self.assertFalse(self.runtime(".d.e!blah.bloo?"))
+    #     # self.assertTrue(self.runtime.perform_node(".a.test?"))
+    #     # self.assertTrue(self.runtime(".d.e!blah.bloo?"))
+    #     # root_logger.disable(root_logger.CRITICAL)
         
     def test_global_binding(self):
         """
