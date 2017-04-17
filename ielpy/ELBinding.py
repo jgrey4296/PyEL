@@ -15,7 +15,7 @@ class ELBindingStack(list):
     def __init__(self):
         super().__init__([ELBindingFrame()])
     def top(self):
-        return ELBindingFrame(self[-1])
+        return self[-1].copy()
     def push_stack(self):
         self.append(self.top())
 
@@ -31,6 +31,9 @@ class ELBindingFrame(list):
         else:
             super().__init__(data)
 
+    def copy(self):
+        return ELBindingFrame(data=self)
+            
 class ELBindingSlice(dict):
     """ The dictionaries of a rule possibility,
     { x : (ELBindingEntry), y: (ELBinding Entry ... }
