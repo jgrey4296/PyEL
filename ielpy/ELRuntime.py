@@ -136,7 +136,77 @@ class ELRuntime:
 
         self.pop_stack()
         return output
+
+    def get_location(self,location, bindings=None):
+        """ Utility to get a trie node based on string, fact, uuid, or trie node """
+        if isinstance(location, ELTrieNode):
+            return location
+        elif isinstance(location, UUID):
+            return self.trie[location]
+        elif isinstance(location, str): #str -> ELFACT
+            location = self.parser(location)[0]
+        elif not isinstance(location, ELFACT): #UNKNONW
+            raise ELE.ELConsistencyException("Unrecognised value passed to get_location: {}".format(location))
+
+        #location :: ELFACT
+        queried = self.fact_query(location, bindings)
+        target = self.trie[queried.nodes[0]]
+        return target
+
+    def run_conditions(self, location, bindings=None):
+        logging.info("Running Conditions: {}".format(location))
+        if bindings is None:
+            bindings = self.top_stack()
+        target = self.get_location(location, bindings=bindings)
+        conditions = target.to_el_queries()
+        #Run the conditions in sequence:
+        for condition in conditions:
+            result = self.fact_query(condition, bindings)
+            if not bool(result):
+                return ELFail() #EARLY RETURN
+            bindings = result.bindings
+        #Gotten to where all conditions pass, return the bindings:
+        return ELSuccess(None, result.bindings)
+
+    def run_comparisons(self, location, bindings):
+        target = self.get_location(location, bindings=bindings)
+        #comparisons :: ( operator, p1, p2, near)
+        comparisons = target.to_el_comparisons()
         
+        for comparison in comparisons:
+            bindings = ELBindingFrame([slice for slice in bindings if self.run_comparison(slice, comparison)])
+        
+
+        return bindings
+
+
+    def run_comparison(self, binding, comparison):
+        operator, p1, p2, near = comparison
+        #get values from bindings:
+        if p1.value not in binding or (isinstance(p2, ELVAR) and p2.value not in binding):
+            raise ELE.ELConsistencyException('Comparison being run without the necessary bindings')
+        
+        val1 = p1.get_val(binding)
+        if isinstance(p2, ELVAR):
+            val2 = p2.get_val(binding)
+        else:
+            val2 = p2
+        if operator == COMP_FUNCS[ELCOMP.NEAR]:
+            if isinstance(near, ELVAR):
+                nearVal = near.get_val(binding)
+            else:
+                nearVal = near
+
+            return operator(val1, nearVal, val2)
+        else:
+            return operator(val1, val2)
+
+
+
+
+
+        
+    
     def perform_node(self, target, state=None):
         """
         .node.next.[...],
