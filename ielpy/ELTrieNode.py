@@ -103,6 +103,7 @@ class ELTrieNode:
 
     def __setitem__(self, key, value):
         assert isinstance(value, ELTrieNode)
+        logging.info("Setting: {}".format(key))
         #an exclusion removes all else
         if self.elop == EL.EX:
             self.children.clear()

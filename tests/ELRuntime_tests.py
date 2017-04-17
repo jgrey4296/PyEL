@@ -344,9 +344,9 @@ if __name__ == "__main__":
     LOG_FILE_NAME = "ELRuntime_tests.log"
     root_logger.basicConfig(filename=LOG_FILE_NAME, level=LOGLEVEL, filemode='w')
     console = root_logger.StreamHandler()
-    console.setLevel(root_logger.WARNING)
+    console.setLevel(root_logger.DEBUG)
     root_logger.getLogger('').addHandler(console)
     logging = root_logger.getLogger(__name__)
-    #root_logger.disable(root_logger.INFO)
+    root_logger.disable(root_logger.CRITICAL)
     ##############################
     unittest.main()

@@ -30,4 +30,3 @@ class ELBIND(ELAction):
     def copy(self):
         return ELBIND(self.var.copy(), self.root.copy())
 
-

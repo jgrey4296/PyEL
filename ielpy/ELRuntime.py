@@ -271,26 +271,26 @@ class ELRuntime:
         #Perform based on parsed type
         if isinstance(action, ELFACT):
             #Fact: Assert /retract
-            if isinstance(action[-1], ELQUERY):
+            if isinstance(action[-1], ELQUERY):                       #QUERY
                 #Don't replace vars with bindings, populate them
                 logging.debug("Querying")
                 self.push_stack()
                 result = self.fact_query(action, self.top_stack())
                 self.pop_stack()
                 logging.debug('Query Result: {}'.format(result))
-            elif action.negated:
+            elif action.negated:                                      #RETRACT
                 logging.debug("Hit a negation, retracting")
                 result = self.fact_retract(action) 
-            else:
+            else:                                                     #ASSERT
                 logging.debug("Hit an assertion")
                 result = self.fact_assert(action)
-        elif isinstance(action, ELBIND):
+        elif isinstance(action, ELBIND):                              #BIND
             raise ELE.ELRuntimeException("Not Implemented")
             #self.set_binding(action.var,action.root)
-        elif isinstance(action, ELARITH_FACT):
+        elif isinstance(action, ELARITH_FACT):                        #ARITH
             #Get the designated leaf.
             node = self.trie[action.data]
-            result = (action.apply(node), None)
+            result = action.apply(node)
         else:
             raise ELE.ELRuntimeException("Unrecognised Action: {}".format(action))
         return result
