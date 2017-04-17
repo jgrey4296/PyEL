@@ -8,6 +8,7 @@ from enum import Enum
 from collections import namedtuple
 from fractions import Fraction
 from random import choice
+from uuid import UUID
 import IPython
 import uuid
 from .ELUtil import EL, ELEXT, ELCOMP
@@ -17,9 +18,10 @@ from .ELResults import ELFail, ELSuccess
 from .ELActions import ELBIND
 from .ELStructure import ELQUERY, ELVAR
 from .ELFactStructure import ELFACT, ELARITH_FACT
+from .ELCompFunctions import COMP_FUNCS
 from . import ELParser, ELTrie
 from . import ELExceptions as ELE
-from . ELCompFunctions import get_COMP_FUNC, get_ARITH_FUNC
+from .ELCompFunctions import get_COMP_FUNC, get_ARITH_FUNC
 
 
 class ELRuntime:

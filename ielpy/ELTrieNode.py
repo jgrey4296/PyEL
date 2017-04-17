@@ -5,6 +5,7 @@ import uuid
 from .ELUtil import EL, ELOP2STR
 from .ELStructure import ELPAIR, ELVAR
 from .ELFactStructure import ELFACT
+from .ELCompFunctions import get_COMP_FUNC
 from . import ELExceptions as ELE
 import logging as root_logger
 
