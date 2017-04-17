@@ -74,12 +74,7 @@ def construct_el_fact(toks):
     for x in base:
         new_fact.insert(x)
 
-    if len(toks[str(PARSENAMES.TERMINAL)]) == 0:
-        term = None
-    elif len(toks[str(PARSENAMES.TERMINAL)]) > 1:
-        term = toks[str(PARSENAMES.TERMINAL)][:]
-    else:
-        term = toks[str(PARSENAMES.TERMINAL)][0]
+    term = toks[str(PARSENAMES.TERMINAL)][0]
         
     if term is not None and isinstance(term, list):
         new_fact.insert(term)
@@ -248,7 +243,7 @@ ACTION_ARRAY = array_template(ARITH_FACT | REGEX_ACTION | FACT, brackets_optiona
 #Core part of a fact: a.b!c => (a,DOT),(b.EX)
 EL_PAIR = ELEMENT + pp.NotAny(pp.LineEnd()) + (DOT | EX)
 EL_FACT_ROOT = pp.Group(((PATH_VAR | DBL_VLINE) + (DOT | EX)) | DOT).setResultsName(str(PARSENAMES.ROOT))
-EL_FACT_TERMINAL = ELEMENT | EL_ARRAY
+EL_FACT_TERMINAL = ELEMENT | pp.Group(EL_ARRAY)
 #An Entire sequence, note the stopOn to not continue over lines
 FACT << op(NOT).setResultsName(str(PARSENAMES.NOT)) + \
                               EL_FACT_ROOT + \
