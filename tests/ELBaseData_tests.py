@@ -27,28 +27,27 @@ class ELBaseData_Tests(unittest.TestCase):
              'c': ELBindingEntry('c', None, 'crickey'),
              'd': ELBindingEntry('d', None, 'dimwit') })
         bound = testFact.bind(bindingDict)
-        self.assertEqual(str(testFact), '.$b.$c.$d')
-        self.assertEqual(repr(testFact), '| ROOT.VAR(b).VAR(c).VAR(d) |')
+        self.assertEqual(str(testFact), '.$b.$c.$d.')
+        self.assertEqual(repr(testFact), '| ROOT.VAR(b).VAR(c).VAR(d). |')
         self.assertNotEqual(repr(testFact), repr(bound))
-        self.assertEqual(str(bound), '.blah.crickey.dimwit')
-        self.assertEqual(repr(bound), "| ROOT.'blah'.'crickey'.'dimwit' |")
+        self.assertEqual(str(bound), '.blah.crickey.dimwit.')
+        self.assertEqual(repr(bound), "| ROOT.'blah'.'crickey'.'dimwit'. |")
 
     def test_fact_expansion(self):
         testFact = ELFACT(r=True).pair('blah').pair('bloo').var('blee')
         subfact_1 = ELFACT(r=True).pair('awef').pair('awefgg').pair('awee')
         subfact_2 = ELFACT(r=True).pair('poi').epair('iuy').pair('oyb')
-        testFact.push([subfact_1, subfact_2])
+        testFact.insert([subfact_1, subfact_2])
 
         expanded = testFact.expand()
-        self.assertEqual(len(expanded),3)
-        self.assertEqual(str(expanded[0]), ".blah.bloo.$blee")
-        self.assertEqual(str(expanded[1]), ".blah.bloo.$blee.awef.awefgg.awee")
-        self.assertEqual(str(expanded[2]), ".blah.bloo.$blee.poi.iuy!oyb")
+        self.assertEqual(len(expanded),2)
+        self.assertEqual(str(expanded[0]), ".blah.bloo.$blee.awef.awefgg.awee.")
+        self.assertEqual(str(expanded[1]), ".blah.bloo.$blee.poi.iuy!oyb.")
 
     def test_fact_array_expansion_ints(self):
-        testFact = ELFACT(r=True).pair('blah').pair('bloo').push([1,2,3,4])
+        testFact = ELFACT(r=True).pair('blah').pair('bloo').insert([1,2,3,4])
         expanded = testFact.expand()
-        self.assertEqual(len(expanded),5)
+        self.assertEqual(len(expanded),4)
         
     def test_trie_node_sub_nodes_to_facts(self):
         node = ELTrieNode(ELPAIR('blah'))
@@ -65,9 +64,9 @@ class ELBaseData_Tests(unittest.TestCase):
         as_facts = node.to_el_facts()
         self.assertEqual(len(as_facts), 3)
         as_strings = [str(x) for x in as_facts]
-        self.assertIn(".awef", as_strings)
-        self.assertIn(".bloo.blarg", as_strings)
-        self.assertIn(".bloo.oiju", as_strings)
+        self.assertIn(".awef.", as_strings)
+        self.assertIn(".bloo.blarg.", as_strings)
+        self.assertIn(".bloo.oiju.", as_strings)
         
 
     def test_trie_node_sub_nodes_to_facts_with_var(self):
@@ -85,9 +84,9 @@ class ELBaseData_Tests(unittest.TestCase):
         as_facts = node.to_el_facts()
         self.assertEqual(len(as_facts), 3)
         as_strings = [str(x) for x in as_facts]
-        self.assertIn(".awef", as_strings)
-        self.assertIn(".$bloo.blarg", as_strings)
-        self.assertIn(".$bloo.oiju", as_strings)
+        self.assertIn(".awef.", as_strings)
+        self.assertIn(".$bloo.blarg.", as_strings)
+        self.assertIn(".$bloo.oiju.", as_strings)
         
 
         

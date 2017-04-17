@@ -50,8 +50,10 @@ class ELParser_to_Trie_tests(unittest.TestCase):
     def test_empty_array(self):
         fact_string = ".this.is.an.empty.array.[]"
         #add
-        result = self.trie.push(self.parser(fact_string)[0])
-        self.assertTrue(result)
+        facts = self.parser(fact_string)[0].expand()
+        for x in facts:
+            result = self.trie.push(x)
+            self.assertTrue(result)
         self.assertTrue(self.trie.query(self.parser('.this.is.an.empty.array?')[0]))
         
     def test_non_empty_array(self):
@@ -188,10 +190,10 @@ if __name__ == "__main__":
     LOG_FILE_NAME = "ELParser_Trie_tests.log"
     root_logger.basicConfig(filename=LOG_FILE_NAME, level=LOGLEVEL, filemode='w')
     console = root_logger.StreamHandler()
-    console.setLevel(root_logger.INFO)
+    console.setLevel(root_logger.WARNING)
     root_logger.getLogger('').addHandler(console)
     logging = root_logger.getLogger(__name__)
-    #root_logger.disable(root_logger.CRITICAL)
+    root_logger.disable(root_logger.CRITICAL)
     ##############################
     
     unittest.main()

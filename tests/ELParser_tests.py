@@ -68,8 +68,8 @@ class ELParser_Tests(unittest.TestCase):
         test_fact = ".this.is.an.empty.array.[]"
         results = self.parser(test_fact)
         #length is 7, num of '.' + terminal
-        self.assertEqual(len(results[0].data), 6)
-        self.assertEqual(results[0][-1].value, "array")
+        self.assertEqual(len(results[0].data), 7)
+        self.assertEqual(results[0][-1], [])
         
     def test_multi_line_array(self):
         """ check that an array can be on multiple lines """
