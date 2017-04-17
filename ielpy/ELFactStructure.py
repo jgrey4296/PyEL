@@ -262,23 +262,24 @@ class ELComparison(ELExpandable):
         .focus!{b1}
         .value!{b2}
         """
+        logging.info("Expanding comparison: {}".format(str(self)))
         #focus:
-        if isinstance(self.b1, ELVAR):
-            focus = ELFACT(r=True).epair('focus').pair(self.b1)
-        elif isinstance(self.b1, ELFACT):
+        if isinstance(self.b1, ELFACT):
             focus = self.b1.copy().epair('focus', prepend=True)
+        else:
+            focus = ELFACT(r=True).epair('focus').pair(self.b1)
         #value:
-        if isinstance(self.b2, ELVAR):
-            value = ELFACT(r=True).epair('value').pair(self.b2)
-        elif isinstance(self.b2, ELFACT):
+        if isinstance(self.b2, ELFACT):
             value = self.b2.copy().epair('value', prepend=True)
+        else:
+            value = ELFACT(r=True).epair('value').pair(self.b2)
         #operator:
         operator = ELFACT(r=True).epair('operator').pair(self.op)
         #nearVal:
-        if self.nearVal is not None and isinstance(self.nearVal, ELVAR):
-            near = ELFACT(r=True).epair('near').pair(self.nearVal)
-        elif self.nearVal is not None and isinstance(self.nearVal, ELFACT):
+        if self.nearVal is not None and isinstance(self.nearVal, ELFACT):
             near = self.nearVal.copy().epair('near', prepend=True)
+        elif self.nearVal is not None:
+            near = ELFACT(r=True).epair('near').pair(self.nearVal)
         else:
             near = None
             
