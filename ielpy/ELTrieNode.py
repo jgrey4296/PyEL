@@ -152,10 +152,30 @@ class ELTrieNode:
             if len(current) > 0:
                 queue.extend([(x, new_path) for x in current])
             else:
-                leaves.append(ELFACT(new_path, r=True))
+                leaves.append(ELFACT(new_path, r=with_root))
 
         return leaves
 
+    def to_el_queries(self):
+        leaves = self.to_el_facts()
+        queries = [x.query() for x in leaves]
+        return queries
+
+    def to_el_comparisons(self):
+        comp_nodes = [x for x in self]
+        formatted = []
+        for node in comp_nodes:
+            operator = get_COMP_FUNC(node['operator'].child_value())
+            p1 = node['focus'].child_value()
+            p2 = node['value'].child_value()
+            if 'near' in node:
+                nearVal = node['near'].child_value()
+            else:
+                nearVal = None
+            formatted.append(( operator, p1, p2, nearVal ))
+        
+        return formatted
+    
     def to_weighted_el_facts(self):
         return []
     
