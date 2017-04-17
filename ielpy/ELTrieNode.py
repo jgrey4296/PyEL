@@ -150,7 +150,7 @@ class ELTrieNode:
     def __iter__(self):
         return iter(self.children.values())
     
-    def to_el_facts(self):
+    def to_el_facts(self, with_root=True):
         #Return leaves of this node as an array of ELStructure's
         queue = [(x,[]) for x in self]
         leaves = []
