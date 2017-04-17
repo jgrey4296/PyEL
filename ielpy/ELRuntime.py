@@ -230,30 +230,58 @@ class ELRuntime:
         else:
             parsed_target = self.parser(target)[0]
             #todo: make fact_query return the uuid of each possible leaf?
-            target_node = self.fact_query(parsed_target)
-
+            target_node = self.trie[self.fact_query(parsed_target).nodes[0]]
         if 'conditions' not in target_node:
             raise ELE.ELConsistencyException("Performing a node without conditions")
-        #Get the conditions:
+        ###########
+        #CONDITIONS:
+        ###########
         conditions = [x.query() for x in target_node['conditions'].to_el_facts()]
         #run the conditions
         for cond in conditions:
-            bound = cond.bind(selected_state)
-            query_result = self.fact_query(bound)
+            query_result = self.fact_query(cond, internal_state)
             #todo: go down state stack if conditions fail
             if bool(query_result) is not True:
                 raise ELE.ELRuntimeException("A Condition failed in the performance of a node")
             #select a binding set from the conditions
-            selected_state = choice(query_result.bindings)
+            internal_state = query_result.bindings
         
         #run and filter by comparisons
-        
-        #run modifications
-        
+        try:
+            comp_tuple = self.format_comparisons(target_node['comparisons'])
+            compared_bindings = self.filter_by_comparisons(comp_tuple, internal_state)
 
+            
+            if len(compared_bindings) == 0:
+                raise ELE.ELRuleException('No passing bindings')
+
+            #select:
+            selection = choice(compared_bindings)
+            
+            #run modifications
+
+
+            #enact actions 
+            for action in target_node['actions']:
+                if action.hasForAllBinding():
+                    bound_actions = [action.bind(selection, x) \
+                                     for x in compared_bindings]
+                    logging.debug("Bound actions: {}".format(bound_actions))
+                else:
+                    bound_actions = [action.bind(selection)]
+                    
+                for act in bound_actions:
+                    self.act(act)
+
+            return_value = ELSuccess()
+
+        except KeyError as e:
+            logging.debug('No {} found'.format(e.args[0]))
+
+        
         #return the bindings and truth value
         if return_value:
-            return (return_value, selected_state)
+            return (return_value, selection)
         else:
             return (return_value, state)
 
