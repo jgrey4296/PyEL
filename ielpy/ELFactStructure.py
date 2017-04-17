@@ -82,6 +82,9 @@ class ELFACT(ELExpandable):
             flattened = new_fact.expand()
             output.extend(flattened)
 
+        if len(term) == 0:
+            output.append(ELFACT(current))
+            
         logging.info("Result of expanded Fact: {}".format(output))
         return output
 
