@@ -47,9 +47,7 @@ class ELRuntime:
         #todo: return a {status: bool, data: [] } obj
         actResults = []
         for r in parsed_representations:
-            expanded = r.expand()
-            for x in expanded:
-                actResults.append(self.act(x))
+            actResults.append(self.act(r))
             
         if len(actResults) == 0:
             return None
@@ -217,12 +215,13 @@ class ELRuntime:
         .node.weight!n
         .node.rules...
         """
+        logging.info("Perfoming node: {}".format(target))
+        #SETUP:
+        return_value = ELFail()
         if state is None:
             state = self.top_stack()
             
         internal_state = state.copy()
-        #selected variation:
-        selected_state = choice(internal_state)
 
         if isinstance(target, ELTrieNode):
             target_node = target        
@@ -298,13 +297,19 @@ class ELRuntime:
 
     def fact_assert(self,fact): #Fact operations:
         """ Add a fact """
-        return_val = self.trie.push(fact)
-        return return_val
+        return_val = []
+        expanded = fact.expand()
+        for f in expanded:
+            return_val.append(self.trie.push(f))
+        return all(return_val)
             
     def fact_retract(self,fact):
         """ Remove a fact """
-        return_val = self.trie.pop(fact)
-        return return_val
+        return_val = []
+        expanded = fact.expand()
+        for f in expanded:
+            return_val.append(self.trie.pop(fact))
+        return all(return_val)
             
     def fact_query(self,query, bindingFrame=None):
         """ Test a fact, BE CAREFUL IT MODIFES THE TOP OF THE VAR STACK  """
