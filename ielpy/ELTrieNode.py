@@ -127,18 +127,19 @@ class ELTrieNode:
             self.elop = elop
             
     def __contains__(self, key):
-        logging.debug("TrieNode __contains__: {}".format(key))
+        result = False
         if isinstance(key, ELTrieNode):
-            return key.value in self.children
+            result = key.value in self.children
         if isinstance(key, ELPAIR):
-            if isinstance(key.value, ELVAR):
-                raise Exception('checking trie for a var doesnt make sense')
             #check the key is right, and the elop is right
             logging.debug("TrieNode: {}".format(key.value in self.children))
             logging.debug("{}".format(list(self.children.keys())))
-            return key.value in self.children
+            result = key.value in self.children
         else:
-            return key in self.children
+            result = key in self.children
+        logging.debug("TrieNode __contains__: {} --- {}".format(result, key))
+        return result
+
 
     def values(self):
         return self.children.values()
