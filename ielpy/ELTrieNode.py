@@ -33,6 +33,13 @@ class ELTrieNode:
         else:
             self.value = val
 
+    def child_value(self):
+        """ Utility to get the child value of exclusive nodes """
+        if self.elop is not EL.EX:
+            raise ELE.ELConsistencyException('Trying to get single child of a non-exclusive node')
+        return list(self.children.values())[0].value
+        
+            
     def simple_string(self):
         val = str(self.value)
         if isinstance(self.value, float):
