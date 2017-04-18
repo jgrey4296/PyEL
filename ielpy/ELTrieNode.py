@@ -33,6 +33,11 @@ class ELTrieNode:
         else:
             self.value = val
 
+    def update_value(self,value):
+        del self.parent[self]
+        self.value = value
+        self.parent[self] = self
+            
     def child_value(self):
         """ Utility to get the child value of exclusive nodes """
         if self.elop is not EL.EX:
