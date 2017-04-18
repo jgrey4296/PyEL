@@ -41,7 +41,7 @@ class ELFACT(ELExpandable):
             self.filled_bindings = ELBindingSlice()
         else:
             self.filled_bindings = ELBindingSlice(filled_bindings)
-        if r is True:
+        if r is True and (len(data) == 0 or not isinstance(data[0].value, ELROOT)):
             self.data.insert(0,ELROOT())
         for x in data:
             self.insert(x)
