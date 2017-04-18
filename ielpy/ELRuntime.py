@@ -244,93 +244,7 @@ class ELRuntime:
             return operator(val1, val2)
 
 
-
-
-
         
-    
-    def perform_node(self, target, state=None):
-        """
-        .node.next.[...],
-        .node.conditions.[]
-        .node.statemods...
-        .node.performance."blah"
-        .node.bindings.[] <- or is this implicit?
-        .node.weight!n
-        .node.rules...
-        """
-        logging.info("Perfoming node: {}".format(target))
-        #SETUP:
-        return_value = ELFail()
-        if state is None:
-            state = self.top_stack()
-            
-        internal_state = state.copy()
-
-        if isinstance(target, ELTrieNode):
-            target_node = target        
-        elif isinstance(target, uuid.UUID):
-            target_node = self.trie[target]
-        else:
-            parsed_target = self.parser(target)[0]
-            #todo: make fact_query return the uuid of each possible leaf?
-            target_node = self.trie[self.fact_query(parsed_target).nodes[0]]
-        if 'conditions' not in target_node:
-            raise ELE.ELConsistencyException("Performing a node without conditions")
-        ###########
-        #CONDITIONS:
-        ###########
-        conditions = [x.query() for x in target_node['conditions'].to_el_facts()]
-        #run the conditions
-        for cond in conditions:
-            query_result = self.fact_query(cond, internal_state)
-            #todo: go down state stack if conditions fail
-            if bool(query_result) is not True:
-                raise ELE.ELRuntimeException("A Condition failed in the performance of a node")
-            #select a binding set from the conditions
-            internal_state = query_result.bindings
-        
-        #run and filter by comparisons
-        try:
-            comp_tuple = self.format_comparisons(target_node['comparisons'])
-            compared_bindings = self.filter_by_comparisons(comp_tuple, internal_state)
-
-            
-            if len(compared_bindings) == 0:
-                raise ELE.ELRuleException('No passing bindings')
-
-            #select:
-            selection = choice(compared_bindings)
-            
-            #run modifications
-
-
-            #enact actions 
-            for action in target_node['actions']:
-                if action.hasForAllBinding():
-                    bound_actions = [action.bind(selection, x) \
-                                     for x in compared_bindings]
-                    logging.debug("Bound actions: {}".format(bound_actions))
-                else:
-                    bound_actions = [action.bind(selection)]
-                    
-                for act in bound_actions:
-                    self.act(act)
-
-            return_value = ELSuccess()
-
-        except KeyError as e:
-            logging.debug('No {} found'.format(e.args[0]))
-
-        
-        #return the bindings and truth value
-        if return_value:
-            return (return_value, selection)
-        else:
-            return (return_value, state)
-
-
-
     def act(self,action): #Action functions:
         """ Given an action (one of ELBDs action types),
         perform it
@@ -417,92 +331,25 @@ class ELRuntime:
         else:
             return ELFail()
 
-    def run_rule(self,rule):
-        """ Given a rule, check its conditions then queue its results """
-        logging.info("Running Rule: {}".format(rule))
-        return_val = ELFail()
-        try:
-            self.push_stack()
-            current_frame = self.top_stack()
-            for condition in rule.conditions:
-                result = self.fact_query(condition, current_frame)
-                if not bool(result):
-                    raise ELE.ELRuleException()
-
-            # passing_bindings :: ELBindingFrame
-            passing_bindings = current_frame.bindings
+    # def run_rule(self,rule):
+    #     if action.hasForAllBinding():
+    #         bound_actions = [action.bind(selection, x) \
+    #                          for x in compared_bindings]
+    #         logging.debug("Bound actions: {}".format(bound_actions))
+    #     else:
+    #         bound_actions = [action.bind(selection)]
             
-            #get the comparison functions, as a tuple 
-            comp_tuple = self.format_comparisons(rule)
-            compared_bindings = self.filter_by_comparisons(comp_tuple, passing_bindings)
-            
-            #if filtered the rule down to nothing
-            if len(compared_bindings) == 0:
-                raise ELE.ELRuleException()
-            
-            #select a still viable rule
-            #todo: add variability here. utility, curves, distributions,
-            #round_robins? state?
-            selection = choice(compared_bindings)
+    #     for act in bound_actions:
+    #         self.act(act)
 
-            #perform modifications to bindings (regex?)
-            
-            #todo: make the parser check for unbound variables before adding to runtime?  or should that be covered by the parser?
-            for action in rule.actions:
-
-                if action.hasForAllBinding():
-                    bound_actions = [action.bind(selection, x) \
-                                     for x in compared_bindings]
-                    logging.debug("Bound actions: {}".format(bound_actions))
-                else:
-                    bound_actions = [action.bind(selection)]
-
-                for act in bound_actions:
-                    self.act(act)
-
-            return_val = ELSuccess()
-        except ELE.ELRuleException:
-            logging.warning("ELRule Exception occurred")
-            return_val = ELFail()
-        finally:
-            #then pop the frame off
-            self.pop_stack()
-        return return_val
-
-
-    def format_comparisons(self, comparisons): #Rule Utilities:
-        #get the operator from the compariso
-        retrieved = [(comp, get_COMP_FUNC(comp.op)) for comp in rule.binding_comparisons]
-        return retrieved
-    
-
-    def filter_by_comparisons(self, comparison_tuples, potential_bindings):
-        assert isinstance(potential_bindings, ELBindingFrame)
-        compared_bindings = potential_bindings
-        for comp, func in comparison_tuples:
-            compared_bindings = ELBindingFrame([slice for slice in compared_bindings if self.run_function(slice, func, comp)])
-        ## compared_bindings :: ELBD.ELBindingFrame
-        return compared_bindings
-        
-    def run_function(self, binding, func, comparison):
-        #get values from bindings:
-        if comparison.b1.value not in binding or \
-           (isinstance(comparison.b2, ELVAR) and comparison.b2.value not in binding):
-            raise ELE.ELConsistencyException('Comparison being run without the necessary bindings')
-        val1 = comparison.b1.get_val(binding)
-        if isinstance(comparison.b2, ELVAR):
-            val2 = comparison.b2.get_val(binding)
-        else:
-            val2 = comparison.b2
-        if comparison.op == ELCOMP.NEAR:
-            if isinstance(comparison.nearVal, ELVAR):
-                nearVal = comparison.nearVal.get_val(binding)
-            else:
-                nearVal = comparison.nearVal
-
-            return func(val1, nearVal, val2)
-        else:
-            return func(val1, val2)
+    #         return_val = ELSuccess()
+    #     except ELE.ELRuleException:
+    #         logging.warning("ELRule Exception occurred")
+    #         return_val = ELFail()
+    #     finally:
+    #         #then pop the frame off
+    #         self.pop_stack()
+    #     return return_val
 
 
     #String Operations:
