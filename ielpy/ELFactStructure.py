@@ -380,7 +380,7 @@ class ELARITH_FACT(ELExpandable):
 
     def apply(self, node):
         """ An encapuslated way to perform an arithmetic action, just add a target """
-        func = get_ARITH_FUNC(self.op)
+        func = get_EL_FUNC(self.op, comp=False)
         new_value = func(node.value, self.val)
         #update the parent:
         del node.parent[node]

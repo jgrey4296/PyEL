@@ -169,11 +169,14 @@ class ELTrieNode:
         queries = [x.query() for x in leaves]
         return queries
 
-    def to_el_comparisons(self):
+    def to_el_function_formatted(self, comp=True):
+        """ Format children of the node for use in a function,
+        default to expecting comparisons. 
+        """
         comp_nodes = [x for x in self]
         formatted = []
         for node in comp_nodes:
-            operator = get_COMP_FUNC(node['operator'].child_value())
+            operator = get_EL_FUNC(node['operator'].child_value(), comp=comp)
             p1 = node['focus'].child_value()
             p2 = node['value'].child_value()
             if 'near' in node:
