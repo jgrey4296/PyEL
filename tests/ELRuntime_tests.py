@@ -319,21 +319,38 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(self.runtime('.a.b.20?'))
         self.assertTrue(self.runtime('.a.c.5?'))
 
-    
         
-    # def test_action(self):
-    #     """
-    #     .a.b.blah
-    #     .test.conditions.[ .a.b.$x? ] => (True, {x: blah})
-    #     .test.actions.[ $..x.bloo ]
-    #     .a.b.blah.bloo? => True
-    #     """
-    #     self.runtime('.a.b.blah')
-    #     self.runtime('.test.conditions.[ .a.b.$x? ]')
-    #     self.runtime('.test.actions.[ $..x.bloo ]')
-    #     self.assertFalse(self.runtime('.a.b.blah.bloo?'))
-    #     self.runtime.run_action('.test.actions')
-    #     self.assertTrue(self.runtime('.a.b.blah.bloo?'))
+    def test_action(self):
+        """
+        .a.b.blah
+        .test.conditions.[ .a.b.$x? ] => (True, {x: blah})
+        .test.actions.[ $..x.bloo ]
+        .a.b.blah.bloo? => True
+        """
+        self.runtime('.a.b.blah')
+        self.runtime('.test.conditions.[ .a.b.$x? ]')
+        self.runtime('.test.actions.[ $..x.bloo ]')
+        self.assertFalse(self.runtime('.a.b.blah.bloo?'))
+        result = self.runtime.run_conditions('.test.conditions?')
+        self.assertTrue(result)
+        self.runtime.run_actions('.test.actions?', binding=result.bindings[0])
+        self.assertTrue(self.runtime('.a.b.blah.bloo?'))
+
+    def test_condition_arith_action(self):
+        """
+        .a.b.10, .a.c.20
+        .test.conditions.[ .a.b.$x?, .a.c.$y ],
+        .test.arithmetic.[ $x + $y ],
+        .test.actions.[ .a.d.$x ]
+        """
+        self.runtime('.a.b.10, .a.c.20, .test.[ .conditions.[ .a.b.$x?, .a.c.$y? ] ]')
+        self.runtime('.test.[ .arithmetic.[ $x + $y ], .actions.[ .a.d.$x ] ]')
+        self.assertFalse(self.runtime('.a.d.30?'))
+        result = self.runtime.run_conditions('.test.conditions?')
+        binding = self.runtime.run_arithmetic('.test.arithmetic?', result.bindings[0])
+        self.runtime.run_actions('.test.actions?', binding)
+        self.assertTrue(self.runtime('.a.d.30?'))
+
         
     def test_trie_next_following(self):
         """
