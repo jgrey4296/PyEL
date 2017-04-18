@@ -138,7 +138,7 @@ class ELVAR(ELSTRUCTURE):
             focus_slice = binding_slice
         #now get the right value:
         if self.is_path_var:
-            return_val = focus_slice[self.value].node
+            return_val = focus_slice[self.value].uuid
         elif self.access_point:
             if isinstance(self.access_point, ELVAR):
                 return_val = focus_slice[self.value].value[self.access_point.get_val(binding_slice, all_sub_slice)]
