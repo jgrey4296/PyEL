@@ -66,11 +66,7 @@ class ELFACT(ELExpandable):
                 new_fact = ELFACT(current + x[1:])
             elif isinstance(x, list):
                 new_fact = ELFACT(current + x)
-            elif isinstance(x, ELARITH_FACT):
-                local_string = current.copy() + index_pair
-                local_string.append(x.expand())
-                new_fact = ELFACT(local_string)
-            elif isinstance(x, ELComparison):
+            elif isinstance(x, ELARITH_FACT) or isinstance(x, ELComparison):
                 local_string = current.copy() + index_pair
                 local_string.append(x.expand())
                 new_fact = ELFACT(local_string)
