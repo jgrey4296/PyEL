@@ -8,7 +8,7 @@ from random import random
 from test_context import ielpy
 from ielpy import ELParser
 from ielpy import ELExceptions as ELE
-from ielpy.ELCompFunctions import ELCOMP, ELARITH
+from ielpy.ELFunctions import ELCOMP, ELARITH
 from ielpy.ELActions import ELBIND
 from ielpy.ELStructure import ELVAR, ELQUERY
 from ielpy.ELFactStructure import ELFACT, ELComparison
