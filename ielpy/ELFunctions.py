@@ -5,6 +5,7 @@ import logging as root_logger
 from enum import Enum
 from math import log, exp
 from random import random
+from . import ELExceptions as ELE
 
 logging = root_logger.getLogger(__name__)
 
@@ -41,12 +42,11 @@ ARITH_FUNCS = {
     ELARITH.EXP : exp
 }
 
-def get_COMP_FUNC(op):
-    if op in COMP_FUNCS:
+def get_EL_FUNC(op, comp=True):
+    if op in COMP_FUNCS and comp:
         return COMP_FUNCS[op]
-    raise Exception('Op not found in Comp Funcs: {}'.format(op))
-
-def get_ARITH_FUNC(op):
-    if op in ARITH_FUNCS:
+    elif op in ARITH_FUNCS and not comp:
         return ARITH_FUNCS[op]
-    raise Exception('Op not found in Arith Funcs: {}'.format(op))
+    else:
+        raise ELE.ELException('Op not found: {}'.format(op))
+        
