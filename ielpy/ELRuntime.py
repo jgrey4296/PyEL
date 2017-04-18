@@ -183,7 +183,7 @@ class ELRuntime:
             binding = self.__run_arith(arith_action, binding)
         return binding
         
-    def __run_arith(self, binding, arith_action):
+    def __run_arith(self, arith_action, binding):
         operator, p1, p2, near = arith_action
         if p1.value not in binding or (isinstance(p2, ELVAR) and p2.value not in binding):
             raise ELE.ELConsistencyException('Arithmetic being run without the necessary bindings')
@@ -229,12 +229,12 @@ class ELRuntime:
         comparisons = target.to_el_function_formatted()
         
         for comparison in comparisons:
-            bindings = ELBindingFrame([slice for slice in bindings if self.__run_comparison(slice, comparison)])
+            bindings = ELBindingFrame([slice for slice in bindings if self.__run_comparison(comparison, slice)])
         
         return bindings
 
 
-    def __run_comparison(self, binding, comparison):
+    def __run_comparison(self, comparison, binding):
         operator, p1, p2, near = comparison
         if p1.value not in binding or (isinstance(p2, ELVAR) and p2.value not in binding):
             raise ELE.ELConsistencyException('Comparison being run without the necessary bindings')
