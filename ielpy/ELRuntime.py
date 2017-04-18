@@ -150,6 +150,14 @@ class ELRuntime:
         target = self.trie[queried.nodes[0]]
         return target
 
+    def next_node(self, location, binding=None):
+        if binding is None:
+            binding = self.select_binding()
+        target = self.get_location(location, ELBindingFrame([binding]))
+        potentials = [self.fact_query(x).nodes[0] for x in target['next'].to_el_queries()]
+        return choice(potentials)
+                                   
+            
     def select_binding(self, bindings=None):
         if bindings is None:
             bindings = self.top_stack()
