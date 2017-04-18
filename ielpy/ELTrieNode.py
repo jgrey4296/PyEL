@@ -43,7 +43,10 @@ class ELTrieNode:
         if self.elop is not EL.EX:
             raise ELE.ELConsistencyException('Trying to get single child of a non-exclusive node')
         return list(self.children.values())[0].value
-        
+
+    def children_values(self):
+        """ Utility to get the values of the children of a node """
+        return [x.value for x in self.children.values()]
             
     def simple_string(self):
         val = str(self.value)

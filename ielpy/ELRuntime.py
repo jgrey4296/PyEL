@@ -179,6 +179,14 @@ class ELRuntime:
         else:
             self.fact_assert(bound)
             
+    def run_output(self, location, binding=None):
+        if binding is None:
+            binding = self.select_binding()
+        target = self.get_location(location, ELBindingFrame([binding]))
+        potentials = target['output'].children_values()
+
+        return choice(potentials)
+
             
     def run_arithmetic(self, location, binding=None, bindings=None):
         logging.info("Running Arithmetic: {}".format(location))
