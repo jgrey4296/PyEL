@@ -349,22 +349,23 @@ class ELARITH_FACT(ELExpandable):
         .value!{val}
         """
         logging.info("Expanding Arith: {}".format(str(self)))
-        operator = ELFACT(r=True)
         value = ELFACT(r=True)
         #Add focus data:
-        if isinstance(self.data, ELVAR):
-            focus = ELFACT(r=True).epair('focus').pair(self.data)
-        elif isinstance(self.data, ELFACT):
+        if isinstance(self.data, ELFACT):
             focus = self.data.copy().epair('focus', prepend=True)
+        else:
+            focus = ELFACT(r=True).epair('focus').pair(self.data)
 
-        #add op data:
-        operator.epair('operator').pair(self.op)
         #add value data:
-        if isinstance(self.val, ELVAR):
-            value.epair('value').pair(self.val)
-        elif isinstance(self.val, ELFACT):
+        if isinstance(self.val, ELFACT):
             value = self.val
             value.epair('value', prepend=True)
+        else:
+            value = ELFACT(r=True).epair('value').pair(self.val)
+            
+        #add operator:
+        operator = ELFACT(r=True).epair('operator').pair(self.op)
+        
                 
         return [focus, operator, value ]
 
