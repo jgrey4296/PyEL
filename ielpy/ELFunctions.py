@@ -10,8 +10,8 @@ from . import ELExceptions as ELE
 logging = root_logger.getLogger(__name__)
 
 #Enums, moved here from base data to stop circular dependence
-ELCOMP = Enum('ELCOMP','GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL NOTEQUAL CONTAINS NOTCONTAINS NEAR')
-ELARITH = Enum('ELARITH','MINUS PLUS MUL DIV POW MOD RAND LOG EXP')
+ELCOMP = Enum('ELCOMP', 'GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL NOTEQUAL CONTAINS NOTCONTAINS NEAR')
+ELARITH = Enum('ELARITH', 'MINUS PLUS MUL DIV POW MOD RAND LOG EXP')
 
 
 #Comparison Functions:
@@ -34,9 +34,9 @@ ARITH_FUNCS = {
     ELARITH.MINUS : lambda a, b: a - b,
     ELARITH.PLUS : lambda a, b: a + b,
     ELARITH.MUL : lambda a, b: a * b,
-    ELARITH.DIV : lambda a, b : a / b,
+    ELARITH.DIV : lambda a, b: a / b,
     ELARITH.POW : pow,
-    ELARITH.MOD : lambda a, b : a % b,
+    ELARITH.MOD : lambda a, b: a % b,
     ELARITH.RAND : random,
     ELARITH.LOG : log,
     ELARITH.EXP : exp
@@ -49,4 +49,3 @@ def get_EL_FUNC(op, comp=True):
         return ARITH_FUNCS[op]
     else:
         raise ELE.ELException('Op not found: {}'.format(op))
-        

@@ -1,7 +1,7 @@
 """
 The Node Structure used in ELTrie
 """
-import uuid
+from uuid import uuid1
 from .ELUtil import EL, ELOP2STR
 from .ELStructure import ELPAIR
 from .ELFactStructure import ELFACT
@@ -19,7 +19,7 @@ class ELTrieNode:
     """
 
     def __init__(self, val, parent=None):
-        self.uuid = uuid.uuid1()
+        self.uuid = uuid1()
         #Default to Dot, update later if necessary
         #Add an int time step stack, and then index elop, value, child edges by it
         #so self.change_time_steps: [0, 4, 6, 7, 8]
@@ -33,11 +33,11 @@ class ELTrieNode:
         else:
             self.value = val
 
-    def update_value(self,value):
+    def update_value(self, value):
         del self.parent[self]
         self.value = value
         self.parent[self] = self
-            
+
     def child_value(self):
         """ Utility to get the child value of exclusive nodes """
         if self.elop is not EL.EX:
@@ -47,7 +47,7 @@ class ELTrieNode:
     def children_values(self):
         """ Utility to get the values of the children of a node """
         return [x.value for x in self.children.values()]
-            
+
     def simple_string(self):
         val = str(self.value)
         if isinstance(self.value, float):
@@ -99,6 +99,7 @@ class ELTrieNode:
             return self.value == other
 
     def __delitem__(self, key):
+        #todo: if deleting an integer, and all children are integers, adjust indices
         if isinstance(key, ELTrieNode):
             del self.children[key.value]
         elif isinstance(key, ELPAIR):
@@ -123,17 +124,17 @@ class ELTrieNode:
         if self.elop == EL.EX:
             self.children.clear()
         #now process the key val pair:
-        if isinstance(key, ELTrieNode) and isinstance(value, ELTrieNode): 
+        if isinstance(key, ELTrieNode) and isinstance(value, ELTrieNode):
             self.children[key.value] = value
             value.parent = self
         else:
             raise ELE.ELConsistencyException('Setting a TrieNode requires passing in a trie node')
 
-    def update_elop(self,elop):
+    def update_elop(self, elop):
         if self.elop is not elop:
             self.children.clear()
             self.elop = elop
-            
+
     def __contains__(self, key):
         result = False
         if isinstance(key, ELTrieNode):
@@ -157,10 +158,10 @@ class ELTrieNode:
 
     def __iter__(self):
         return iter(self.children.values())
-    
+
     def to_el_facts(self, with_root=True):
         #Return leaves of this node as an array of ELStructure's
-        queue = [(x,[]) for x in self]
+        queue = [(x, []) for x in self]
         leaves = []
         while len(queue) > 0:
             current, path = queue.pop(0)
@@ -179,7 +180,7 @@ class ELTrieNode:
 
     def to_el_function_formatted(self, comp=True):
         """ Format children of the node for use in a function,
-        default to expecting comparisons. 
+        default to expecting comparisons.
         """
         comp_nodes = [x for x in self]
         formatted = []
@@ -191,15 +192,14 @@ class ELTrieNode:
                 nearVal = node['near'].child_value()
             else:
                 nearVal = None
-            formatted.append(( operator, p1, p2, nearVal ))
-        
+            formatted.append((operator, p1, p2, nearVal))
+
         return formatted
-    
+
     def to_weighted_el_facts(self):
         return []
-    
+
     def struct_equal(self, other):
         a = set([x for x in self.children.keys()])
         b = set([x for x in other.children.keys()])
         return a.issuperset(b)
-    

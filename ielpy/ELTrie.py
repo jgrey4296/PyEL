@@ -9,7 +9,7 @@ from .ELFactStructure import ELFACT, ELPAIR, ELQUERY
 from .ELTrieNode import ELTrieNode
 from .ELResults import ELSuccess, ELFail
 from . import ELExceptions as ELE
-import uuid
+from uuid import UUID
 
 
 logging = root_logger.getLogger(__name__)
@@ -25,7 +25,7 @@ class ELTrie:
         
 
     def __getitem__(self,key):
-        if isinstance(key, uuid.UUID) and key in self.allNodes:
+        if isinstance(key, UUID) and key in self.allNodes:
             return self.allNodes[key]
         elif key in self.root:
             return self.root[key]
@@ -75,7 +75,7 @@ class ELTrie:
             for statement in el_string:
                 if isinstance(statement, ELROOT) and current is None:
                     logging.debug("Hit Root")
-                    if isinstance(statement.value, uuid.UUID) and statement.value in self.allNodes:
+                    if isinstance(statement.value, UUID) and statement.value in self.allNodes:
                         current = self.allNodes[statement.value]
                     elif statement.value is None and current is None:
                         current = self.root
@@ -109,14 +109,15 @@ class ELTrie:
         
     def pop(self,el_string):
         """ Remove an EL String from the Trie """
-        returnVal = ELFail()
         theTarget = None
-        if isinstance(el_string, ELFACT):
+        if isinstance(el_string, UUID):
+            theTarget = self.allNodes[el_string]
+        elif isinstance(el_string, ELFACT):
             searchResult = self.get(el_string)
             if searchResult:
-                theTarget = self.allNodes[searchResult.bindings[0].uuid]
+                theTarget = self.allNodes[searchResult.nodes[0]]
         elif isinstance(el_string, ELSuccess):
-            theTarget = self.allNodes[el_string.bindings[0][0]]
+            theTarget = self.allNodes[el_string.nodes[0]]
 
         if theTarget is None:
             return ELFail()

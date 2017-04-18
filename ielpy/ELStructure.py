@@ -9,10 +9,11 @@ from .ELBinding import ELBindingSlice
 ##########
 
 class ELSTRUCTURE:
+    #todo: refactor this to is_var
     def isVar(self):
         return False
 
-    
+
 class ELROOT(ELSTRUCTURE):
     """ The Representation of the Trie root """
     def __init__(self, elop=EL.DOT, var=None):
@@ -21,7 +22,7 @@ class ELROOT(ELSTRUCTURE):
 
     def __hash__(self):
         return hash("ELROOT")
-        
+
     def isVar(self):
         return self.value is not None
 
@@ -50,7 +51,7 @@ class ELQUERY(ELSTRUCTURE):
     """ A structural representation of a query, as a terminal """
     def __repr__(self):
         return "?"
-        
+
 
 class ELPAIR(ELSTRUCTURE):
     """ Internal pairs of statements of |test.|blah!|something.|
@@ -62,11 +63,11 @@ class ELPAIR(ELSTRUCTURE):
             self.elop = elop
         else:
             self.elop = EL.EX
-            
 
+    #todo: refactor names to is_arr, and is_var
     def isArr(self):
         return isinstance(self.value, list)
-    
+
     def isVar(self):
         return isinstance(self.value, ELVAR)
 
@@ -76,7 +77,7 @@ class ELPAIR(ELSTRUCTURE):
 
     def __str__(self):
         return str(self.value) + ELOP2STR(self.elop)
-    
+
     def __eq__(self, other):
         return self.elop == other.elop and self.value == other.value
 
@@ -99,13 +100,13 @@ class ELVAR(ELSTRUCTURE):
 
     def __hash__(self):
         return hash(repr(self))
-                        
+
     def __repr__(self):
         if self.access_point is None:
             return "VAR({})".format(self.value)
         else:
             return "VAR({}@{})".format(self.value, self.access_point)
-        
+
     def __str__(self):
         output = ""
         if self.scope is ELVARSCOPE.EXIS:
@@ -141,7 +142,9 @@ class ELVAR(ELSTRUCTURE):
             return_val = focus_slice[self.value].uuid
         elif self.access_point:
             if isinstance(self.access_point, ELVAR):
-                return_val = focus_slice[self.value].value[self.access_point.get_val(binding_slice, all_sub_slice)]
+                focus_array = focus_slice[self.value].value
+                index = self.access_point.get_val(binding_slice, all_sub_slice)
+                return_val = focus_array[index]
             else:
                 return_val = focus_slice[self.value].value[self.access_point]
         else:

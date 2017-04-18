@@ -29,4 +29,3 @@ class ELBIND(ELAction):
         return "{} <- {}".format(str(self.var), str(self.root))
     def copy(self):
         return ELBIND(self.var.copy(), self.root.copy())
-

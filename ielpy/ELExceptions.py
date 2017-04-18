@@ -5,7 +5,7 @@ The exception classes used for iEL
 class ELException(Exception):
     """ The Base class for all iEL exceptions """
     None
-    
+
 class ELParseException(ELException):
     """ The Exception Raised when a parse error occurs """
     None
@@ -25,7 +25,7 @@ class ELConsistencyException(ELException):
 class ELRuleException(ELException):
     """ A Failure occured in the course of running a rule """
     None
-    
+
 class ELNotImplementedException(ELException):
     """ Raised when a not-implemented feature is called """
     None

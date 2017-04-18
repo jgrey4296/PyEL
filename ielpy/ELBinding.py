@@ -33,7 +33,7 @@ class ELBindingFrame(list):
 
     def copy(self):
         return ELBindingFrame(data=self)
-            
+
 class ELBindingSlice(dict):
     """ The dictionaries of a rule possibility,
     { x : (ELBindingEntry), y: (ELBinding Entry ... }
@@ -65,4 +65,3 @@ class ELBindingEntry:
 
     def __repr__(self):
         return "ELBindEntry({}, {}, +uuid)".format(self.key, self.value)
-        

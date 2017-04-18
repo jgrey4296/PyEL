@@ -6,7 +6,7 @@ import logging as root_logger
 from uuid import UUID
 from .ELFunctions import ELCOMP, ELARITH, get_EL_FUNC
 from .ELUtil import EL, ELVARSCOPE, EL_ARITH_2_STR, EL_COMP_2_STR
-from .ELBinding import ELBindingSlice 
+from .ELBinding import ELBindingSlice
 from .ELStructure import ELSTRUCTURE, ELPAIR, ELROOT, ELVAR, ELQUERY
 from . import ELExceptions as ELE
 
@@ -14,11 +14,11 @@ logging = root_logger.getLogger(__name__)
 
 ##########
 # FACT Structure
-##########    
+##########
 class ELExpandable(ELSTRUCTURE):
     def expand(self):
         return [self]
-    
+
 class ELFACT(ELExpandable):
     """ An internal representation of an EL Fact string """
 
@@ -42,10 +42,10 @@ class ELFACT(ELExpandable):
         else:
             self.filled_bindings = ELBindingSlice(filled_bindings)
         if r is True and (len(data) == 0 or not isinstance(data[0].value, ELROOT)):
-            self.data.insert(0,ELROOT())
-        for x in data:
-            self.insert(x)
-            
+            self.data.insert(0, ELROOT())
+        for pair in data:
+            self.insert(pair)
+
 
     def expand(self):
         """ Takes a fact with a terminal array,
@@ -59,23 +59,23 @@ class ELFACT(ELExpandable):
         #Add the root fact up to the terminal
         #output.append(ELFACT(current))
         #Now expand out each element in the list
-        for i,x in enumerate(term):
+        for i, term_item in enumerate(term):
             index_pair = [ELPAIR(i)]
             if isinstance(x, ELFACT):
                 #lop off the duplicated root
-                if isinstance(x[0], ELROOT) and not x[0].isVar():
-                    new_fact = ELFACT(current + x[1:])
+                if isinstance(term_item[0], ELROOT) and not term_item[0].isVar():
+                    new_fact = ELFACT(current + term_item[1:])
                 else:
-                    new_fact = ELFACT(current + x[:])
-            elif isinstance(x, list):
-                new_fact = ELFACT(current + x)
-            elif isinstance(x, ELARITH_FACT) or isinstance(x, ELComparison):
+                    new_fact = ELFACT(current + term_item[:])
+            elif isinstance(term_item, list):
+                new_fact = ELFACT(current + term_item)
+            elif isinstance(term_item, ELARITH_FACT) or isinstance(term_item, ELComparison):
                 local_string = current.copy() + index_pair
-                local_string.append(x.expand())
+                local_string.append(term_item.expand())
                 new_fact = ELFACT(local_string)
             else:
                 new_fact = ELFACT(current)
-                new_fact.pair(x)
+                new_fact.pair(term_item)
 
             #recurse down, extending as necessary:
             flattened = new_fact.expand()
@@ -83,12 +83,12 @@ class ELFACT(ELExpandable):
 
         if len(term) == 0:
             output.append(ELFACT(current))
-            
+
         logging.info("Result of expanded Fact: {}".format(output))
         return output
 
-            
-    def hasForAllBinding(self):
+
+    def has_forall_binding(self):
         """ Return true if any binding is a forall binding """
         #todo: this doesn't account for forall variables that are array accessors
         allforalls = [x.scope is ELVARSCOPE.FORALL for x in self.bindings]
@@ -105,19 +105,19 @@ class ELFACT(ELExpandable):
 
         new_string = []
         new_pair = None
-        for x in self.data:
-            if not x.isVar():
-                new_pair = x
-            elif isinstance(x, ELPAIR) and x.value.value in binding_slice:
+        for pair in self.data:
+            if not pair.isVar():
+                new_pair = pair
+            elif isinstance(pair, ELPAIR) and pair.value.value in binding_slice:
                 #ELPair.value :: ELVar
-                new_pair = ELPAIR(x.value.get_val(binding_slice, all_sub_slice), \
-                                  x.elop)
-            elif isinstance(x, ELROOT) and x.isVar() and x.value.value in binding_slice:
+                new_pair = ELPAIR(pair.value.get_val(binding_slice, all_sub_slice), \
+                                  pair.elop)
+            elif isinstance(pair, ELROOT) and pair.isVar() and pair.value.value in binding_slice:
                 #ELRoot.value :: ELVAR
-                new_pair = ELROOT(elop=x.elop, \
-                                  var=x.value.get_val(binding_slice, all_sub_slice))
-            elif x.isVar() and x.value.value not in binding_slice:
-                new_pair = x.copy()
+                new_pair = ELROOT(elop=pair.elop, \
+                                  var=pair.value.get_val(binding_slice, all_sub_slice))
+            elif pair.isVar() and pair.value.value not in binding_slice:
+                new_pair = pair.copy()
             new_string.append(new_pair)
         updated_bindings = self.filled_bindings.copy()
 
@@ -133,11 +133,11 @@ class ELFACT(ELExpandable):
         return new_fact
 
     def copy(self):
-        dataCopy = [x.copy() for x in self.data if x is not None]
-        bindingsCopy = self.bindings.copy()
+        data_copy = [x.copy() for x in self.data if x is not None]
+        bindings_copy = self.bindings.copy()
         filled_bindings_copy = self.filled_bindings.copy()
-        return ELFACT(dataCopy,
-                      bindings=bindingsCopy,
+        return ELFACT(data_copy,
+                      bindings=bindings_copy,
                       negated=self.negated,
                       filled_bindings=filled_bindings_copy)
 
@@ -151,7 +151,7 @@ class ELFACT(ELExpandable):
 
     def __repr__(self):
         strings = [repr(x) for x in self.data]
-        
+
         joined_strings = "".join(strings)
         if self.negated:
             return "| ~{} |".format(joined_strings)
@@ -193,7 +193,7 @@ class ELFACT(ELExpandable):
         """ Utility for easy construction of a fact """
         if isinstance(statement, ELPAIR) and isinstance(statement.value, ELROOT):
             statement = statement.value
-        
+
         if not prepend:
             self.data.append(statement)
         elif isinstance(self.data[0], ELROOT):
@@ -211,12 +211,12 @@ class ELFACT(ELExpandable):
                 self.bindings.append(statement.access_point)
         return self
 
-    
+
     def query(self):
         copy = self.copy()
         copy.insert(ELQUERY())
         return copy
-    
+
     def var(self, *args, prepend=False):
         """ Utility for easy construction of a variable """
         var = ELVAR(*args)
@@ -254,13 +254,15 @@ class ELComparison(ELExpandable):
     def __init__(self, b1, op, b2):
         self.op = op[0]
         #only used for ~= operator
+        #TODO: refactor this to be p3
         self.nearVal = op[1]
         #VARS:
+        #todo: make these 'params'
         self.b1 = b1
         self.b2 = b2
 
     def expand(self):
-        """ Convert the IR representation of the comparison to a 
+        """ Convert the IR representation of the comparison to a
         true Trie representation in the form:
         .operator!{op}
         .near!{nearVal}
@@ -273,16 +275,16 @@ class ELComparison(ELExpandable):
             focus = self.b1.copy().epair('focus', prepend=True)
         else:
             focus = ELFACT(r=True).epair('focus').pair(self.b1)
-            
+
         #value:
         if isinstance(self.b2, ELFACT):
             value = self.b2.copy().epair('value', prepend=True)
         else:
             value = ELFACT(r=True).epair('value').pair(self.b2)
-            
+
         #operator:
         operator = ELFACT(r=True).epair('operator').pair(self.op)
-        
+
         #nearVal:
         if self.nearVal is not None and isinstance(self.nearVal, ELFACT):
             near = self.nearVal.copy().epair('near', prepend=True)
@@ -290,13 +292,13 @@ class ELComparison(ELExpandable):
             near = ELFACT(r=True).epair('near').pair(self.nearVal)
         else:
             near = None
-            
+
         if near is not None:
             return [focus, value, operator, near]
         else:
             return [focus, value, operator]
-        
-        
+
+
     def __repr__(self):
         if self.nearVal is None:
             return "({} {} {})".format(self.b1, EL_COMP_2_STR(self.op), self.b2)
@@ -348,7 +350,8 @@ class ELARITH_FACT(ELExpandable):
             self.bindings.append(val)
 
         #retrieve sub vars
-        self.bindings.extend([x.access_point for x in self.bindings if isinstance(x.access_point, ELVAR)])
+        extension = [x.access_point for x in self.bindings if isinstance(x.access_point, ELVAR)]
+        self.bindings.extend(extension)
 
     def expand(self):
         """ Take the IR representation of an arithmetic fact,
@@ -371,14 +374,13 @@ class ELARITH_FACT(ELExpandable):
             value.epair('value', prepend=True)
         else:
             value = ELFACT(r=True).epair('value').pair(self.val)
-            
+
         #add operator:
         operator = ELFACT(r=True).epair('operator').pair(self.op)
-        
-                
-        return [focus, operator, value ]
 
-        
+        return [focus, operator, value]
+
+
     def hasForAllBinding(self):
         """ If one of the bindings is scoped to forall, return true """
         forallbindings = [x.scope is ELVARSCOPE.FORALL for x in self.bindings]
@@ -424,5 +426,3 @@ class ELARITH_FACT(ELExpandable):
 
     def copy(self):
         return ELARITH_FACT(self.data.copy(), self.op, self.val.copy())
-
-    

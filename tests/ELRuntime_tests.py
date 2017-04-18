@@ -366,9 +366,6 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime('.a.b.[ .output.[ "First Test", "Second Test", "Third Test" ]]')
         output = self.runtime.run_output('.a.b?')
         self.assertIn(output,["First Test", "Second Test", "Third Test"])
-
-    
-
         
     def test_trie_next_following(self):
         """
@@ -381,14 +378,20 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime('.second.[ .next.fourth, .output."bloo" ]')
         self.runtime('.third.[ .next.fourth, .output."awef" ]')
         self.runtime('.fourth.output.finished')
-        next = self.runtime.next_node('.first?')
+        next_node = self.runtime.next_node('.first?')
         second = self.runtime('.second?').nodes[0]
         third = self.runtime('.third?').nodes[0]
         fourth = self.runtime('.fourth?').nodes[0]
-        self.assertIn(next, [second, third])
-        final = self.runtime.next_node(next)
+        self.assertIn(next_node, [second, third])
+        final = self.runtime.next_node(next_node)
         self.assertEqual(final, fourth)
 
+
+
+    #todo: test forall binding actions
+    #todo: string interpolation, selection based on a variable,
+    #todo: weighting based on a variable
+    
     def test_trie_weighted_next_following(self):
         """
         .first.[ .next.[ .0d6.second, .0d4.third ], .output."blah" ],
@@ -397,8 +400,6 @@ class ELRuntime_Tests(unittest.TestCase):
         """
         None
 
-    #todo: string interpolation, selection based on a variable,
-    #weighting based on a variable
     
     def test_global_binding(self):
         """

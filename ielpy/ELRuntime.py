@@ -339,7 +339,7 @@ class ELRuntime:
         current_frame = bindingFrame
         if len(current_frame) == 0:
             logging.debug("Nothing in the current frame")
-            return (False, None)
+            return ELFail()
         #fill in any variables from the current bindings
         bound_queries = [query.bind(slice) for slice in current_frame]
         logging.debug('Bound: {}'.format(bound_queries))
@@ -362,7 +362,7 @@ class ELRuntime:
         else:
             return ELFail()
 
-    # def run_rule(self,rule):
+
     #     if action.hasForAllBinding():
     #         bound_actions = [action.bind(selection, x) \
     #                          for x in compared_bindings]
@@ -370,19 +370,6 @@ class ELRuntime:
     #     else:
     #         bound_actions = [action.bind(selection)]
             
-    #     for act in bound_actions:
-    #         self.act(act)
-
-    #         return_val = ELSuccess()
-    #     except ELE.ELRuleException:
-    #         logging.warning("ELRule Exception occurred")
-    #         return_val = ELFail()
-    #     finally:
-    #         #then pop the frame off
-    #         self.pop_stack()
-    #     return return_val
-
-
     #String Operations:
     def format_string(self,raw_string, bindings):
         """ Given a format_string, use defined variables in the runtime
