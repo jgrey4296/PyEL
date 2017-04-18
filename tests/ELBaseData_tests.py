@@ -115,7 +115,7 @@ class ELBaseData_Tests(unittest.TestCase):
         
 if __name__ == "__main__":
     LOGLEVEL = root_logger.DEBUG
-    LOG_FILE_NAME = "ELBaseData_tests.log"
+    LOG_FILE_NAME = "test_ELBaseData.log"
     root_logger.basicConfig(filename=LOG_FILE_NAME, level=LOGLEVEL, filemode='w')
     console = root_logger.StreamHandler()
     console.setLevel(root_logger.INFO)

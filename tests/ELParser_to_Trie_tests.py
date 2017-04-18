@@ -187,7 +187,7 @@ class ELParser_to_Trie_tests(unittest.TestCase):
 
 if __name__ == "__main__":
     LOGLEVEL = root_logger.DEBUG
-    LOG_FILE_NAME = "ELParser_Trie_tests.log"
+    LOG_FILE_NAME = "test_ELParser_Trie.log"
     root_logger.basicConfig(filename=LOG_FILE_NAME, level=LOGLEVEL, filemode='w')
     console = root_logger.StreamHandler()
     console.setLevel(root_logger.WARNING)
