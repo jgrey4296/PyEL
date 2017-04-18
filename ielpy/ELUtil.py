@@ -2,7 +2,7 @@
 Utilities for ielpy
 """
 from enum import Enum
-from .ELCompFunctions import ELCOMP, ELARITH
+from .ELFunctions import ELCOMP, ELARITH
 from . import ELExceptions as ELE
 
 ##############################

@@ -4,7 +4,7 @@ The ways ELStructure components can be assembled into facts
 import IPython
 import logging as root_logger
 from uuid import UUID
-from .ELCompFunctions import ELCOMP, ELARITH, get_ARITH_FUNC
+from .ELFunctions import ELCOMP, ELARITH, get_EL_FUNC
 from .ELUtil import EL, ELVARSCOPE, EL_ARITH_2_STR, EL_COMP_2_STR
 from .ELBinding import ELBindingSlice 
 from .ELStructure import ELSTRUCTURE, ELPAIR, ELROOT, ELVAR, ELQUERY

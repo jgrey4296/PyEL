@@ -18,7 +18,7 @@ from fractions import Fraction
 import re
 from . import ELExceptions as ELE
 from .ELUtil import ELCOMP_lookup, ELARITH_lookup, EL, ELVARSCOPE
-from .ELCompFunctions import ELCOMP
+from .ELFunctions import ELCOMP
 from .ELStructure import ELVAR, ELPAIR
 from .ELFactStructure import ELFACT, ELARITH_FACT, ELROOT, ELComparison
 from .ELActions import ELBIND

@@ -18,10 +18,9 @@ from .ELResults import ELFail, ELSuccess
 from .ELActions import ELBIND
 from .ELStructure import ELQUERY, ELVAR
 from .ELFactStructure import ELFACT, ELARITH_FACT
-from .ELCompFunctions import COMP_FUNCS
+from .ELFunctions import COMP_FUNCS, get_EL_FUNC
 from . import ELParser, ELTrie
 from . import ELExceptions as ELE
-from .ELCompFunctions import get_COMP_FUNC, get_ARITH_FUNC
 
 
 class ELRuntime:

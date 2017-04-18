@@ -3,9 +3,9 @@ The Node Structure used in ELTrie
 """
 import uuid
 from .ELUtil import EL, ELOP2STR
-from .ELStructure import ELPAIR, ELVAR
+from .ELStructure import ELPAIR
 from .ELFactStructure import ELFACT
-from .ELCompFunctions import get_COMP_FUNC
+from .ELFunctions import get_EL_FUNC
 from . import ELExceptions as ELE
 import logging as root_logger
 
