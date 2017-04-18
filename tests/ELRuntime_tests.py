@@ -351,6 +351,24 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_actions('.test.actions?', binding)
         self.assertTrue(self.runtime('.a.d.30?'))
 
+    def test_node_output(self):
+        """
+        .a.b.[ .output."Test output" ]
+        """
+        self.runtime('.a.b.[ .output."Test output" ]')
+        output = self.runtime.run_output('.a.b?')
+        self.assertEqual(output, "Test output")
+
+    def test_node_output_from_options(self):
+        """
+        .a.b.[ .output.[ "First Test", "Second Test", "Third Test" ]]
+        """
+        self.runtime('.a.b.[ .output.[ "First Test", "Second Test", "Third Test" ]]')
+        output = self.runtime.run_output('.a.b?')
+        self.assertIn(output,["First Test", "Second Test", "Third Test"])
+
+    
+
         
     def test_trie_next_following(self):
         """
@@ -359,7 +377,17 @@ class ELRuntime_Tests(unittest.TestCase):
         .third.[ .next.[ .fourth ], .output."awef" ],
         .forth.[ .next.[], .output."finished" ]
         """
-        None
+        self.runtime('.first.[ .next.[ .second, .third ], .output."blah"]')
+        self.runtime('.second.[ .next.fourth, .output."bloo" ]')
+        self.runtime('.third.[ .next.fourth, .output."awef" ]')
+        self.runtime('.fourth.output.finished')
+        next = self.runtime.next_node('.first?')
+        second = self.runtime('.second?').nodes[0]
+        third = self.runtime('.third?').nodes[0]
+        fourth = self.runtime('.fourth?').nodes[0]
+        self.assertIn(next, [second, third])
+        final = self.runtime.next_node(next)
+        self.assertEqual(final, fourth)
 
     def test_trie_weighted_next_following(self):
         """
