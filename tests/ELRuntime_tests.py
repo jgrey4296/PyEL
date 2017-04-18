@@ -284,6 +284,22 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_arithmetic('.test.arithmetic?', binding=result.bindings[0])
         self.assertTrue(self.runtime('.a.b.20?'))
 
+    def test_arith_in_place(self):
+        """
+        .a.b.10
+        .test.conditions.[ .a.b.$x? ]
+        .test.arithmetic.[ $x * 10 ]
+        .a.b.10?
+        """
+        self.runtime('.a.b.10, .test.[ .conditions.[ .a.b.$x? ], .arithmetic.[ $x * 10 ] ]')
+        result = self.runtime.run_conditions('.test.conditions?')
+        self.assertTrue(result)
+        self.assertEqual(len(result), 1)
+        self.assertTrue(self.runtime('.a.b.10?'))
+        self.runtime.run_arithmetic('.test.arithmetic?', binding=result.bindings[0])
+        self.assertTrue(self.runtime('.a.b.10?'))
+
+        
     def test_arith_chain(self):
         """
         .a.b.10, .a.c.5,
@@ -304,9 +320,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(self.runtime('.a.b.20?'))
         self.assertTrue(self.runtime('.a.c.5?'))
 
-        
-        
-    #todo: Arithmetic: $..x + 20 mods the node, $x + 20 mods the binding
+    
         
     # def test_action(self):
     #     """
