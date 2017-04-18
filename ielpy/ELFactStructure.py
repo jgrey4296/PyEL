@@ -191,6 +191,9 @@ class ELFACT(ELExpandable):
 
     def insert(self, statement, prepend=False):
         """ Utility for easy construction of a fact """
+        if isinstance(statement, ELPAIR) and isinstance(statement.value, ELROOT):
+            statement = statement.value
+        
         if not prepend:
             self.data.append(statement)
         elif isinstance(self.data[0], ELROOT):
