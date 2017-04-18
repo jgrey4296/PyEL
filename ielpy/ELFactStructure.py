@@ -267,13 +267,16 @@ class ELComparison(ELExpandable):
             focus = self.b1.copy().epair('focus', prepend=True)
         else:
             focus = ELFACT(r=True).epair('focus').pair(self.b1)
+            
         #value:
         if isinstance(self.b2, ELFACT):
             value = self.b2.copy().epair('value', prepend=True)
         else:
             value = ELFACT(r=True).epair('value').pair(self.b2)
+            
         #operator:
         operator = ELFACT(r=True).epair('operator').pair(self.op)
+        
         #nearVal:
         if self.nearVal is not None and isinstance(self.nearVal, ELFACT):
             near = self.nearVal.copy().epair('near', prepend=True)
