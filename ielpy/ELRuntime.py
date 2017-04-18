@@ -154,7 +154,24 @@ class ELRuntime:
         if bindings is None:
             bindings = self.top_stack()
         return choice(bindings)
-    
+
+    def run_actions(self, location, binding=None, bindings=None):
+        logging.info("Running Actions: {}".format(location))
+        if binding is None:
+            binding = self.select_binding(bindings)
+        target = self.get_location(location, ELBindingFrame([binding]))
+        actions = target.to_el_facts()
+        for action in actions:
+            self.__run_action(action, binding)
+
+    def __run_action(self, action, binding):
+        bound = action.bind(binding)
+        if bound.negated:
+            self.fact_retract(bound)
+        else:
+            self.fact_assert(bound)
+            
+            
     def run_arithmetic(self, location, binding=None, bindings=None):
         logging.info("Running Arithmetic: {}".format(location))
         if binding is None:
