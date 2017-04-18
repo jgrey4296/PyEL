@@ -267,21 +267,47 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertEqual(len(passing_bindings), 2)
 
         
-    # def test_arith_action(self):
-    #     """
-    #     .a.b.10,
-    #     .test.conditions.[ .a.b.$x ],
-    #     .test.arithmetic.[ $..x + 10 ],
-    #     .a.b.20? => True
-    #     """
-    #     self.runtime('.a.b.10')
-    #     self.runtime('.test.conditions.[ .a.b.$x ]')
-    #     self.runtime('.test.arithmetic.[ $..x + 10 ]')
-    #     self.assertFalse(self.runtime('.a.b.20?'))
-    #     self.runtime.run_arithmetic('.test.arithmetic')
-    #     self.assertTrue(self.runtime('.a.b.20?'))
-        
+    def test_arith_action(self):
+        """
+        .a.b.10,
+        .test.conditions.[ .a.b.$x ],
+        .test.arithmetic.[ $..x + 10 ],
+        .a.b.20? => True
+        """
+        self.runtime('.a.b.10')
+        self.runtime('.test.conditions.[ .a.b.$x ]')
+        self.runtime('.test.arithmetic.[ $..x + 10 ]')
+        result = self.runtime.run_conditions('.test.conditions?')
+        self.assertTrue(result)
+        self.assertEqual(len(result), 1)
+        self.assertFalse(self.runtime('.a.b.20?'))
+        self.runtime.run_arithmetic('.test.arithmetic?', binding=result.bindings[0])
+        self.assertTrue(self.runtime('.a.b.20?'))
 
+    def test_arith_chain(self):
+        """
+        .a.b.10, .a.c.5,
+        .test.conditions.[ .a.b.$x?, .a.c.$y? ],
+        .test.arithmetic.[ $y + 5, $..x + $y ]
+        .a.b.20?
+        .a.c.5?        
+        """
+        self.runtime('.a.b.10, .a.c.5')
+        self.runtime('.test.conditions.[ .a.b.$x?, .a.c.$y? ]')
+        self.runtime('.test.arithmetic.[ $y + 5, $..x + $y ]')
+        result = self.runtime.run_conditions('.test.conditions?')
+        self.assertTrue(result)
+        self.assertEqual(len(result), 1)
+        self.assertFalse(self.runtime('.a.b.20?'))
+        self.assertTrue(self.runtime('.a.c.5?'))
+        self.runtime.run_arithmetic('.test.arithmetic?', binding=result.bindings[0])
+        self.assertTrue(self.runtime('.a.b.20?'))
+        self.assertTrue(self.runtime('.a.c.5?'))
+
+        
+        
+    #todo: Arithmetic: $..x + 20 mods the node, $x + 20 mods the binding
+        
     # def test_action(self):
     #     """
     #     .a.b.blah
@@ -296,28 +322,26 @@ class ELRuntime_Tests(unittest.TestCase):
     #     self.runtime.run_action('.test.actions')
     #     self.assertTrue(self.runtime('.a.b.blah.bloo?'))
         
+    def test_trie_next_following(self):
+        """
+        .first.[ .next.[ .second, .third ], .output."blah" ],
+        .second.[ .next.[ .fourth ], .output."bloo" ],
+        .third.[ .next.[ .fourth ], .output."awef" ],
+        .forth.[ .next.[], .output."finished" ]
+        """
+        None
 
-    # def test_condition_evaluation(self):
-    #     fact_string = """ 
-    #     .a.b.c, .d.e!blah,
-    #     .a.test.[
-    #     	.conditions.[
-    #     		.a.b.c?,
-    #     		.d.e!$f?
-    #     	],
-    #     	.actions.[
-    #     		$..f.bloo
-    #     	]
-    #     ]
-    #     """
-    #     # root_logger.disable(root_logger.NOTSET)
-    #     # self.runtime(fact_string)
-    #     # self.assertTrue(self.runtime(".d.e!blah"))
-    #     # self.assertFalse(self.runtime(".d.e!blah.bloo?"))
-    #     # self.assertTrue(self.runtime.perform_node(".a.test?"))
-    #     # self.assertTrue(self.runtime(".d.e!blah.bloo?"))
-    #     # root_logger.disable(root_logger.CRITICAL)
-        
+    def test_trie_weighted_next_following(self):
+        """
+        .first.[ .next.[ .0d6.second, .0d4.third ], .output."blah" ],
+        .second.[ .output."bloo" ],
+        .third.[ .output."blee" ]
+        """
+        None
+
+    #todo: string interpolation, selection based on a variable,
+    #weighting based on a variable
+    
     def test_global_binding(self):
         """
         $x <- .a.b.c
