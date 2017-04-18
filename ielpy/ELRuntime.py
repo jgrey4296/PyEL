@@ -180,8 +180,8 @@ class ELRuntime:
         actions = target.to_el_function_formatted(comp=False)
         #todo: verify bindings
         for arith_action in actions:
-            binding = self.__run_arith(binding, arith_action)
-
+            binding = self.__run_arith(arith_action, binding)
+        return binding
         
     def __run_arith(self, binding, arith_action):
         operator, p1, p2, near = arith_action
