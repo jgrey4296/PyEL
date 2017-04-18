@@ -298,7 +298,6 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(self.runtime('.a.b.10?'))
         self.runtime.run_arithmetic('.test.arithmetic?', binding=result.bindings[0])
         self.assertTrue(self.runtime('.a.b.10?'))
-
         
     def test_arith_chain(self):
         """

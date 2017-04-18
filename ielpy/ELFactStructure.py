@@ -50,7 +50,7 @@ class ELFACT(ELExpandable):
     def expand(self):
         """ Takes a fact with a terminal array,
         and converts it into a list of facts """
-        logging.info("Expanding Fact")
+        logging.info("Expanding Fact: {}".format(self))
         current = self[0:-1]
         term = self[-1]
         if not isinstance(term, list):

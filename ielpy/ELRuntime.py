@@ -205,8 +205,6 @@ class ELRuntime:
             node.update_value(result)
         binding[p1.value].value = result
         return binding
-        
-            
     
     def run_conditions(self, location, bindings=None):
         logging.info("Running Conditions: {}".format(location))
