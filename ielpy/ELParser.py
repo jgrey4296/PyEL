@@ -232,7 +232,7 @@ REGEX_ACTION = (FACT | NON_PATH_VAR) + pp.Group(REGEX_OP + (NON_PATH_VAR | REGEX
 
 #TODO: EL_ARRAY -> SEQUENCE
 #a basic array of values in EL: [ e1, e2 ... en ]
-EL_ARRAY = array_template(CONDITION | FACT | EL_COMPARISON | ARITH_FACT | REGEX_ACTION | ELEMENT)
+EL_ARRAY = array_template(CONDITION | FACT | (EL_COMPARISON ^ ARITH_FACT) | REGEX_ACTION | ELEMENT)
 
 #TODO:Other Actions? Stack/Queue/sample_from?
 #TODO: add a negated path var fact special case.
