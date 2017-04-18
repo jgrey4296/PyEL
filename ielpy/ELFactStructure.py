@@ -63,7 +63,10 @@ class ELFACT(ELExpandable):
             index_pair = [ELPAIR(i)]
             if isinstance(x, ELFACT):
                 #lop off the duplicated root
-                new_fact = ELFACT(current + x[1:])
+                if isinstance(x[0], ELROOT) and not x[0].isVar():
+                    new_fact = ELFACT(current + x[1:])
+                else:
+                    new_fact = ELFACT(current + x[:])
             elif isinstance(x, list):
                 new_fact = ELFACT(current + x)
             elif isinstance(x, ELARITH_FACT) or isinstance(x, ELComparison):
