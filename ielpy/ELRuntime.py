@@ -209,26 +209,30 @@ class ELRuntime:
     def run_comparisons(self, location, bindings):
         target = self.get_location(location, bindings=bindings)
         #comparisons :: ( operator, p1, p2, near)
-        comparisons = target.to_el_comparisons()
+        comparisons = target.to_el_function_formatted()
         
         for comparison in comparisons:
-            bindings = ELBindingFrame([slice for slice in bindings if self.run_comparison(slice, comparison)])
+            bindings = ELBindingFrame([slice for slice in bindings if self.__run_comparison(slice, comparison)])
         
-
         return bindings
 
 
-    def run_comparison(self, binding, comparison):
+    def __run_comparison(self, binding, comparison):
         operator, p1, p2, near = comparison
-        #get values from bindings:
         if p1.value not in binding or (isinstance(p2, ELVAR) and p2.value not in binding):
             raise ELE.ELConsistencyException('Comparison being run without the necessary bindings')
-        
-        val1 = p1.get_val(binding)
+
+        if p1.is_path_var:
+            node = p1.get_val(binding)
+            val1 = self.trie[node]
+        else:
+            val1 = p1.get_val(binding)
+            
         if isinstance(p2, ELVAR):
             val2 = p2.get_val(binding)
         else:
             val2 = p2
+            
         if operator == COMP_FUNCS[ELCOMP.NEAR]:
             if isinstance(near, ELVAR):
                 nearVal = near.get_val(binding)
