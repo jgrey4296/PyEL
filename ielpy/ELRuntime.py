@@ -150,6 +150,47 @@ class ELRuntime:
         target = self.trie[queried.nodes[0]]
         return target
 
+    def select_binding(self, bindings=None):
+        if bindings is None:
+            bindings = self.top_stack()
+        return choice(bindings)
+    
+    def run_arithmetic(self, location, binding=None, bindings=None):
+        logging.info("Running Arithmetic: {}".format(location))
+        if binding is None:
+            binding = self.select_binding(bindings)
+        target = self.get_location(location, ELBindingFrame([binding]))
+        actions = target.to_el_function_formatted(comp=False)
+        #todo: verify bindings
+        for arith_action in actions:
+            binding = self.__run_arith(binding, arith_action)
+
+        
+    def __run_arith(self, binding, arith_action):
+        operator, p1, p2, near = arith_action
+        if p1.value not in binding or (isinstance(p2, ELVAR) and p2.value not in binding):
+            raise ELE.ELConsistencyException('Arithmetic being run without the necessary bindings')
+
+        if p1.is_path_var:
+            node = self.trie[p1.get_val(binding)]
+            val1 = node.value
+        else:
+            val1 = p1.get_val(binding)
+            
+        if isinstance(p2, ELVAR):
+            val2 = p2.get_val(binding)
+        else:
+            val2 = p2
+
+        result = operator(val1, val2)
+
+        if p1.is_path_var:
+            node.update_value(result)
+        binding[p1.value].value = result
+        return binding
+        
+            
+    
     def run_conditions(self, location, bindings=None):
         logging.info("Running Conditions: {}".format(location))
         if bindings is None:
