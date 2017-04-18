@@ -61,7 +61,7 @@ class ELFACT(ELExpandable):
         #Now expand out each element in the list
         for i, term_item in enumerate(term):
             index_pair = [ELPAIR(i)]
-            if isinstance(x, ELFACT):
+            if isinstance(term_item, ELFACT):
                 #lop off the duplicated root
                 if isinstance(term_item[0], ELROOT) and not term_item[0].isVar():
                     new_fact = ELFACT(current + term_item[1:])
@@ -122,7 +122,7 @@ class ELFACT(ELExpandable):
         updated_bindings = self.filled_bindings.copy()
 
         #todo: this has the ability to clobber bindings
-        if self.hasForAllBinding():
+        if self.has_forall_binding():
             updated_bindings.update(all_sub_slice)
         updated_bindings.update(binding_slice)
         new_fact = ELFACT(new_string,
@@ -381,7 +381,7 @@ class ELARITH_FACT(ELExpandable):
         return [focus, operator, value]
 
 
-    def hasForAllBinding(self):
+    def has_forall_binding(self):
         """ If one of the bindings is scoped to forall, return true """
         forallbindings = [x.scope is ELVARSCOPE.FORALL for x in self.bindings]
         return any(forallbindings)
