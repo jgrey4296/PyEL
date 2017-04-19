@@ -387,6 +387,55 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertEqual(final, fourth)
 
 
+    def test_binding_less_actions(self):
+        """
+        .a.b.c,
+        .actions.[ ~.a.b.c, .a.b.d ]
+        ~.a.b.c?
+        .a.b.d?
+        """
+        self.runtime('.a.b.c')
+        self.runtime('.actions.[ ~.a.b.c, .a.b.d ]')
+        self.assertFalse(self.runtime('.a.b.d?'))
+        self.assertFalse(self.runtime('~.a.b.c?'))
+        self.runtime.run_actions('.actions?')
+        self.assertTrue(self.runtime('~.a.b.c?, .a.b.d?'))
+        
+    def test_string_interpolation(self):
+        """
+        .name.first.Henry
+        .name.second.Thornwood
+        .conditions.[ .name.first.$x?, .name.second.$y? ],
+        .actions.[ .output."His name was $x Maurice $y" ]
+        .output."His name was Henry Maurice Thornwood"?
+        """
+        self.runtime('.name.first.Henry, .name.second.Thornwood')
+        self.runtime('.node.conditions.[ .name.first.$x?, .name.second.$y?]')
+        self.runtime('.node.output.[ "His name was {x} Maurice {y}"]')
+        result = self.runtime.run_conditions('.node.conditions?')
+        output = self.runtime.run_output('.node?', result.bindings[0])
+        self.assertEqual(output, "His name was Henry Maurice Thornwood")
+
+                
+    def test_forall_binding_action(self):
+        """
+        .a.b.10, .a.c.20, .a.d.2,
+        .test.conditions.[ .a.$x.$y? ] ],
+        .test.actions.[ @..x.@y + 5 ],
+        .a.b.15?
+        .a.c.25?
+        .a.d.7?
+        """
+        # self.runtime('.a.b.10, .a.c.20, .a.d.2')
+        # self.runtime('.test.conditions.[ .a.$x.$y? ]')
+        # self.runtime('.test.actions.[ @..y + 5 ]')
+        # result = self.runtime.run_conditions('.test.conditions?')
+        # self.assertTrue(result)
+        # self.assertEqual(len(result), 3)
+        # self.assertFalse(any(self.runtime('.a.b.15?, .a.c.25?, .a.d.7?')))
+        # self.runtime.run_actions('.test.conditions?', result.bindings)
+        # self.assertTrue(all(self.runtime('.a.b.15?, .a.c.25?, .a.d.7?')))
+        None
 
     #todo: test forall binding actions
     #todo: string interpolation, selection based on a variable,
