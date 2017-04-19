@@ -53,6 +53,13 @@ class ELBindingSlice(dict):
     def copy(self):
         return ELBindingSlice(self)
 
+    def to_simple_dict(self):
+        """
+        utility to turn a binding slice into a normal dictionary,
+        to allow a string to be format_map'd 
+        """
+        return {x.key: x.value for x in self.values()}
+    
 
 class ELBindingEntry:
     """ Contains a single data point, $x = 5.
