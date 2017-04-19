@@ -185,10 +185,21 @@ class ELRuntime:
             binding = self.select_binding()
         target = self.get_location(location, ELBindingFrame([binding]))[0]
         potentials = target['output'].children_values()
+        chosen = choice(potentials)
+        #bind variables in the string:
+        interpolated = self.interpolate_string(chosen, binding)
+        return interpolated
 
-        return choice(potentials)
+    def interpolate_string(self, string, binding):
+        try:
+            return string.format_map(binding.to_simple_dict())
+        except KeyError as e:
+            logging.warning("Interpolating String: {}".format(string))
+            logging.warning("No Key Found in binding: {}".format(binding))
+            logging.warning("Missing Key: {}".format(e.args[0]))
+            return string
 
-            
+    
     def run_arithmetic(self, location, binding=None, bindings=None):
         logging.info("Running Arithmetic: {}".format(location))
         if binding is None:
