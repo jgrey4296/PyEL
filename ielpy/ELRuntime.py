@@ -133,13 +133,13 @@ class ELRuntime:
 
         self.pop_stack()
         return output
-
+    
     def get_location(self,location, bindings=None):
         """ Utility to get a trie node based on string, fact, uuid, or trie node """
         if isinstance(location, ELTrieNode):
-            return location
+            return [location]
         elif isinstance(location, UUID):
-            return self.trie[location]
+            return [self.trie[location]]
         elif isinstance(location, str): #str -> ELFACT
             location = self.parser(location)[0]
         elif not isinstance(location, ELFACT): #UNKNONW
@@ -147,17 +147,17 @@ class ELRuntime:
 
         #location :: ELFACT
         queried = self.fact_query(location, bindings)
-        target = self.trie[queried.nodes[0]]
-        return target
+        targets = [self.trie[x] for x in queried.nodes]
+        return targets
 
     def next_node(self, location, binding=None):
         if binding is None:
             binding = self.select_binding()
-        target = self.get_location(location, ELBindingFrame([binding]))
+        #makes no sense to have multiple targets, so get just the first
+        target = self.get_location(location, ELBindingFrame([binding]))[0]
         potentials = [self.fact_query(x).nodes[0] for x in target['next'].to_el_queries()]
-        return choice(potentials)
-                                   
-            
+        return choice(potentials)                                  
+
     def select_binding(self, bindings=None):
         if bindings is None:
             bindings = self.top_stack()
@@ -167,7 +167,8 @@ class ELRuntime:
         logging.info("Running Actions: {}".format(location))
         if binding is None:
             binding = self.select_binding(bindings)
-        target = self.get_location(location, ELBindingFrame([binding]))
+        #only a single target:
+        target = self.get_location(location, ELBindingFrame([binding]))[0]
         actions = target.to_el_facts()
         for action in actions:
             self.__run_action(action, binding)
@@ -182,7 +183,7 @@ class ELRuntime:
     def run_output(self, location, binding=None):
         if binding is None:
             binding = self.select_binding()
-        target = self.get_location(location, ELBindingFrame([binding]))
+        target = self.get_location(location, ELBindingFrame([binding]))[0]
         potentials = target['output'].children_values()
 
         return choice(potentials)
@@ -192,7 +193,7 @@ class ELRuntime:
         logging.info("Running Arithmetic: {}".format(location))
         if binding is None:
             binding = self.select_binding(bindings)
-        target = self.get_location(location, ELBindingFrame([binding]))
+        target = self.get_location(location, ELBindingFrame([binding]))[0]
         actions = target.to_el_function_formatted(comp=False)
         #todo: verify bindings
         for arith_action in actions:
@@ -226,7 +227,7 @@ class ELRuntime:
         logging.info("Running Conditions: {}".format(location))
         if bindings is None:
             bindings = self.top_stack()
-        target = self.get_location(location, bindings=bindings)
+        target = self.get_location(location, bindings=bindings)[0]
         conditions = target.to_el_queries()
         #Run the conditions in sequence:
         for condition in conditions:
@@ -238,7 +239,7 @@ class ELRuntime:
         return ELSuccess(None, result.bindings)
 
     def run_comparisons(self, location, bindings):
-        target = self.get_location(location, bindings=bindings)
+        target = self.get_location(location, bindings=bindings)[0]
         #comparisons :: ( operator, p1, p2, near)
         comparisons = target.to_el_function_formatted()
         
