@@ -73,7 +73,14 @@ class ELRuntime:
         """ run the simulation """
         None
 
-    def execute(self, etype, data):
+    def execute(self, data, etype=ELEXT.TRIE):
+        if isinstance(etype, str):
+            try:
+                etype = ELEXT[etype]
+            except KeyError as e:
+                logging.warning('Unrecognised Execution Enum: {}'.format(etype))
+                etype = ELEXT.TRIE
+        logging.info('Executing {} from {}'.format(etype, data))
         return_val = []
         if etype is ELEXT.TRIE:
             return_val = self.execute_as_trie(data)
@@ -90,7 +97,7 @@ class ELRuntime:
 
         return return_val
 
-    def execute_as_trie(self, data):
+    def execute_as_trie(self, data, MAX_STEPS=100):
         """
         data :: string -> ELFACT
         Assumes structure where each node has a 'next' child,
@@ -104,35 +111,85 @@ class ELRuntime:
         ....
         """
         self.push_stack()
-        output = ["Start"]
+        output = []
+        steps = 0
+        #state :: ELBindingFrame
         state = self.top_stack()
         #Parse, search, then get the exact node from the trie
-        current = self.trie[self.fact_query(self.parser(data)[0]).nodes[0]]
+        #data:: string, current::ELTrieNode
+        current = self.get_location(data)[0]
         assert current is not None
         
-        while len(current['next']) > 0:
-            #verify the structure of the node:
+        while 'next' in current and \
+              len(current['next']) > 0 and \
+              steps < MAX_STEPS:
+            steps += 1
+            #current::ELTrieNode, state::ELBindingFrame
+            #n_node::ELTrieNode
+            #u_state::ELBindingFrame
+            #o_text::String
+            n_node, u_state, o_text = self.perform_node(current, state)
+            current = n_node
+            state = u_state
+            output.append(o_text)
             
-            #perform the node
-            success_value, state = self.perform_node(current, state)
-            #get the text of the node
-            text = current['text']
-            #interpolate the text of the node with bindings
-            interp_text = self.format_string(text.format, state)
-            
-            #add the text to the record
-            output.append(interp_text)
-            
-            #pick the next node
-            potential_children = current['next'].to_weighted_el_facts()
-            next_location = choice(potential_children)
-            current = self(next_location)
-            
-
         #perform the final leaf
-
+        n_node, u_state, o_text = self.perform_node(current, state)
+        output.append(o_text)
+        
         self.pop_stack()
         return output
+
+    #node :: ELTrieNode, state :: ELBindingFrame
+    def perform_node(self, node, state):
+        #todo: verify the structure of the node:
+        
+        #run conditions
+        if 'conditions' in node:
+            #initial_bindings :: ELBindingFrame
+            conditions_result = self.run_conditions(node['conditions'],
+                                                   bindings=state)
+            initial_bindings = conditions_result.bindings
+        else:
+            initial_bindings = state
+        #run comparisons
+        if 'comparisons' in node:
+            compared_bindings = self.run_comparisons(node['comparisons'],
+                                                     initial_bindings)
+        else:
+            compared_bindings = initial_bindings
+            
+        selected_binding = choice(compared_bindings)        
+        #run arithmetic actions
+        if 'arithmetic' in node:
+            updated_binding = self.run_arithmetic(node['arithmetic'],
+                                                  binding=selected_binding)
+        else:
+            updated_binding = selected_binding
+        #run general actions
+        if 'actions' in node:
+            self.run_actions(node['actions'], updated_binding)
+        
+        #Get the output of the node
+        if 'output' in node:
+            interp_text = self.run_output(node['output'], updated_binding)
+        else:
+            interp_text = "N/A"
+        
+        #Get the next node:
+        if 'next' in node:
+            next_location = self.next_node(node['next'], updated_binding)
+        else:
+            next_location = None
+
+        #ELBindingSlice -> ELBindingFrame
+        binding_frame = ELBindingFrame([updated_binding])
+
+        #next_loc::ELTrieNode,
+        #binding_frame::ELBindingFrame
+        #interp_text::String
+        return (next_location, binding_frame, interp_text)
+
     
     def get_location(self,location, bindings=None):
         """ Utility to get a trie node based on string, fact, uuid, or trie node """
@@ -145,18 +202,27 @@ class ELRuntime:
         elif not isinstance(location, ELFACT): #UNKNONW
             raise ELE.ELConsistencyException("Unrecognised value passed to get_location: {}".format(location))
 
+        if not location.is_query():
+            location = location.query()
+                     
         #location :: ELFACT
         queried = self.fact_query(location, bindings)
+        assert isinstance(queried, ELSuccess)
         targets = [self.trie[x] for x in queried.nodes]
         return targets
 
+    #location::ELTrieNode
+    #binding::ELBindingSlice
     def next_node(self, location, binding=None):
         if binding is None:
             binding = self.select_binding()
         #makes no sense to have multiple targets, so get just the first
         target = self.get_location(location, ELBindingFrame([binding]))[0]
-        potentials = [self.fact_query(x).nodes[0] for x in target['next'].to_el_queries()]
-        return choice(potentials)                                  
+        potentials = [self.fact_query(x).nodes[0] for x in target.to_el_queries()]
+        chosen = choice(potentials)
+        node = self.trie[chosen]
+        #node :: ELTrieNode
+        return node
 
     def select_binding(self, bindings=None):
         if bindings is None:
@@ -184,7 +250,7 @@ class ELRuntime:
         if binding is None:
             binding = self.select_binding()
         target = self.get_location(location, ELBindingFrame([binding]))[0]
-        potentials = target['output'].children_values()
+        potentials = target.children_values()
         chosen = choice(potentials)
         #bind variables in the string:
         interpolated = self.interpolate_string(chosen, binding)
