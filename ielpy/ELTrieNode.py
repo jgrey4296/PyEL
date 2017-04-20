@@ -196,9 +196,6 @@ class ELTrieNode:
 
         return formatted
 
-    def to_weighted_el_facts(self):
-        return []
-
     def struct_equal(self, other):
         a = set([x for x in self.children.keys()])
         b = set([x for x in other.children.keys()])
