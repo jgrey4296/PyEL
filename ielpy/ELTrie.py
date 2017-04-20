@@ -5,7 +5,7 @@ import IPython
 import logging as root_logger
 from .ELBinding import ELBindingFrame, ELBindingSlice, ELBindingEntry
 from .ELStructure import ELROOT
-from .ELFactStructure import ELFACT, ELPAIR, ELQUERY
+from .ELFactStructure import ELFACT, ELPAIR
 from .ELTrieNode import ELTrieNode
 from .ELResults import ELSuccess, ELFail
 from . import ELExceptions as ELE
@@ -130,7 +130,7 @@ class ELTrie:
         
     def query(self,query):
         """ Given an EL String, test the Trie to see if it is true """
-        assert isinstance(query[-1], ELQUERY)
+        assert query.is_query()
         #result :: ELFail | ELSuccess
         result = self.get(query)
         logging.debug('Get Result: {}'.format(result))
@@ -155,7 +155,7 @@ class ELTrie:
         else:
             raise ELE.ELRuleException('Root Value not found in allnodes')
         #lop off the final query (?) structure:
-        if isinstance(el_string[-1], ELQUERY):
+        if el_string.is_query():
             search_string = el_string[1:-1]
         else:
             search_string = el_string[1:]

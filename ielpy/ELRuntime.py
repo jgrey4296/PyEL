@@ -16,7 +16,7 @@ from .ELBinding import ELBindingStack, ELBindingFrame
 from .ELTrieNode import ELTrieNode
 from .ELResults import ELFail, ELSuccess
 from .ELActions import ELBIND
-from .ELStructure import ELQUERY, ELVAR
+from .ELStructure import ELVAR
 from .ELFactStructure import ELFACT, ELARITH_FACT
 from .ELFunctions import COMP_FUNCS, get_EL_FUNC
 from . import ELParser, ELTrie
@@ -299,7 +299,7 @@ class ELRuntime:
         #Perform based on parsed type
         if isinstance(action, ELFACT):
             #Fact: Assert /retract
-            if isinstance(action[-1], ELQUERY):                       #QUERY
+            if action.is_query():                       #QUERY
                 #Don't replace vars with bindings, populate them
                 logging.debug("Querying")
                 self.push_stack()
@@ -346,7 +346,7 @@ class ELRuntime:
         if bindingFrame is None:
             bindingFrame = self.top_stack()
         assert isinstance(bindingFrame, ELBindingFrame)
-        assert isinstance(query[-1], ELQUERY)
+        assert query.is_query()
         
         current_frame = bindingFrame
         if len(current_frame) == 0:
