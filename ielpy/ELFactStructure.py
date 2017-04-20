@@ -211,6 +211,8 @@ class ELFACT(ELExpandable):
                 self.bindings.append(statement.access_point)
         return self
 
+    def is_query(self):
+        return isinstance(self[-1], ELQUERY)
 
     def query(self):
         copy = self.copy()
