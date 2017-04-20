@@ -356,7 +356,7 @@ class ELRuntime_Tests(unittest.TestCase):
         .a.b.[ .output."Test output" ]
         """
         self.runtime('.a.b.[ .output."Test output" ]')
-        output = self.runtime.run_output('.a.b?')
+        output = self.runtime.run_output('.a.b.output?')
         self.assertEqual(output, "Test output")
 
     def test_node_output_from_options(self):
@@ -364,7 +364,7 @@ class ELRuntime_Tests(unittest.TestCase):
         .a.b.[ .output.[ "First Test", "Second Test", "Third Test" ]]
         """
         self.runtime('.a.b.[ .output.[ "First Test", "Second Test", "Third Test" ]]')
-        output = self.runtime.run_output('.a.b?')
+        output = self.runtime.run_output('.a.b.output?')
         self.assertIn(output,["First Test", "Second Test", "Third Test"])
         
     def test_trie_next_following(self):
@@ -378,13 +378,13 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime('.second.[ .next.fourth, .output."bloo" ]')
         self.runtime('.third.[ .next.fourth, .output."awef" ]')
         self.runtime('.fourth.output.finished')
-        next_node = self.runtime.next_node('.first?')
+        next_node = self.runtime.next_node('.first.next?')
         second = self.runtime('.second?').nodes[0]
         third = self.runtime('.third?').nodes[0]
         fourth = self.runtime('.fourth?').nodes[0]
-        self.assertIn(next_node, [second, third])
-        final = self.runtime.next_node(next_node)
-        self.assertEqual(final, fourth)
+        self.assertIn(next_node.uuid, [second, third])
+        final = self.runtime.next_node(next_node['next'])
+        self.assertEqual(final.uuid, fourth)
 
 
     def test_binding_less_actions(self):
@@ -413,10 +413,28 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime('.node.conditions.[ .name.first.$x?, .name.second.$y?]')
         self.runtime('.node.output.[ "His name was {x} Maurice {y}"]')
         result = self.runtime.run_conditions('.node.conditions?')
-        output = self.runtime.run_output('.node?', result.bindings[0])
+        output = self.runtime.run_output('.node.output?', result.bindings[0])
         self.assertEqual(output, "His name was Henry Maurice Thornwood")
 
-                
+    def test_trie_execution_in_total(self):
+        """
+        .first.[ .actions.[ .name.Henry.ThornWood ], .output."Start", .next.second ]
+        .second.[ .conditions.[ .name.$x ], .output."{x} said hello", .next.third ]
+        .third.[ .conditions.[ .name.$x.$y ], .output."Hello Mr {y}"]
+        """
+        self.runtime('.first.[ .actions.[ .name.Henry.Thornwood ], .output."Start", .next.second ]')
+        self.runtime('.second.[ .conditions.[ .name.$x ], .output."{x} said hello", .next.third ]')
+        self.runtime('.third.[ .conditions.[ .name.$x.$y ], .output."Hello Mr {y}"]')
+        #pass in trie num value
+        output = self.runtime.execute('.first')
+        #test the output:
+        self.assertEqual(len(output), 3)
+        self.assertEqual(output[0], 'Start')
+        self.assertEqual(output[1], 'Henry said hello')
+        self.assertEqual(output[2], 'Hello Mr Thornwood')
+
+
+        
     def test_forall_binding_action(self):
         """
         .a.b.10, .a.c.20, .a.d.2,
