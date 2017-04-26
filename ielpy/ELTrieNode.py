@@ -192,7 +192,12 @@ class ELTrieNode:
                 nearVal = node['near'].child_value()
             else:
                 nearVal = None
-            formatted.append((operator, p1, p2, nearVal))
+            forall_scoped = any([p1.scope is ELVARSCOPE.FORALL,
+                                 (isinstance(p2, ELVAR) and \
+                                  p2.scope is ELVARSCOPE.FORALL),
+                                 (isinstance(nearVal, ELVAR) and \
+                                  nearVal.scope is ELVARSCOPE.FORALL)])
+            formatted.append((operator, p1, p2, nearVal, forall_scoped))
 
         return formatted
 
