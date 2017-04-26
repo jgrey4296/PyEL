@@ -36,16 +36,18 @@ class ELFACT(ELExpandable):
         self.negated = negated
         #variables of the fact. [x,y,z...]
         self.bindings = bindings.copy()
-        #filled_bindings :: ELBindingSlice
-        if filled_bindings is None:
-            self.filled_bindings = ELBindingSlice()
-        else:
-            self.filled_bindings = ELBindingSlice(filled_bindings)
         if r is True and (len(data) == 0 or not isinstance(data[0].value, ELROOT)):
             self.data.insert(0, ELROOT())
         for pair in data:
             self.insert(pair)
+        #filled_bindings:: ELBindingSlice
+        if filled_bindings is None:
+            self.filled_bindings = ELBindingSlice()
+        else:
+            self.filled_bindings = ELBindingSlice(filled_bindings)
 
+            
+            
 
     def expand(self):
         """ Takes a fact with a terminal array,
@@ -94,15 +96,11 @@ class ELFACT(ELExpandable):
         allforalls = [x.scope is ELVARSCOPE.FORALL for x in self.bindings]
         return any(allforalls)
 
-
-    def bind(self, binding_slice, all_sub_slice=None):
+    def bind_slice(self, binding_slice):
         #return a copy of the fact, where the var has been switched out
-        #TODO: CONVERT PATH_VARS TO NODE IDS TO RETRIEVE AND MOD LATER?
         logging.info("Binding to fact: {}".format(binding_slice))
         assert isinstance(binding_slice, ELBindingSlice)
-        if all_sub_slice is not None:
-            assert isinstance(all_sub_slice, ELBindingSlice)
-
+        updated_bindings = self.filled_bindings.copy()
         new_string = []
         new_pair = None
         for pair in self.data:
@@ -110,36 +108,30 @@ class ELFACT(ELExpandable):
                 new_pair = pair
             elif isinstance(pair, ELPAIR) and pair.value.value in binding_slice:
                 #ELPair.value :: ELVar
-                new_pair = ELPAIR(pair.value.get_val(binding_slice, all_sub_slice), \
-                                  pair.elop)
+                new_pair = ELPAIR(pair.value.get_val(binding_slice), pair.elop)
             elif isinstance(pair, ELROOT) and pair.isVar() and pair.value.value in binding_slice:
                 #ELRoot.value :: ELVAR
                 new_pair = ELROOT(elop=pair.elop, \
-                                  var=pair.value.get_val(binding_slice, all_sub_slice))
+                                  var=pair.value.get_val(binding_slice))
             elif pair.isVar() and pair.value.value not in binding_slice:
                 new_pair = pair.copy()
             new_string.append(new_pair)
-        updated_bindings = self.filled_bindings.copy()
 
-        #todo: this has the ability to clobber bindings
-        if self.has_forall_binding():
-            updated_bindings.update(all_sub_slice)
         updated_bindings.update(binding_slice)
         new_fact = ELFACT(new_string,
                           bindings=self.bindings,
-                          filled_bindings=updated_bindings,
-                          negated=self.negated)
+                          negated=self.negated,
+                          filled_bindings=updated_bindings)
         logging.info("Binding Result: {}".format(new_fact))
         return new_fact
 
     def copy(self):
         data_copy = [x.copy() for x in self.data if x is not None]
         bindings_copy = self.bindings.copy()
-        filled_bindings_copy = self.filled_bindings.copy()
         return ELFACT(data_copy,
                       bindings=bindings_copy,
                       negated=self.negated,
-                      filled_bindings=filled_bindings_copy)
+                      filled_bindings=self.filled_bindings.copy())
 
     def negate(self):
         copy = self.copy()
@@ -397,18 +389,15 @@ class ELARITH_FACT(ELExpandable):
         node.value = new_value
         node.parent[node] = node
 
-    def bind(self, binding_slice, all_sub_slice=None):
+    def bind_slice(self, binding_slice):
         #returns a new bound ELARITH_FACT that has been bound
         assert isinstance(binding_slice, ELBindingSlice)
-        if all_sub_slice is not None:
-            assert isinstance(all_sub_slice, ELBindingSlice)
-
         if isinstance(self.data, ELVAR):
-            new_data = self.data.get_val(binding_slice, all_sub_slice)
+            new_data = self.data.get_val(binding_slice)
         else:
             new_data = self.data
         if isinstance(self.val, ELVAR):
-            new_val = self.val.get_val(binding_slice, all_sub_slice)
+            new_val = self.val.get_val(binding_slice)
         else:
             new_val = self.val
         return ELARITH_FACT(data=new_data, op=self.op, val=new_val)
