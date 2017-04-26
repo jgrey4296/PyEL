@@ -521,6 +521,25 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(all(self.runtime('.a.b.10?, .a.c.20?, .a.d.2?')))
         self.assertTrue(all(self.runtime('.output.b.10?, .output.c.20?, .output.d.2?')))
 
+
+    def test_forall_and_selected_binding(self):
+        self.runtime('.a.b.10, .a.c.20, .a.d.2')
+        self.runtime('.test.conditions.[ .a.$x.$y?]')
+        self.runtime('.test.arithmetic.[ @y + 5]')
+        self.runtime('.test.actions.[ .output.$x, .outputs.@x.@y]')
+        result = self.runtime.run_conditions('.test.conditions?')
+        result.bindings.select(0)
+        updated_bindings = self.runtime.run_arithmetic('.test.arithmetic?', result.bindings)
+        self.runtime.run_actions('.test.actions?', updated_bindings)
+        self.assertTrue(all(self.runtime('.a.b.10?, .a.c.20?, .a.d.2?')))
+        self.assertTrue(all(self.runtime('.outputs.b.15?, .outputs.c.25?, .outputs.d.7?')))
+        self.assertTrue(self.runtime('.output.b?'))
+
+
+
+
+
+
         
     #todo: test forall binding actions
     #todo: string interpolation, selection based on a variable,
