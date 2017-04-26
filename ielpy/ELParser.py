@@ -17,7 +17,7 @@ import pyparsing as pp
 from fractions import Fraction
 import re
 from . import ELExceptions as ELE
-from .ELUtil import ELCOMP_lookup, ELARITH_lookup, EL, ELVARSCOPE
+from .ELUtil import ELARR, ELCOMP_lookup, ELARITH_lookup, EL, ELVARSCOPE
 from .ELFunctions import ELCOMP
 from .ELStructure import ELVAR, ELPAIR
 from .ELFactStructure import ELFACT, ELARITH_FACT, ELROOT, ELComparison
@@ -121,15 +121,16 @@ def construct_arith_op(tok):
         raise ELE.ELParseException('Unrecognised arithmetic operator')
 
 def construct_el_var(toks):
-    is_a_path_var = 'PATH_ACCESS' in toks
     scope_type = toks['VAR_SCOPE'][0]
+    is_a_path_var = 'PATH_ACCESS' in toks
     var_name = toks['VARNAME']
-    has_array_access = 'ARR_ACCESS' in toks
-    if has_array_access:
-        arr_access_value = toks['ARR_ACCESS'][0]
+    is_var_arr = 'VAR_ARR' in toks
+    if is_var_arr:
+        arr_type, arr_value = toks['VAR_ARR'][0]
     else:
-        arr_access_value = None
-    return ELVAR(var_name, arr_access_value, is_a_path_var, scope_type)
+        arr_type = None
+        arr_value = None
+    return ELVAR(var_name, scope_type, is_a_path_var, arr_type, arr_value)
 
 def construct_el_root_fact(toks):
     if toks[0][0] is EL.DOT:
@@ -184,51 +185,51 @@ IG_NAME   = pp.Word('_', pp.alphas)
 NUM       = pp.Word(pp.nums + '-_d/') #negation, formatting, decimal, and fraction
 STRING    = pp.dblQuotedString
 
+#Forward declaraction of fact:
+FACT = pp.Forward()
 
-NON_PATH_VAR = pp.Forward()
-PATH_VAR   = pp.Forward()
+# .a.b.$x(2)? <- get two x's
+# .a.b.$x[2] <- use the second x bound
+# .a.b.$x[2].$y(2)? <- use the second x bound, get 2 y's
 
+# $x(2), $x
+# $..x.a.b.c, $x, $x[2], $..x[2].a.b.c
+# @x, @..x.a.b.c, @x[2], @..x[2]
 VAR_HEADER = pp.Group(DOLLAR | AT)
+VAR = pp.Forward()
+VAR_ARRAY_DEF = s(O_PAREN) + (NUM | FACT | VAR) + s(C_PAREN)
+VAR_ARRAY_ACC = s(O_BRACKET) + (NUM | FACT | VAR) + s(C_BRACKET)
+VAR_ARR = pp.Group(VAR_ARRAY_DEF | VAR_ARRAY_ACC)
 
+VAR << VAR_HEADER.setResultsName('VAR_SCOPE') + \
+      op(pp.Group(pp.Keyword('..', '.')).setResultsName('PATH_ACCESS')) + \
+      pp.Word(pp.alphas + pp.nums).setResultsName('VARNAME') - \
+      op(VAR_ARR.setResultsName('VAR_ARR'))
 
-PATH_VAR << VAR_HEADER.setResultsName('VAR_SCOPE') + \
-    pp.Group(pp.Keyword('..', ' .')).setResultsName('PATH_ACCESS') + \
-    pp.Word(pp.alphas + pp.nums).setResultsName('VARNAME') - \
-    op(s(O_PAREN) + (NUM | NON_PATH_VAR) + s(C_PAREN)).setResultsName('ARR_ACCESS')
+ELEMENT   = (VAR | NAME | STRING | NUM)
 
-NON_PATH_VAR << VAR_HEADER.setResultsName('VAR_SCOPE') + \
-           pp.Word(pp.alphas + pp.nums).setResultsName('VARNAME') - \
-           op(s(O_PAREN) + (NUM | NON_PATH_VAR) + s(C_PAREN)).setResultsName('ARR_ACCESS')
-
-
-
-
-ELEMENT   = (NON_PATH_VAR | NAME | STRING | NUM)
-
-NEAR      = s(pp.Word('~=', exact=2)) + s(O_PAREN) + (NUM | NON_PATH_VAR) + s(C_PAREN)
+NEAR      = s(pp.Word('~=', exact=2)) + s(O_PAREN) + (NUM | VAR) + s(C_PAREN)
 COMP      = pp.Group(pp.Word('=><@!', max=2)).setResultsName(str(PARSENAMES.STANDARDCOMP_OP)) | \
             pp.Group(NEAR).setResultsName(str(PARSENAMES.NEARCOMP_OP))
 
 
 #Comparison: $v1 < $V2
-EL_COMPARISON = NON_PATH_VAR - COMP - ELEMENT
+EL_COMPARISON = VAR - COMP - ELEMENT
 
-#Forward declaraction of fact:
-FACT = pp.Forward()
 
 #An array for rules, as it contains facts
 CONDITION = FACT + s(QUERYOP)
 EL_CONDITIONS = array_template(CONDITION, brackets_optional=True)
 
 #An arithmetic action fact: .a.b.c + 20
-ARITH_FACT = (FACT | NON_PATH_VAR | PATH_VAR) + \
-             pp.Group(ARITH + (NON_PATH_VAR | NUM)).setResultsName(str(PARSENAMES.ARITH_OP))
+ARITH_FACT = (FACT | VAR) + \
+             pp.Group(ARITH + (VAR | NUM)).setResultsName(str(PARSENAMES.ARITH_OP))
 
 #Regex Action?
 REGEX_OP = pp.Word('>>')
 REGEX = s(SLASH) + pp.Regex(r'[a-zA-Z0-9*+?()\[\]\\\'" <>,.$]+') + s(SLASH) + \
         pp.Regex(r'[a-zA-Z0-9*+?()\[\]\\\'"<> ,.$]+') + s(SLASH)
-REGEX_ACTION = (FACT | NON_PATH_VAR) + pp.Group(REGEX_OP + (NON_PATH_VAR | REGEX))
+REGEX_ACTION = (FACT | VAR) + pp.Group(REGEX_OP + (VAR | REGEX))
 
 #TODO: EL_ARRAY -> SEQUENCE
 #a basic array of values in EL: [ e1, e2 ... en ]
@@ -242,7 +243,7 @@ ACTION_ARRAY = array_template(ARITH_FACT | REGEX_ACTION | FACT, brackets_optiona
 #Fact Components, [Root ... pairs ... terminal]
 #Core part of a fact: a.b!c => (a,DOT),(b.EX)
 EL_PAIR = ELEMENT + pp.NotAny(pp.LineEnd()) + (DOT | EX)
-EL_FACT_ROOT = pp.Group(((PATH_VAR | DBL_VLINE) + (DOT | EX)) | DOT).setResultsName(str(PARSENAMES.ROOT))
+EL_FACT_ROOT = pp.Group(((VAR | DBL_VLINE) + (DOT | EX)) | DOT).setResultsName(str(PARSENAMES.ROOT))
 EL_FACT_TERMINAL = ELEMENT | pp.Group(EL_ARRAY)
 #An Entire sequence, note the stopOn to not continue over lines
 FACT << op(NOT).setResultsName(str(PARSENAMES.NOT)) + \
@@ -250,7 +251,7 @@ FACT << op(NOT).setResultsName(str(PARSENAMES.NOT)) + \
                               pp.Group(pp.ZeroOrMore(EL_PAIR)).setResultsName(str(PARSENAMES.BASEFACT)) + \
                               pp.Group(EL_FACT_TERMINAL).setResultsName(str(PARSENAMES.TERMINAL))
 
-BIND_STATEMENT = NON_PATH_VAR + s(BIND) + op(FACT)
+BIND_STATEMENT = VAR + s(BIND) + op(FACT)
 
 #Execute Statements?
 
@@ -270,7 +271,7 @@ NAME.setName('Name')
 IG_NAME.setName('IG_NAME')
 NUM.setName('Nums')
 STRING.setName('String')
-PATH_VAR.setName('PathVar')
+VAR.setName('Variable')
 COMP.setName('Comp')
 EL_COMPARISON.setName('Comparison')
 FACT.setName('Fact')
@@ -300,8 +301,10 @@ STRING.setParseAction(pp.removeQuotes)
 REGEX.setParseAction(lambda toks: re.compile(toks[0]))
 
 #Variable construction
-PATH_VAR.setParseAction(construct_el_var)
-NON_PATH_VAR.setParseAction(construct_el_var)
+VAR_ARRAY_DEF.setParseAction(lambda toks: (ELARR.DEFINE, toks[0]))
+VAR_ARRAY_ACC.setParseAction(lambda toks: (ELARR.ACCESS, toks[0]))
+
+VAR.setParseAction(construct_el_var)
 
 #wapping a fact in a query:
 CONDITION.setParseAction(lambda toks: construct_el_query(toks))
