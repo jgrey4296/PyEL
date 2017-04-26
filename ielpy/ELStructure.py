@@ -1,7 +1,7 @@
 """
 Internal Structure of EL Statements
 """
-from .ELUtil import EL, ELVARSCOPE, ELOP2STR
+from .ELUtil import EL, ELVARSCOPE, ELARR, ELOP2STR
 from .ELBinding import ELBindingSlice
 
 ##########

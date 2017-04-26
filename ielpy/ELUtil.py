@@ -16,6 +16,8 @@ ELV = Enum('ELV', 'ARR RULE')
 ELVARSCOPE = Enum('ELVARSCOPE', 'EXIS FORALL')
 #Execution Types:
 ELEXT = Enum('EL_Ex_t','TRIE TREE FSM SEL INS')
+#EL Array var types, definition(), and access[]
+ELARR = Enum('EL_Arr_t', 'DEFINE ACCESS')
 
 ##############################
 # Enum Utilities

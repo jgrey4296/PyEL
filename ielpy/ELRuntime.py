@@ -115,7 +115,6 @@ class ELRuntime:
         steps = 0
         #state :: ELBindingFrame
         state = self.top_stack()
-        #Parse, search, then get the exact node from the trie
         #data:: string, current::ELTrieNode
         current = self.get_location(data)[0]
         assert current is not None
@@ -146,9 +145,12 @@ class ELRuntime:
         
         #run conditions
         if 'conditions' in node:
+            #conditions_result :: ELResult
             #initial_bindings :: ELBindingFrame
             conditions_result = self.run_conditions(node['conditions'],
                                                    bindings=state)
+            if isinstance(conditions_result, ELFail):
+                return (None, None, None)
             initial_bindings = conditions_result.bindings
         else:
             initial_bindings = state

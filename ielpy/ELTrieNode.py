@@ -2,8 +2,8 @@
 The Node Structure used in ELTrie
 """
 from uuid import uuid1
-from .ELUtil import EL, ELOP2STR
-from .ELStructure import ELPAIR
+from .ELUtil import EL, ELOP2STR, ELVARSCOPE
+from .ELStructure import ELPAIR, ELVAR
 from .ELFactStructure import ELFACT
 from .ELFunctions import get_EL_FUNC
 from . import ELExceptions as ELE
