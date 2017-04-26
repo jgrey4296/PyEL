@@ -34,9 +34,9 @@ class ELBindingFrame(list):
             super().__init__([ELBindingSlice()])
         else:
             super().__init__(data)
+        #Selected:
+        self.selected = None
 
-    def copy(self):
-        return ELBindingFrame(data=self)
     def select(self,i=None):
         if i is None:
             i = randrange(0,len(self))
