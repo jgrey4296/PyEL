@@ -345,7 +345,7 @@ class ELARITH_FACT(ELExpandable):
             self.bindings.append(val)
 
         #retrieve sub vars
-        extension = [x.access_point for x in self.bindings if isinstance(x.access_point, ELVAR)]
+        extension = [x.array_point for x in self.bindings if isinstance(x.array_point, ELVAR)]
         self.bindings.extend(extension)
 
     def expand(self):
