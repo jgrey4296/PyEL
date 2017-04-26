@@ -31,7 +31,7 @@ class ELFACT(ELExpandable):
             data = []
         if bindings is None:
             bindings = []
-
+        self._isElFact = True
         self.data = []
         self.negated = negated
         #variables of the fact. [x,y,z...]
