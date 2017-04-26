@@ -102,11 +102,9 @@ class ELVAR(ELSTRUCTURE):
         return hash(repr(self))
 
     def __repr__(self):
-        if self.access_point is None:
-            return "VAR({})".format(self.value)
-        else:
-            return "VAR({}@{})".format(self.value, self.access_point)
-
+        output = "VAR({})".format(str(self))
+        return output
+                
     def __str__(self):
         output = ""
         if self.scope is ELVARSCOPE.EXIS:

@@ -20,11 +20,13 @@ class ELBindingStack(list):
         return self[-1].copy()
     def push_stack(self):
         self.append(self.top())
-
+    def __repr__(self):
+        return "ELBStack({})".format(super().__repr__())    
 
 class ELBindingFrame(list):
     """ All possibilites across current slices
     [ ELBindingSlice(x=2..), ELBindingSlice(x=4...) ]
+    #todo: encode weights?
     """
     def __init__(self, data=None):
         #todo: add a inter_frame ELBinding, make sure its copied
@@ -52,6 +54,9 @@ class ELBindingFrame(list):
             raise Exception('Trying to select from an unselected frame')
         return self[self.selected]
     
+    def __repr__(self):
+        return "ELBFrame({})".format(super().__repr__())
+            
 class ELBindingSlice(dict):
     """ The dictionaries of a rule possibility,
     { x : (ELBindingEntry), y: (ELBinding Entry ... }
@@ -68,6 +73,9 @@ class ELBindingSlice(dict):
             super().__init__(data)
             self.uuid = node_uuid
 
+    def __repr__(self):
+        return "ELBSlice({})".format(super().__repr__())
+            
     def copy(self):
         return ELBindingSlice(self)
 
