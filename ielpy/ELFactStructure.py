@@ -208,7 +208,8 @@ class ELFACT(ELExpandable):
 
     def query(self):
         copy = self.copy()
-        copy.insert(ELQUERY())
+        if not copy.is_query():
+            copy.insert(ELQUERY())
         return copy
 
     def var(self, *args, prepend=False):
