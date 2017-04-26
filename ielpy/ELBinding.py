@@ -82,7 +82,7 @@ class ELBindingSlice(dict):
         return "ELBSlice({})".format(super().__repr__())
             
     def copy(self):
-        newSlice = ELBindingSlice(self)
+        newSlice = ELBindingSlice({x: y.copy() for x,y in self.items()})
         return newSlice
 
 
@@ -97,3 +97,7 @@ class ELBindingEntry:
 
     def __repr__(self):
         return "ELBindEntry({}, {}, +uuid)".format(self.key, self.value)
+
+    def copy(self):
+        return ELBindingEntry(self.key, self.uuid, self.value)
+             
