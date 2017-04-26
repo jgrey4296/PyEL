@@ -348,6 +348,9 @@ class ELARITH_FACT(ELExpandable):
         extension = [x.array_point for x in self.bindings if isinstance(x.array_point, ELVAR)]
         self.bindings.extend(extension)
 
+    def has_forall_binding(self):
+        return any([x.scope is ELVARSCOPE.FORALL for x in self.bindings])
+        
     def expand(self):
         """ Take the IR representation of an arithmetic fact,
         and turn it into a true trie representation of form:
