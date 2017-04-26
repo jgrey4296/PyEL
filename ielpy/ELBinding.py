@@ -4,6 +4,8 @@ Classes relating to the structuring of binding
 import logging as root_logger
 logging = root_logger.getLogger(__name__)
 
+from random import randrange
+
 ##########
 # Binding
 ##########
@@ -33,7 +35,23 @@ class ELBindingFrame(list):
 
     def copy(self):
         return ELBindingFrame(data=self)
+    def select(self,i=None):
+        if i is None:
+            i = randrange(0,len(self))
+        if i >= len(self):
+            raise Exception('Trying to designate a slice not in frame')
+        self.selected = i
 
+    def has_selection(self):
+        return self.selected is not None
+
+    def get_selected(self):
+        if len(self) == 1:
+            return self[0]
+        if self.selected is None:
+            raise Exception('Trying to select from an unselected frame')
+        return self[self.selected]
+    
 class ELBindingSlice(dict):
     """ The dictionaries of a rule possibility,
     { x : (ELBindingEntry), y: (ELBinding Entry ... }
