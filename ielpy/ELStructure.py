@@ -89,14 +89,18 @@ class ELPAIR(ELSTRUCTURE):
 
 class ELVAR(ELSTRUCTURE):
     """ An internal representation of a binding """
-    def __init__(self, bindName, access_point=None, path_var=False, scope=ELVARSCOPE.EXIS):
-        self.is_path_var = path_var
-        self.scope = scope
-        self.value = bindName
-        if access_point is not None:
-            self.access_point = access_point
-        else:
-            self.access_point = None
+    def __init__(self,
+                 bindName,
+                 scope=ELVARSCOPE.EXIS,
+                 path_var=False,
+                 arr_type=None,
+                 arr_point=None):
+        self.value = bindName            #ie: x
+        self.scope = scope               #ie: $ or @
+        self.is_path_var = path_var      #True if $..x 
+        
+        self.array_type = arr_type       #[] or ()
+        self.array_point = arr_point     #2, $x, 
 
     def __hash__(self):
         return hash(repr(self))
@@ -114,38 +118,63 @@ class ELVAR(ELSTRUCTURE):
         if self.is_path_var:
             output += ".."
         output += self.value
-        if self.access_point is not None:
-            output += "({})".format(str(self.access_point))
-
+        if self.array_type is ELARR.DEFINE:
+            output += "({})".format(str(self.array_point))
+        elif self.array_type is ELARR.ACCESS:
+            output += "[{}]".format(str(self.array_point))
         return output
-
+            
+        
     def __eq__(self, other):
-        return self.value == other.value and self.access_point == other.access_point
+        return self.value == other.value and self.array_point == other.array_point
+    
     def copy(self):
         return ELVAR(self.value)
 
-    def get_val(self, binding_slice, all_sub_slice=None):
-        assert isinstance(binding_slice, ELBindingSlice)
-        if all_sub_slice is not None:
-            assert isinstance(binding_slice, ELBindingSlice)
-        return_val = None
-        #Get the right scope:
-        if self.scope is ELVARSCOPE.FORALL:
-            assert all_sub_slice is not None
-            focus_slice = all_sub_slice
-        else:
-            focus_slice = binding_slice
-        #now get the right value:
-        if self.is_path_var:
-            return_val = focus_slice[self.value].uuid
-        elif self.access_point:
-            if isinstance(self.access_point, ELVAR):
-                focus_array = focus_slice[self.value].value
-                index = self.access_point.get_val(binding_slice, all_sub_slice)
-                return_val = focus_array[index]
-            else:
-                return_val = focus_slice[self.value].value[self.access_point]
-        else:
-            return_val = focus_slice[self.value].value
-
+    ##############################
+    
+    def get_val(self, binding_slice, trie=None): # binding_frame=None, trie=None):
+        """ Given some bindings, reify this variable """
+        # if self.scope is ELVARSCOPE.FORALL:
+        #     return_val = self.get_value_all_values(binding_frame)
+        # else:
+        return_val = self._get_value(binding_slice, trie=trie)
         return return_val
+
+
+
+    # $x, $..x, $x[2], $..x[2], $x[$y], $..x[$y]
+    def _get_value(self, binding_slice, arr_point=None, trie=None):
+        if self.is_path_var:
+            field = 'uuid'
+        else:
+            field = 'value'
+        if self.array_point is not None:
+            arr_point = self.array_point
+            
+        el_bind_entry = binding_slice[self.value]
+        #to get ELBindingEntry.uuid or ELBE.value, dynamically:
+        field_value = getattr(el_bind_entry, field)
+        if arr_point is not None:
+            if isinstance(arr_point, ELVAR):
+                reified_arr_point = arr_point._get_value(binding_slice)
+            elif hasattr(arr_point, '_isElFact'): #avoid circular dep
+                reified_arr_point = get_arr_point_from_trie(arr_point, binding_slice, trie)
+            else:
+                reified_arr_point = arr_point
+            value = field_value[reified_arr_point]
+        else:
+            value = field_value
+        return value
+
+
+#utility functions:
+
+def get_arr_point_from_trie(fact, binding_slice, trie):
+    assert trie is not None
+    #reify string:
+    bound = fact.bind(binding_slice)
+    result = trie.get(bound.query())
+    trie_node = trie[result.nodes[0]]
+    value = trie_node.child_value()
+    return value
