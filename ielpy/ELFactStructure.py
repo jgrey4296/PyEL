@@ -195,12 +195,12 @@ class ELFACT(ELExpandable):
         #update binding record:
         if isinstance(statement, ELPAIR) and isinstance(statement.value, ELVAR):
             self.bindings.append(statement.value)
-            if isinstance(statement.value.access_point, ELVAR):
-                self.bindings.append(statement.value.access__point)
+            if isinstance(statement.value.array_point, ELVAR):
+                self.bindings.append(statement.value.array_point)
         elif isinstance(statement, ELVAR):
             self.bindings.append(statement)
-            if isinstance(statement.access_point, ELVAR):
-                self.bindings.append(statement.access_point)
+            if isinstance(statement.array_point, ELVAR):
+                self.bindings.append(statement.array_point)
         return self
 
     def is_query(self):
