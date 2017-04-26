@@ -12,7 +12,7 @@ from ielpy.ELFunctions import ELCOMP, ELARITH
 from ielpy.ELActions import ELBIND
 from ielpy.ELStructure import ELVAR, ELQUERY
 from ielpy.ELFactStructure import ELFACT, ELComparison
-from ielpy.ELUtil import ELVARSCOPE, EL
+from ielpy.ELUtil import ELVARSCOPE, EL, ELARR
 from fractions import Fraction
 
 
@@ -266,59 +266,84 @@ class ELParser_Tests(unittest.TestCase):
 
     def test_path_var_scoping_exis(self):
         test_var = "$..x"
-        result = ELParser.PATH_VAR.parseString(test_var)[0]
+        result = ELParser.VAR.parseString(test_var)[0]
         self.assertIsInstance(result, ELVAR)
         self.assertEqual(result.value, 'x')
         self.assertEqual(result.scope, ELVARSCOPE.EXIS)
-        self.assertIsNone(result.access_point)
+        self.assertIsNone(result.array_point)
         self.assertTrue(result.is_path_var)
 
     def test_path_var_scoping_forall(self):
         test_var = "@..x"
-        result = ELParser.PATH_VAR.parseString(test_var)[0]
+        result = ELParser.VAR.parseString(test_var)[0]
         self.assertIsInstance(result, ELVAR)
         self.assertEqual(result.value, 'x')
         self.assertEqual(result.scope, ELVARSCOPE.FORALL)
-        self.assertIsNone(result.access_point)
+        self.assertIsNone(result.array_point)
         self.assertTrue(result.is_path_var)
 
     def test_non_path_var_scoping_exis(self):
         test_var = "$x"
-        result = ELParser.NON_PATH_VAR.parseString(test_var)[0]
+        result = ELParser.VAR.parseString(test_var)[0]
         self.assertIsInstance(result, ELVAR)
         self.assertEqual(result.value, 'x')
         self.assertEqual(result.scope, ELVARSCOPE.EXIS)
-        self.assertIsNone(result.access_point)
+        self.assertIsNone(result.array_point)
         self.assertFalse(result.is_path_var)
         
     def test_non_path_var_scoping_forall(self):
         test_var = "@x"
-        result = ELParser.NON_PATH_VAR.parseString(test_var)[0]
+        result = ELParser.VAR.parseString(test_var)[0]
         self.assertIsInstance(result, ELVAR)
         self.assertEqual(result.value, 'x')
         self.assertEqual(result.scope, ELVARSCOPE.FORALL)
-        self.assertIsNone(result.access_point)
+        self.assertIsNone(result.array_point)
         self.assertFalse(result.is_path_var)
     
-    def test_non_path_array_access(self):
+    def test_non_path_array_define(self):
         test_var = "$x(4)"
-        result = ELParser.NON_PATH_VAR.parseString(test_var)[0]
+        result = ELParser.VAR.parseString(test_var)[0]
         self.assertIsInstance(result, ELVAR)
         self.assertEqual(result.value, 'x')
         self.assertEqual(result.scope, ELVARSCOPE.EXIS)
-        self.assertEqual(result.access_point,4)
+        self.assertEqual(result.array_point,4)
+        self.assertEqual(result.array_type, ELARR.DEFINE)
+        self.assertFalse(result.is_path_var)
+
+    def test_non_path_array_access(self):
+        test_var = "$x[4]"
+        result = ELParser.VAR.parseString(test_var)[0]
+        self.assertIsInstance(result, ELVAR)
+        self.assertEqual(result.value, 'x')
+        self.assertEqual(result.scope, ELVARSCOPE.EXIS)
+        self.assertEqual(result.array_point,4)
+        self.assertEqual(result.array_type, ELARR.ACCESS)
+        self.assertFalse(result.is_path_var)
+
+        
+    def test_non_path_array_define_from_var(self):
+        test_var = "$x($y)"
+        result = ELParser.VAR.parseString(test_var)[0]
+        self.assertIsInstance(result, ELVAR)
+        self.assertEqual(result.value, 'x')
+        self.assertEqual(result.scope, ELVARSCOPE.EXIS)
+        self.assertEqual(result.array_type, ELARR.DEFINE)
+        self.assertIsInstance(result.array_point, ELVAR)
+        self.assertEqual(result.array_point.value, 'y')
         self.assertFalse(result.is_path_var)
 
     def test_non_path_array_access_from_var(self):
-        test_var = "$x($y)"
-        result = ELParser.NON_PATH_VAR.parseString(test_var)[0]
+        test_var = "$x[$y]"
+        result = ELParser.VAR.parseString(test_var)[0]
         self.assertIsInstance(result, ELVAR)
         self.assertEqual(result.value, 'x')
         self.assertEqual(result.scope, ELVARSCOPE.EXIS)
-        self.assertIsInstance(result.access_point, ELVAR)
-        self.assertEqual(result.access_point.value, 'y')
+        self.assertEqual(result.array_type, ELARR.ACCESS)
+        self.assertIsInstance(result.array_point, ELVAR)
+        self.assertEqual(result.array_point.value, 'y')
         self.assertFalse(result.is_path_var)
-
+        
+        
     def test_comparison_array(self):
         test_string = ".this.is.a.test.[ $x < $y, $y == $z ]"
         result = self.parser(test_string)[0]

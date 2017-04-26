@@ -26,9 +26,9 @@ class ELBaseData_Tests(unittest.TestCase):
             {'b': ELBindingEntry('b',None,'blah'),
              'c': ELBindingEntry('c', None, 'crickey'),
              'd': ELBindingEntry('d', None, 'dimwit') })
-        bound = testFact.bind(bindingDict)
+        bound = testFact.bind_slice(bindingDict)
         self.assertEqual(str(testFact), '.$b.$c.$d.')
-        self.assertEqual(repr(testFact), '| ROOT.VAR(b).VAR(c).VAR(d). |')
+        self.assertEqual(repr(testFact), '| ROOT.VAR($b).VAR($c).VAR($d). |')
         self.assertNotEqual(repr(testFact), repr(bound))
         self.assertEqual(str(bound), '.blah.crickey.dimwit.')
         self.assertEqual(repr(bound), "| ROOT.'blah'.'crickey'.'dimwit'. |")
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     console.setLevel(root_logger.INFO)
     root_logger.getLogger('').addHandler(console)
     logging = root_logger.getLogger(__name__)
-    #root_logger.disable(root_logger.CRITICAL)
+    root_logger.disable(root_logger.CRITICAL)
     ##############################
 
     unittest.main()

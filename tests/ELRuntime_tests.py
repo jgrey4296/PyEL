@@ -281,7 +281,8 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(result)
         self.assertEqual(len(result), 1)
         self.assertFalse(self.runtime('.a.b.20?'))
-        self.runtime.run_arithmetic('.test.arithmetic?', binding=result.bindings[0])
+        result.bindings.select()
+        self.runtime.run_arithmetic('.test.arithmetic?', bindings=result.bindings)
         self.assertTrue(self.runtime('.a.b.20?'))
 
     def test_arith_in_place(self):
@@ -293,10 +294,11 @@ class ELRuntime_Tests(unittest.TestCase):
         """
         self.runtime('.a.b.10, .test.[ .conditions.[ .a.b.$x? ], .arithmetic.[ $x * 10 ] ]')
         result = self.runtime.run_conditions('.test.conditions?')
+        result.bindings.select()
         self.assertTrue(result)
         self.assertEqual(len(result), 1)
         self.assertTrue(self.runtime('.a.b.10?'))
-        self.runtime.run_arithmetic('.test.arithmetic?', binding=result.bindings[0])
+        self.runtime.run_arithmetic('.test.arithmetic?', bindings=result.bindings)
         self.assertTrue(self.runtime('.a.b.10?'))
         
     def test_arith_chain(self):
@@ -311,11 +313,12 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime('.test.conditions.[ .a.b.$x?, .a.c.$y? ]')
         self.runtime('.test.arithmetic.[ $y + 5, $..x + $y ]')
         result = self.runtime.run_conditions('.test.conditions?')
+        result.bindings.select()
         self.assertTrue(result)
         self.assertEqual(len(result), 1)
         self.assertFalse(self.runtime('.a.b.20?'))
         self.assertTrue(self.runtime('.a.c.5?'))
-        self.runtime.run_arithmetic('.test.arithmetic?', binding=result.bindings[0])
+        self.runtime.run_arithmetic('.test.arithmetic?', bindings=result.bindings)
         self.assertTrue(self.runtime('.a.b.20?'))
         self.assertTrue(self.runtime('.a.c.5?'))
 
@@ -333,7 +336,7 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertFalse(self.runtime('.a.b.blah.bloo?'))
         result = self.runtime.run_conditions('.test.conditions?')
         self.assertTrue(result)
-        self.runtime.run_actions('.test.actions?', binding=result.bindings[0])
+        self.runtime.run_actions('.test.actions?', bindings=result.bindings)
         self.assertTrue(self.runtime('.a.b.blah.bloo?'))
 
     def test_condition_arith_action(self):
@@ -347,7 +350,8 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime('.test.[ .arithmetic.[ $x + $y ], .actions.[ .a.d.$x ] ]')
         self.assertFalse(self.runtime('.a.d.30?'))
         result = self.runtime.run_conditions('.test.conditions?')
-        binding = self.runtime.run_arithmetic('.test.arithmetic?', result.bindings[0])
+        result.bindings.select()
+        binding = self.runtime.run_arithmetic('.test.arithmetic?', result.bindings)
         self.runtime.run_actions('.test.actions?', binding)
         self.assertTrue(self.runtime('.a.d.30?'))
 
@@ -413,7 +417,8 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime('.node.conditions.[ .name.first.$x?, .name.second.$y?]')
         self.runtime('.node.output.[ "His name was {x} Maurice {y}"]')
         result = self.runtime.run_conditions('.node.conditions?')
-        output = self.runtime.run_output('.node.output?', result.bindings[0])
+        result.bindings.select()
+        output = self.runtime.run_output('.node.output?', result.bindings)
         self.assertEqual(output, "His name was Henry Maurice Thornwood")
 
     def test_trie_execution_in_total(self):
@@ -433,7 +438,42 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertEqual(output[1], 'Henry said hello')
         self.assertEqual(output[2], 'Hello Mr Thornwood')
 
+    def test_trie_execution_in_total_2(self):
+        #todo: (n).name.$x.$y? -> select n of the possibilities
+        self.runtime(""" .people.henry.thornwoord, .people.agatha.griseldom,
+        .first.[ .conditions.[ .people.$x.$y? ], .output."Hello {x}", .next.second],
+        .second.[ .output."Testing {x}" ]
+        """)
+        output = self.runtime.execute('.first')
+        self.assertEqual(len(output), 2)
+        self.assertIn(output[0], ['Hello henry', 'Hello agatha'])
+        self.assertIn(output[1], ['Testing henry', 'Testing agatha'])
 
+    def test_trie_execution_options(self):
+        self.runtime(""" .first.[ .actions.[ .name.henry.thornwood ], .next.second ], 
+        .second.[ .conditions.[ .name.$x.$y? ], .actions.[ .people.$x.$y, ~.name ], .output.[ "Blah {x}", "Bloo {y}" ], .next.[ .third, .fourth ]],
+        .third.[ .output."Final {x}" ],
+        .fourth.[ .output."Final {y}" ]
+        """)
+        output = self.runtime.execute('.first')
+        #TODO
+
+    def test_forall_simple(self):
+        """
+        .a.b.c, .a.b.d, .a.b.e,
+        .node.conditions.[ .a.b.$x? ]
+        .node.actions.[ .test.@x ]
+        .test.c?,
+        .test.d?,
+        .test.e?
+        """
+        self.runtime('.a.b.[ c, d, e]');
+        self.runtime('.node.conditions.[ .a.b.$x? ]')
+        results = self.runtime.run_conditions('.node.conditions')
+        results.bindings.select()
+        self.runtime('.node.actions.[ .test.@x ]')
+        self.runtime.run_actions('.node.actions', bindings=results.bindings)
+        self.assertTrue(all(self.runtime('.test.c?, .test.d?, .test.e?')))
         
     def test_forall_binding_action(self):
         """
