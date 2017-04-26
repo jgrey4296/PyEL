@@ -475,26 +475,53 @@ class ELRuntime_Tests(unittest.TestCase):
         self.runtime.run_actions('.node.actions', bindings=results.bindings)
         self.assertTrue(all(self.runtime('.test.c?, .test.d?, .test.e?')))
         
-    def test_forall_binding_action(self):
+    def test_forall_binding_arithmetic(self):
         """
         .a.b.10, .a.c.20, .a.d.2,
         .test.conditions.[ .a.$x.$y? ] ],
-        .test.actions.[ @..x.@y + 5 ],
+        .test.arithmetic.[ @..y + 5 ],
         .a.b.15?
         .a.c.25?
         .a.d.7?
         """
-        # self.runtime('.a.b.10, .a.c.20, .a.d.2')
-        # self.runtime('.test.conditions.[ .a.$x.$y? ]')
-        # self.runtime('.test.actions.[ @..y + 5 ]')
-        # result = self.runtime.run_conditions('.test.conditions?')
-        # self.assertTrue(result)
-        # self.assertEqual(len(result), 3)
-        # self.assertFalse(any(self.runtime('.a.b.15?, .a.c.25?, .a.d.7?')))
-        # self.runtime.run_actions('.test.conditions?', result.bindings)
-        # self.assertTrue(all(self.runtime('.a.b.15?, .a.c.25?, .a.d.7?')))
-        None
+        self.runtime('.a.b.10, .a.c.20, .a.d.2')
+        self.runtime('.test.conditions.[ .a.$x.$y? ]')
+        self.runtime('.test.arithmetic.[ @..y + 5 ]')
+        result = self.runtime.run_conditions('.test.conditions?')
+        self.assertTrue(result)
+        self.assertEqual(len(result), 3)
+        self.assertFalse(any(self.runtime('.a.b.15?, .a.c.25?, .a.d.7?')))
+        self.runtime.run_arithmetic('.test.arithmetic?', result.bindings)
+        self.assertTrue(all(self.runtime('.a.b.15?, .a.c.25?, .a.d.7?')))
 
+    def test_forall_binding_arithmetic_chained_to_actions(self):
+        self.runtime('.a.b.10, .a.c.20, .a.d.2')
+        self.runtime('.test.conditions.[ .a.$x.$y?]')
+        self.runtime('.test.arithmetic.[ @y + 5]')
+        self.runtime('.test.actions.[ .output.@x.@y ]')
+        result = self.runtime.run_conditions('.test.conditions?')
+        self.assertTrue(result)
+        updated_bindings = self.runtime.run_arithmetic('.test.arithmetic?', result.bindings)
+        self.runtime.run_actions('.test.actions?', updated_bindings)
+
+        #check the originals werent modified:
+        self.assertTrue(all(self.runtime('.a.b.10?, .a.c.20?, .a.d.2?')))
+        #check the new assertions were:
+        self.assertTrue(all(self.runtime('.output.b.15?, .output.c.25?, .output.d.7?')))
+
+    def test_binding_purity(self):
+        self.runtime('.a.b.10, .a.c.20, .a.d.2')
+        self.runtime('.test.conditions.[ .a.$x.$y?]')
+        self.runtime('.test.arithmetic.[ @y + 5]')
+        self.runtime('.test.actions.[ .output.@x.@y ]')
+        result = self.runtime.run_conditions('.test.conditions?')
+        self.assertTrue(result)
+        updated_bindings = self.runtime.run_arithmetic('.test.arithmetic?', result.bindings)
+        self.runtime.run_actions('.test.actions?', result.bindings)
+        self.assertTrue(all(self.runtime('.a.b.10?, .a.c.20?, .a.d.2?')))
+        self.assertTrue(all(self.runtime('.output.b.10?, .output.c.20?, .output.d.2?')))
+
+        
     #todo: test forall binding actions
     #todo: string interpolation, selection based on a variable,
     #todo: weighting based on a variable
