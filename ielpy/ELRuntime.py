@@ -158,32 +158,35 @@ class ELRuntime:
                                                      initial_bindings)
         else:
             compared_bindings = initial_bindings
+
+        if len(compared_bindings) == 0:
+            return (None, None, None)
             
-        selected_binding = choice(compared_bindings)        
+        compared_bindings.select()
         #run arithmetic actions
         if 'arithmetic' in node:
-            updated_binding = self.run_arithmetic(node['arithmetic'],
-                                                  binding=selected_binding)
+            updated_bindings = self.run_arithmetic(node['arithmetic'],
+                                                  compared_bindings)
         else:
-            updated_binding = selected_binding
+            updated_bindings = compared_bindings
         #run general actions
         if 'actions' in node:
-            self.run_actions(node['actions'], updated_binding)
+            self.run_actions(node['actions'], updated_bindings)
         
         #Get the output of the node
         if 'output' in node:
-            interp_text = self.run_output(node['output'], updated_binding)
+            interp_text = self.run_output(node['output'], updated_bindings)
         else:
             interp_text = "N/A"
         
         #Get the next node:
         if 'next' in node:
-            next_location = self.next_node(node['next'], updated_binding)
+            next_location = self.next_node(node['next'], updated_bindings)
         else:
             next_location = None
 
         #ELBindingSlice -> ELBindingFrame
-        binding_frame = ELBindingFrame([updated_binding])
+        binding_frame = ELBindingFrame([updated_bindings.get_selected()])
 
         #next_loc::ELTrieNode,
         #binding_frame::ELBindingFrame
@@ -191,7 +194,8 @@ class ELRuntime:
         return (next_location, binding_frame, interp_text)
 
     
-    def get_location(self,location, bindings=None):
+    def get_location(self,location):
+        # ELFact -> ELBindingFrame -> [ELTrieNode]
         """ Utility to get a trie node based on string, fact, uuid, or trie node """
         if isinstance(location, ELTrieNode):
             return [location]
@@ -206,59 +210,62 @@ class ELRuntime:
             location = location.query()
                      
         #location :: ELFACT
-        queried = self.fact_query(location, bindings)
+        queried = self.fact_query(location)
         assert isinstance(queried, ELSuccess)
         targets = [self.trie[x] for x in queried.nodes]
         return targets
 
     #location::ELTrieNode
     #binding::ELBindingSlice
-    def next_node(self, location, binding=None):
-        if binding is None:
-            binding = self.select_binding()
+    def next_node(self, location, bindings=None):
         #makes no sense to have multiple targets, so get just the first
-        target = self.get_location(location, ELBindingFrame([binding]))[0]
-        potentials = [self.fact_query(x).nodes[0] for x in target.to_el_queries()]
+        if bindings is None:
+            bindings = self.top_stack()
+            bindings.select()
+        
+        target = self.get_location(location)[0]
+        potentials = [self.fact_query(x, bindings).nodes[0] for x in target.to_el_queries()]
         chosen = choice(potentials)
         node = self.trie[chosen]
         #node :: ELTrieNode
         return node
 
-    def select_binding(self, bindings=None):
+    def run_actions(self, location, bindings=None):
+        logging.info("Running Actions: {}".format(location))
         if bindings is None:
             bindings = self.top_stack()
-        return choice(bindings)
-
-    def run_actions(self, location, binding=None, bindings=None):
-        logging.info("Running Actions: {}".format(location))
-        if binding is None:
-            binding = self.select_binding(bindings)
         #only a single target:
-        target = self.get_location(location, ELBindingFrame([binding]))[0]
+        target = self.get_location(location)[0]
         actions = target.to_el_facts()
         for action in actions:
-            self.__run_action(action, binding)
+            if action.has_forall_binding:
+                for binding in bindings:
+                    self.__run_action(action, binding)
+            else:
+                self.__run_action(action, bindings.get_selected())
 
     def __run_action(self, action, binding):
-        bound = action.bind(binding)
+        bound = action.bind_slice(binding)
         if bound.negated:
             self.fact_retract(bound)
         else:
             self.fact_assert(bound)
             
-    def run_output(self, location, binding=None):
-        if binding is None:
-            binding = self.select_binding()
-        target = self.get_location(location, ELBindingFrame([binding]))[0]
+    def run_output(self, location, bindings=None):
+        if bindings is None:
+            bindings = self.top_stack()
+            bindings.select()
+        target = self.get_location(location)[0]
         potentials = target.children_values()
         chosen = choice(potentials)
         #bind variables in the string:
-        interpolated = self.interpolate_string(chosen, binding)
+        interpolated = self.interpolate_string(chosen, bindings.get_selected())
         return interpolated
 
     def interpolate_string(self, string, binding):
         try:
-            return string.format_map(binding.to_simple_dict())
+            dict_binding = {x: y.value for x,y in binding.items()}
+            return string.format_map(dict_binding)
         except KeyError as e:
             logging.warning("Interpolating String: {}".format(string))
             logging.warning("No Key Found in binding: {}".format(binding))
@@ -266,19 +273,24 @@ class ELRuntime:
             return string
 
     
-    def run_arithmetic(self, location, binding=None, bindings=None):
+    def run_arithmetic(self, location, bindings=None):
         logging.info("Running Arithmetic: {}".format(location))
-        if binding is None:
-            binding = self.select_binding(bindings)
-        target = self.get_location(location, ELBindingFrame([binding]))[0]
+        target = self.get_location(location)[0]
         actions = target.to_el_function_formatted(comp=False)
-        #todo: verify bindings
+
+        all_bindings = bindings.copy()
         for arith_action in actions:
-            binding = self.__run_arith(arith_action, binding)
-        return binding
+            if arith_action[-1]: #is forall scoped
+                #run arith for all binding slices
+                all_bindings = ELBindingFrame([self.__run_arith(arith_action,
+                                                                binding) for binding in all_bindings])
+            else:
+                all_bindings[all_bindings.selected] = self.__run_arith(arith_action, all_bindings.get_selected())
+        return all_bindings
         
     def __run_arith(self, arith_action, binding):
-        operator, p1, p2, near = arith_action
+        binding = binding.copy()
+        operator, p1, p2, near, forall_scoped = arith_action
         if p1.value not in binding or (isinstance(p2, ELVAR) and p2.value not in binding):
             raise ELE.ELConsistencyException('Arithmetic being run without the necessary bindings')
 
@@ -301,10 +313,11 @@ class ELRuntime:
         return binding
     
     def run_conditions(self, location, bindings=None):
+        # ELFact -> ELBindingFrame -> ELResult
         logging.info("Running Conditions: {}".format(location))
         if bindings is None:
             bindings = self.top_stack()
-        target = self.get_location(location, bindings=bindings)[0]
+        target = self.get_location(location)[0]
         conditions = target.to_el_queries()
         #Run the conditions in sequence:
         for condition in conditions:
@@ -316,7 +329,7 @@ class ELRuntime:
         return ELSuccess(None, result.bindings)
 
     def run_comparisons(self, location, bindings):
-        target = self.get_location(location, bindings=bindings)[0]
+        target = self.get_location(location)[0]
         #comparisons :: ( operator, p1, p2, near)
         comparisons = target.to_el_function_formatted()
         
@@ -327,7 +340,7 @@ class ELRuntime:
 
 
     def __run_comparison(self, comparison, binding):
-        operator, p1, p2, near = comparison
+        operator, p1, p2, near, forall_scoped = comparison
         if p1.value not in binding or (isinstance(p2, ELVAR) and p2.value not in binding):
             raise ELE.ELConsistencyException('Comparison being run without the necessary bindings')
 
@@ -406,20 +419,26 @@ class ELRuntime:
             return_val.append(self.trie.pop(fact))
         return all(return_val)
             
-    def fact_query(self,query, bindingFrame=None):
+    def fact_query(self,query, bindingFrame=None, force_selection=False):
         """ Test a fact, BE CAREFUL IT MODIFES THE TOP OF THE VAR STACK  """
+        # ELFact -> ELBindingFrame -> ELResult
+        #todo: make sure it no longer modifies the top of the var stack
         logging.debug('Recieved Query: {}'.format(query))
         if bindingFrame is None:
             bindingFrame = self.top_stack()
         assert isinstance(bindingFrame, ELBindingFrame)
         assert query.is_query()
-        
-        current_frame = bindingFrame
+        assert not query.has_forall_binding() #not supported yet
+
+        if force_selection:
+            current_frame = ELBindingFrame([bindingFrame.get_selected().copy()])
+        else:
+            current_frame = bindingFrame
         if len(current_frame) == 0:
             logging.debug("Nothing in the current frame")
             return ELFail()
         #fill in any variables from the current bindings
-        bound_queries = [query.bind(slice) for slice in current_frame]
+        bound_queries = [query.bind_slice(slice) for slice in current_frame]
         logging.debug('Bound: {}'.format(bound_queries))
         
         #then query
