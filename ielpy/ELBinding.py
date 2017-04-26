@@ -57,6 +57,11 @@ class ELBindingFrame(list):
     def __repr__(self):
         return "ELBFrame({})".format(super().__repr__())
             
+    def copy(self):
+        newFrame = ELBindingFrame(data=[x.copy() for x in self[:]])
+        newFrame.selected = self.selected
+        return newFrame
+        
 class ELBindingSlice(dict):
     """ The dictionaries of a rule possibility,
     { x : (ELBindingEntry), y: (ELBinding Entry ... }
@@ -77,15 +82,9 @@ class ELBindingSlice(dict):
         return "ELBSlice({})".format(super().__repr__())
             
     def copy(self):
-        return ELBindingSlice(self)
+        newSlice = ELBindingSlice(self)
+        return newSlice
 
-    def to_simple_dict(self):
-        """
-        utility to turn a binding slice into a normal dictionary,
-        to allow a string to be format_map'd 
-        """
-        return {x.key: x.value for x in self.values()}
-    
 
 class ELBindingEntry:
     """ Contains a single data point, $x = 5.
