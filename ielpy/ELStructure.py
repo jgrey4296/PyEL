@@ -96,7 +96,7 @@ class ELVAR(ELSTRUCTURE):
                  arr_type=None,
                  arr_point=None):
         self.value = bindName            #ie: x
-        self.scope = scope               #ie: $ or @
+        self.scope = scope               #ie: $ or @ or @!
         self.is_path_var = path_var      #True if $..x 
         
         self.array_type = arr_type       #[] or ()
@@ -113,6 +113,8 @@ class ELVAR(ELSTRUCTURE):
         output = ""
         if self.scope is ELVARSCOPE.EXIS:
             output += "$"
+        elif self.scope is ELVARSCOPE.EXFORALL:
+            output += '@!'
         else:
             output += "@"
         if self.is_path_var:

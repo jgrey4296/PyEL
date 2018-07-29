@@ -535,10 +535,41 @@ class ELRuntime_Tests(unittest.TestCase):
         self.assertTrue(all(self.runtime('.outputs.b.15?, .outputs.c.25?, .outputs.d.7?')))
         self.assertTrue(self.runtime('.output.b?'))
 
+    def test_binding_selection(self):
+        """
+        .a.b, .a.c, .a.d, .a.e,
+        .test.conditions.[ .a.$x? ],
+        .test.comparisons.[ $x == c ],
+        .test.actions.[ .output.$x ]
+        """
+        self.runtime('.a.b, .a.c, .a.d, .a.e')
+        self.runtime('.test.conditions.[ .a.$x? ]')
+        self.runtime('.test.comparisons.[ $x == c ]')
+        self.runtime('.test.actions.[ .output.$x ]')
+        result = self.runtime.run_conditions('.test.conditions')
+        bindings = self.runtime.run_comparisons('.test.comparisons', result.bindings)
+        self.runtime.run_actions('.test.actions', bindings)
+        self.assertTrue(self.runtime('.output.c'))
 
-
-
-
+    def test_binding_selection_with_forall_exclusion(self):
+        """
+        .a.b, .a.c, .a.d, .a.e,
+        .test.conditions.[ .a.$x? ],
+        .test.comparisons.[ $x == c ],
+        .test.actions.[ .output.$x ]
+        """
+        self.runtime('.a.b, .a.c, .a.d, .a.e')
+        self.runtime('.test.conditions.[ .a.$x? ]')
+        self.runtime('.test.comparisons.[ $x == c ]')
+        self.runtime('.test.actions.[ .output.$x, .other.@!x ]')
+        result = self.runtime.run_conditions('.test.conditions')
+        bindings = self.runtime.run_comparisons('.test.comparisons', result.bindings)
+        self.runtime.run_actions('.test.actions', bindings)
+        self.assertTrue(self.runtime('.output.c?'))
+        self.assertTrue(all(self.runtime('.other.b?, .other.d?, .other.e?')))
+        self.assertTrue(self.runtime('~.other.c?'))
+        self.assertTrue(all(self.runtime('~.output.b?, ~.output.d?, ~.output.e?')))
+    
 
         
     #todo: test forall binding actions

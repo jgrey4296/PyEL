@@ -13,7 +13,7 @@ EL = Enum('EL', 'DOT EX ROOT')
 #Subtypes of leaves
 ELV = Enum('ELV', 'ARR RULE')
 #Scope Applicability of a Variable:
-ELVARSCOPE = Enum('ELVARSCOPE', 'EXIS FORALL')
+ELVARSCOPE = Enum('ELVARSCOPE', 'EXIS FORALL EXFORALL')
 #Execution Types:
 ELEXT = Enum('EL_Ex_t','TRIE TREE FSM SEL INS')
 #EL Array var types, definition(), and access[]

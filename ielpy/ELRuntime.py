@@ -247,11 +247,8 @@ class ELRuntime:
                 self.__run_action(action, bindings.get_selected())
 
     def __run_action(self, action, binding):
-        bound = action.bind_slice(binding)
-        if bound.negated:
-            self.fact_retract(bound)
-        else:
-            self.fact_assert(bound)
+        bound = action.bind_slice(binding, trie=self.trie)
+        self.act(bound)
             
     def run_output(self, location, bindings=None):
         if bindings is None:
@@ -277,6 +274,8 @@ class ELRuntime:
     
     def run_arithmetic(self, location, bindings=None):
         logging.info("Running Arithmetic: {}".format(location))
+        if bindings is None:
+            bindings = self.top_stack()
         target = self.get_location(location)[0]
         actions = target.to_el_function_formatted(comp=False)
 
@@ -291,19 +290,20 @@ class ELRuntime:
         return all_bindings
         
     def __run_arith(self, arith_action, binding):
+        #todo: merge with elarith_fact.apply
         binding = binding.copy()
         operator, p1, p2, near, forall_scoped = arith_action
         if p1.value not in binding or (isinstance(p2, ELVAR) and p2.value not in binding):
             raise ELE.ELConsistencyException('Arithmetic being run without the necessary bindings')
 
         if p1.is_path_var:
-            node = self.trie[p1.get_val(binding)]
+            node = self.trie[p1.get_val(binding, trie=self.trie)]
             val1 = node.value
         else:
-            val1 = p1.get_val(binding)
+            val1 = p1.get_val(binding, trie=self.trie)
             
         if isinstance(p2, ELVAR):
-            val2 = p2.get_val(binding)
+            val2 = p2.get_val(binding, trie=self.trie)
         else:
             val2 = p2
 
@@ -347,19 +347,19 @@ class ELRuntime:
             raise ELE.ELConsistencyException('Comparison being run without the necessary bindings')
 
         if p1.is_path_var:
-            node = p1.get_val(binding)
+            node = p1.get_val(binding, trie=self.trie)
             val1 = self.trie[node]
         else:
-            val1 = p1.get_val(binding)
+            val1 = p1.get_val(binding, trie=self.trie)
             
         if isinstance(p2, ELVAR):
-            val2 = p2.get_val(binding)
+            val2 = p2.get_val(binding, trie=self.trie)
         else:
             val2 = p2
             
         if operator == COMP_FUNCS[ELCOMP.NEAR]:
             if isinstance(near, ELVAR):
-                nearVal = near.get_val(binding)
+                nearVal = near.get_val(binding, trie=self.trie)
             else:
                 nearVal = near
 
@@ -398,8 +398,9 @@ class ELRuntime:
             #self.set_binding(action.var,action.root)
         elif isinstance(action, ELARITH_FACT):                        #ARITH
             #Get the designated leaf.
-            node = self.trie[action.data]
-            result = action.apply(node)
+            self.run_arithmetic(action)
+            #node = self.trie[action.data]
+            #result = action.apply(node)
         else:
             raise ELE.ELRuntimeException("Unrecognised Action: {}".format(action))
         return result
@@ -439,35 +440,31 @@ class ELRuntime:
         if len(current_frame) == 0:
             logging.debug("Nothing in the current frame")
             return ELFail()
-        #fill in any variables from the current bindings
-        bound_queries = [query.bind_slice(slice) for slice in current_frame]
-        logging.debug('Bound: {}'.format(bound_queries))
-        
-        #then query
-        results = [self.trie.query(query) for query in bound_queries]
-        logging.debug("Trie Query results: {}".format(results))
-        
-        #then integrate into bindings:
-        successes = [success for success in results if bool(success) is True]
-        logging.debug("Trie Query Successes: {}".format(successes))
-        
-        #Flatten the frame
+
+
+        successes = []
+        #Loop over slices in the current frame:
+        for slice in current_frame:
+            #bind and expand
+            bound_queries = [query.bind_slice(slice)] #add current_frame
+            #query
+            result = ELSuccess()
+            for query in bound_queries:
+                if bool(result) is True:
+                    result = self.trie.query(query)
+            #filter
+            if bool(result) is True:
+                successes.append(result)
+            
+        #flatten and wrap
         updated_frame = ELBindingFrame([bind_slice for success in successes for bind_slice in success.bindings])
         nodes = [x for success in successes for x in success.nodes]
-        
+
         #a frame is valid if it has at least ELSuccess(none,{}) in it
         if len(updated_frame) > 0:
             return ELSuccess(path=query, bindings=updated_frame, nodes=nodes)
         else:
             return ELFail()
-
-
-    #     if action.hasForAllBinding():
-    #         bound_actions = [action.bind(selection, x) \
-    #                          for x in compared_bindings]
-    #         logging.debug("Bound actions: {}".format(bound_actions))
-    #     else:
-    #         bound_actions = [action.bind(selection)]
             
     #String Operations:
     def format_string(self,raw_string, bindings):

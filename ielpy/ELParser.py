@@ -169,7 +169,8 @@ C_BRACE   = pp.Literal('}')
 O_PAREN   = pp.Literal('(')
 C_PAREN   = pp.Literal(')')
 DOLLAR    = pp.Literal('$')
-AT        = pp.Literal('@')
+AT        = pp.Keyword('@','!')
+EXAT      = pp.Literal('@!')
 SLASH     = pp.Literal('/')
 DBL_VLINE      = pp.Literal('||')
 
@@ -195,7 +196,7 @@ FACT = pp.Forward()
 # $x(2), $x
 # $..x.a.b.c, $x, $x[2], $..x[2].a.b.c
 # @x, @..x.a.b.c, @x[2], @..x[2]
-VAR_HEADER = pp.Group(DOLLAR | AT)
+VAR_HEADER = pp.Group(DOLLAR | EXAT | AT)
 VAR = pp.Forward()
 VAR_ARRAY_DEF = s(O_PAREN) + (NUM | FACT | VAR) + s(C_PAREN)
 VAR_ARRAY_ACC = s(O_BRACKET) + (NUM | FACT | VAR) + s(C_BRACKET)
@@ -288,6 +289,7 @@ DOT.setParseAction(lambda toks: EL.DOT)
 EX.setParseAction(lambda toks: EL.EX)
 DOLLAR.setParseAction(lambda toks: ELVARSCOPE.EXIS)
 AT.setParseAction(lambda toks: ELVARSCOPE.FORALL)
+EXAT.setParseAction(lambda toks: ELVARSCOPE.EXFORALL)
 DBL_VLINE.setParseAction(lambda toks: EL.ROOT)
 
 #Creating the lowest level data structures:

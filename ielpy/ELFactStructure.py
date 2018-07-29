@@ -93,10 +93,10 @@ class ELFACT(ELExpandable):
     def has_forall_binding(self):
         """ Return true if any binding is a forall binding """
         #todo: this doesn't account for forall variables that are array accessors
-        allforalls = [x.scope is ELVARSCOPE.FORALL for x in self.bindings]
+        allforalls = [x.scope is not ELVARSCOPE.EXIS for x in self.bindings]
         return any(allforalls)
 
-    def bind_slice(self, binding_slice):
+    def bind_slice(self, binding_slice, trie=None):
         #return a copy of the fact, where the var has been switched out
         logging.info("Binding to fact: {}".format(binding_slice))
         assert isinstance(binding_slice, ELBindingSlice)
@@ -108,11 +108,11 @@ class ELFACT(ELExpandable):
                 new_pair = pair
             elif isinstance(pair, ELPAIR) and pair.value.value in binding_slice:
                 #ELPair.value :: ELVar
-                new_pair = ELPAIR(pair.value.get_val(binding_slice), pair.elop)
+                new_pair = ELPAIR(pair.value.get_val(binding_slice, trie=trie), pair.elop)
             elif isinstance(pair, ELROOT) and pair.isVar() and pair.value.value in binding_slice:
                 #ELRoot.value :: ELVAR
                 new_pair = ELROOT(elop=pair.elop, \
-                                  var=pair.value.get_val(binding_slice))
+                                  var=pair.value.get_val(binding_slice, trie=trie))
             elif pair.isVar() and pair.value.value not in binding_slice:
                 new_pair = pair.copy()
             new_string.append(new_pair)
@@ -349,7 +349,7 @@ class ELARITH_FACT(ELExpandable):
         self.bindings.extend(extension)
 
     def has_forall_binding(self):
-        return any([x.scope is ELVARSCOPE.FORALL for x in self.bindings])
+        return any([x.scope is not ELVARSCOPE.EXIS for x in self.bindings])
         
     def expand(self):
         """ Take the IR representation of an arithmetic fact,
@@ -381,27 +381,29 @@ class ELARITH_FACT(ELExpandable):
 
     def has_forall_binding(self):
         """ If one of the bindings is scoped to forall, return true """
-        forallbindings = [x.scope is ELVARSCOPE.FORALL for x in self.bindings]
+        forallbindings = [x.scope is not ELVARSCOPE.EXIS for x in self.bindings]
         return any(forallbindings)
 
     def apply(self, node):
         """ An encapuslated way to perform an arithmetic action, just add a target """
+        raise Exception("Not Working")
         func = get_EL_FUNC(self.op, comp=False)
         new_value = func(node.value, self.val)
         #update the parent:
-        del node.parent[node]
-        node.value = new_value
-        node.parent[node] = node
+        node.update_value(new_value)
+        #del node.parent[node]
+        #node.value = new_value
+        #node.parent[node] = node
 
-    def bind_slice(self, binding_slice):
+    def bind_slice(self, binding_slice, trie=None):
         #returns a new bound ELARITH_FACT that has been bound
         assert isinstance(binding_slice, ELBindingSlice)
         if isinstance(self.data, ELVAR):
-            new_data = self.data.get_val(binding_slice)
+            new_data = self.data.get_val(binding_slice, trie=trie)
         else:
             new_data = self.data
         if isinstance(self.val, ELVAR):
-            new_val = self.val.get_val(binding_slice)
+            new_val = self.val.get_val(binding_slice, trie=trie)
         else:
             new_val = self.val
         return ELARITH_FACT(data=new_data, op=self.op, val=new_val)
